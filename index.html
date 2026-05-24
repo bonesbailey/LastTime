@@ -82,7 +82,7 @@
     <div id="add-modal" class="modal">
         <div class="modal-content">
             <h2>Add New Plant</h2>
-            <input type="text" id="photo-url" placeholder="Photo URL (imgur, postimages, etc.)" style="width:100%; padding:10px; margin:8px 0;">
+            <input type="text" id="photo-url" placeholder="Photo URL" style="width:100%; padding:10px; margin:8px 0;">
             <input type="text" id="name" placeholder="Plant Name" style="width:100%; padding:10px; margin:8px 0;">
             <select id="type" style="width:100%; padding:10px; margin:8px 0;">
                 <option value="">Plant Type</option>
@@ -98,22 +98,16 @@
     </div>
 
     <script>
-        // ================== PASTE YOUR KEYS HERE ==================
-        const supabaseUrl = 'https://npivukmvibypwxaypzps.supabase.co';   // ← Your Project URL
-        const supabaseKey = 'sb_publishable_pvYXlRIO7P8x55mGec5L5A_cY3poUBg';         // ← Your Default Publishable Key (replace this whole line)
-        // =========================================================
+        const supabaseUrl = 'https://npivukmvibypwxaypzps.supabase.co';
+        const supabaseKey = 'sb_publishable_pv................';   // ← PASTE YOUR FULL PUBLISHABLE KEY HERE
 
         const supabase = Supabase.createClient(supabaseUrl, supabaseKey);
 
         let plants = [];
 
         async function loadPlants() {
-            const { data, error } = await supabase
-                .from('plants')
-                .select('*')
-                .order('created_at', { ascending: false });
-
-            if (error) console.error(error);
+            const { data, error } = await supabase.from('plants').select('*').order('created_at', { ascending: false });
+            if (error) console.error("Load error:", error);
             else {
                 plants = data || [];
                 renderPlants();
@@ -122,47 +116,23 @@
 
         function renderPlants() {
             const grid = document.getElementById('plants-grid');
-            grid.innerHTML = '';
-
-            if (plants.length === 0) {
-                grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:#555;">No plants yet. Add the first one!</p>';
-                return;
-            }
-
-            plants.forEach(plant => {
-                const card = document.createElement('div');
-                card.className = 'plant-card';
-                card.innerHTML = `
-                    <img src="${plant.photo || 'https://via.placeholder.com/300x220?text=No+Photo'}" alt="${plant.name}">
-                    <div class="plant-info">
-                        <h3>${plant.name}</h3>
-                        <p><strong>Type:</strong> ${plant.type || '—'}</p>
-                        ${plant.native ? '<p>✅ Arizona Native</p>' : ''}
-                        ${plant.seed_pkt ? '<p>📦 Seed Packet Current</p>' : ''}
+            grid.innerHTML = plants.length === 0 
+                ? '<p style="grid-column:1/-1;text-align:center;color:#555;">No plants yet. Add the first one!</p>'
+                : plants.map(plant => `
+                    <div class="plant-card">
+                        <img src="${plant.photo || 'https://via.placeholder.com/300x220?text=No+Photo'}" alt="${plant.name}">
+                        <div class="plant-info">
+                            <h3>${plant.name}</h3>
+                            <p><strong>Type:</strong> ${plant.type || '—'}</p>
+                            ${plant.native ? '<p>✅ Arizona Native</p>' : ''}
+                            ${plant.seed_pkt ? '<p>📦 Seed Packet Current</p>' : ''}
+                        </div>
                     </div>
-                `;
-                grid.appendChild(card);
-            });
+                `).join('');
         }
 
-        // Real-time updates
-        function subscribeToRealtime() {
-            supabase
-                .channel('plants-channel')
-                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'plants' }, (payload) => {
-                    plants.unshift(payload.new);
-                    renderPlants();
-                })
-                .subscribe();
-        }
-
-        function showAddModal() {
-            document.getElementById('add-modal').style.display = 'flex';
-        }
-
-        function hideModal() {
-            document.getElementById('add-modal').style.display = 'none';
-        }
+        function showAddModal() { document.getElementById('add-modal').style.display = 'flex'; }
+        function hideModal() { document.getElementById('add-modal').style.display = 'none'; }
 
         async function savePlant() {
             const newPlant = {
@@ -173,25 +143,23 @@
                 seed_pkt: document.getElementById('seed-pkt').checked
             };
 
-            if (!newPlant.name) {
-                alert("Plant name is required!");
-                return;
-            }
+            if (!newPlant.name) return alert("Plant name is required!");
 
             const { error } = await supabase.from('plants').insert([newPlant]);
-
-            if (error) {
-                alert("Error: " + error.message);
-            } else {
-                alert("✅ Plant added successfully! It appears instantly for everyone.");
+            if (error) alert("Error: " + error.message);
+            else {
+                alert("✅ Plant added successfully!");
                 hideModal();
             }
         }
 
-        // Start the app
+        // Start everything
         window.onload = () => {
             loadPlants();
-            subscribeToRealtime();
+            supabase.channel('plants').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'plants' }, (payload) => {
+                plants.unshift(payload.new);
+                renderPlants();
+            }).subscribe();
         };
     </script>
 </body>
