@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Seed Savers Photo Catalog</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
@@ -12,32 +12,38 @@
             margin: 0;
             background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
             color: #2e7d32;
+            -webkit-text-size-adjust: 100%;
         }
         
         header {
             background: #1b5e20;
             color: white;
-            padding: 1.5rem;
-            text-align: center;
+            padding: 1rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
         }
         
-        h1 { margin: 0; }
+        h1 { 
+            margin: 0; 
+            font-size: 1.6rem; 
+        }
         
         .add-btn {
             background: white;
             color: #1b5e20;
             border: none;
-            padding: 12px 20px;
+            padding: 10px 18px;
             border-radius: 50px;
             font-weight: 600;
             cursor: pointer;
+            font-size: 1rem;
         }
-        
+
         .search-container {
-            padding: 1rem 1rem 0;
+            padding: 1rem;
             max-width: 1400px;
             margin: 0 auto;
             display: flex;
@@ -47,7 +53,6 @@
         
         #searchInput {
             flex: 1;
-            max-width: 420px;
             padding: 12px 18px;
             border: none;
             border-radius: 50px;
@@ -55,22 +60,11 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
         
-        #clearBtn {
-            padding: 12px 20px;
-            background: #388e3c;
-            color: white;
-            border: none;
-            border-radius: 50px;
-            cursor: pointer;
-            font-weight: 600;
-            display: none;
-        }
-        
         .plants-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 2rem;
-            padding: 2rem 1rem;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            padding: 1rem;
             max-width: 1400px;
             margin: 0 auto;
         }
@@ -79,26 +73,51 @@
             background: white;
             border-radius: 20px;
             overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            position: relative;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            position: relative;           /* Important for positioning buttons */
         }
         
         .plant-image {
             width: 100%;
-            height: 260px;
+            height: 200px;
             object-fit: contain;
             background-color: #f5f5f5;
             padding: 10px;
             box-sizing: border-box;
         }
         
-        .plant-info { padding: 1.5rem; }
-        .plant-name { font-size: 1.6rem; margin: 0 0 0.5rem 0; color: #1b5e20; }
-        .scientific { font-style: italic; color: #666; }
+        .plant-info { 
+            padding: 1.2rem; 
+        }
         
-        .tags { display: flex; gap: 8px; flex-wrap: wrap; margin: 1rem 0; }
-        .tag { background: #e8f5e9; color: #2e7d32; padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; }
+        .plant-name { 
+            font-size: 1.4rem; 
+            margin: 0 0 0.4rem 0; 
+            color: #1b5e20; 
+        }
         
+        .scientific { 
+            font-style: italic; 
+            color: #666; 
+            font-size: 0.95rem;
+        }
+        
+        .tags { 
+            display: flex; 
+            gap: 8px; 
+            flex-wrap: wrap; 
+            margin: 1rem 0; 
+        }
+        
+        .tag { 
+            background: #e8f5e9; 
+            color: #2e7d32; 
+            padding: 4px 12px; 
+            border-radius: 20px; 
+            font-size: 0.85rem; 
+        }
+
+        /* === FIXED ACTION BUTTONS === */
         .action-buttons {
             position: absolute;
             top: 10px;
@@ -108,6 +127,15 @@
             z-index: 10;
         }
         
+        .action-buttons button {
+            padding: 6px 10px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
+
+        /* Modal */
         .modal {
             display: none;
             position: fixed;
@@ -116,29 +144,31 @@
             align-items: center;
             justify-content: center;
             z-index: 1000;
+            padding: 15px;
         }
         
         .modal-content {
             background: white;
-            padding: 2rem;
+            padding: 1.5rem;
             border-radius: 20px;
-            width: 90%;
-            max-width: 500px;
+            width: 100%;
+            max-width: 480px;
             max-height: 90vh;
             overflow-y: auto;
         }
         
         input, select, textarea {
             width: 100%;
-            padding: 10px;
+            padding: 12px;
             margin: 8px 0;
             border: 1px solid #ccc;
             border-radius: 8px;
+            font-size: 1rem;
         }
         
         .image-preview {
             width: 100%;
-            height: 200px;
+            height: 180px;
             border: 2px dashed #ccc;
             border-radius: 12px;
             background-size: contain;
@@ -148,26 +178,27 @@
         }
         
         .checkbox-group {
-            margin: 12px 0;
+            margin: 15px 0;
             display: flex;
             align-items: center;
             gap: 12px;
-            font-size: 1.05rem;
-        }
-        
-        .checkbox-group label {
-            order: 1;
-            cursor: pointer;
-            user-select: none;
+            font-size: 1.1rem;
         }
         
         .checkbox-group input[type="checkbox"] {
-            order: 2;
-            width: 22px;
-            height: 22px;
+            width: 26px;
+            height: 26px;
             accent-color: #1b5e20;
-            cursor: pointer;
-            transform: scale(1.1);
+        }
+
+        button {
+            min-height: 48px;
+            font-size: 1rem;
+        }
+        
+        @media (max-width: 480px) {
+            h1 { font-size: 1.5rem; }
+            .plant-image { height: 180px; }
         }
     </style>
 </head>
@@ -179,7 +210,7 @@
 
     <div class="search-container">
         <input type="text" id="searchInput" placeholder="🔍 Search by name, type, Arizona native...">
-        <button id="clearBtn" onclick="clearSearch()">← Back to All Plants</button>
+        <button id="clearBtn" onclick="clearSearch()">← Back</button>
     </div>
 
     <div class="plants-grid" id="plants-grid"></div>
@@ -189,7 +220,7 @@
         <div class="modal-content">
             <h2 id="modalTitle">Add New Plant</h2>
             
-            <input type="text" id="name" placeholder="Plant Name (e.g. Desert Marigold)">
+            <input type="text" id="name" placeholder="Plant Name">
             <input type="text" id="scientific" placeholder="Scientific Name">
             
             <label>Plant Photo:</label>
@@ -218,9 +249,9 @@
             
             <textarea id="description" placeholder="Description / Notes" rows="4"></textarea>
             
-            <div style="margin-top: 15px;">
-                <button onclick="savePlant()" style="background:#1b5e20; color:white; padding:12px 20px; border:none; border-radius:8px;">Save Plant</button>
-                <button onclick="closeModal()" style="background:#ccc; padding:12px 20px; border:none; border-radius:8px; margin-left:10px;">Cancel</button>
+            <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 10px;">
+                <button onclick="savePlant()" style="background:#1b5e20; color:white; border:none; border-radius:8px;">Save Plant</button>
+                <button onclick="closeModal()" style="background:#ccc; border:none; border-radius:8px;">Cancel</button>
             </div>
         </div>
     </div>
@@ -251,8 +282,8 @@
                 card.className = 'plant-card';
                 card.innerHTML = `
                     <div class="action-buttons">
-                        <button onclick="editPlant(${originalIndex})" style="background:#388e3c;color:white;border:none;padding:5px 10px;border-radius:5px;font-size:0.8rem;">Edit</button>
-                        <button onclick="deletePlant(${originalIndex})" style="background:#d32f2f;color:white;border:none;padding:5px 10px;border-radius:5px;font-size:0.8rem;">Delete</button>
+                        <button onclick="editPlant(${originalIndex})" style="background:#388e3c;color:white;">Edit</button>
+                        <button onclick="deletePlant(${originalIndex})" style="background:#d32f2f;color:white;">Delete</button>
                     </div>
                     <img src="${plant.image}" class="plant-image" alt="${plant.name}">
                     <div class="plant-info">
@@ -263,13 +294,14 @@
                             ${plant.arizonaNative ? '<span class="tag">🌵 AZ Native</span>' : ''}
                             ${plant.seedPktCurrent ? '<span class="tag">📦 Seed Pkt</span>' : ''}
                         </div>
-                        <p><strong>Description:</strong> ${plant.description}</p>
+                        <p><strong>Description:</strong> ${plant.description || ''}</p>
                     </div>
                 `;
                 grid.appendChild(card);
             });
         }
 
+        // Rest of your functions (unchanged)
         function showAddForm() {
             editingIndex = null;
             currentImageBase64 = null;
@@ -314,7 +346,7 @@
         });
 
         function savePlant() {
-            if (!document.getElementById('name').value) {
+            if (!document.getElementById('name').value.trim()) {
                 alert("Please enter a plant name");
                 return;
             }
@@ -362,7 +394,6 @@
             renderPlants(plants);
         }
 
-        // ==================== IMPROVED SEARCH ====================
         document.getElementById('searchInput').addEventListener('input', function() {
             const term = this.value.toLowerCase().trim();
             const clearBtn = document.getElementById('clearBtn');
@@ -376,435 +407,10 @@
             clearBtn.style.display = 'block';
 
             const filtered = plants.filter(plant => {
-                const searchTerm = term;
-                
-                // Plant Name
-                if (plant.name.toLowerCase().includes(searchTerm)) return true;
-                
-                // Scientific Name
-                if (plant.scientific && plant.scientific.toLowerCase().includes(searchTerm)) return true;
-                
-                // Category / Plant Type
-                if (plant.type && plant.type.toLowerCase().includes(searchTerm)) return true;
-                
-                // Arizona Native
-                if (plant.arizonaNative) {
-                    if (searchTerm.includes('arizona') || 
-                        searchTerm.includes('az') || 
-                        searchTerm.includes('native') || 
-                        searchTerm.includes('🌵')) {
-                        return true;
-                    }
-                }
-                
-                return false;
-            });
-            
-            renderPlants(filtered);
-        });
-
-        window.onload = loadPlants;
-    </script>
-</body>
-</html<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Plant Catalog</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
-        
-        body {
-            font-family: 'Poppins', sans-serif;
-            margin: 0;
-            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
-            color: #2e7d32;
-        }
-        
-        header {
-            background: #1b5e20;
-            color: white;
-            padding: 1.5rem;
-            text-align: center;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        h1 { margin: 0; }
-        
-        .add-btn {
-            background: white;
-            color: #1b5e20;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 50px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-        
-        .search-container {
-            padding: 1rem 1rem 0;
-            max-width: 1400px;
-            margin: 0 auto;
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-        
-        #searchInput {
-            flex: 1;
-            max-width: 420px;
-            padding: 12px 18px;
-            border: none;
-            border-radius: 50px;
-            font-size: 1rem;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-        
-        #clearBtn {
-            padding: 12px 20px;
-            background: #388e3c;
-            color: white;
-            border: none;
-            border-radius: 50px;
-            cursor: pointer;
-            font-weight: 600;
-            display: none;
-        }
-        
-        .plants-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 2rem;
-            padding: 2rem 1rem;
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-        
-        .plant-card {
-            background: white;
-            border-radius: 20px;
-            overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            position: relative;
-        }
-        
-        .plant-image {
-            width: 100%;
-            height: 260px;
-            object-fit: contain;
-            background-color: #f5f5f5;
-            padding: 10px;
-            box-sizing: border-box;
-        }
-        
-        .plant-info { padding: 1.5rem; }
-        .plant-name { font-size: 1.6rem; margin: 0 0 0.5rem 0; color: #1b5e20; }
-        .scientific { font-style: italic; color: #666; }
-        
-        .tags { display: flex; gap: 8px; flex-wrap: wrap; margin: 1rem 0; }
-        .tag { background: #e8f5e9; color: #2e7d32; padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; }
-        
-        .action-buttons {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            display: flex;
-            gap: 8px;
-            z-index: 10;
-        }
-        
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.7);
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-        }
-        
-        .modal-content {
-            background: white;
-            padding: 2rem;
-            border-radius: 20px;
-            width: 90%;
-            max-width: 500px;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-        
-        input, select, textarea {
-            width: 100%;
-            padding: 10px;
-            margin: 8px 0;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-        }
-        
-        .image-preview {
-            width: 100%;
-            height: 200px;
-            border: 2px dashed #ccc;
-            border-radius: 12px;
-            background-size: contain;
-            background-position: center;
-            background-color: #f5f5f5;
-            margin: 10px 0;
-        }
-        
-        .checkbox-group {
-            margin: 12px 0;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 1.05rem;
-        }
-        
-        .checkbox-group label {
-            order: 1;
-            cursor: pointer;
-            user-select: none;
-        }
-        
-        .checkbox-group input[type="checkbox"] {
-            order: 2;
-            width: 22px;
-            height: 22px;
-            accent-color: #1b5e20;
-            cursor: pointer;
-            transform: scale(1.1);
-        }
-    </style>
-</head>
-<body>
-    <header>
-        <h1>🌱 My Plant Catalog</h1>
-        <button class="add-btn" onclick="showAddForm()">+ Add Plant</button>
-    </header>
-
-    <div class="search-container">
-        <input type="text" id="searchInput" placeholder="🔍 Search by name, type, Arizona native...">
-        <button id="clearBtn" onclick="clearSearch()">← Back to All Plants</button>
-    </div>
-
-    <div class="plants-grid" id="plants-grid"></div>
-
-    <!-- Add/Edit Modal -->
-    <div class="modal" id="plantModal">
-        <div class="modal-content">
-            <h2 id="modalTitle">Add New Plant</h2>
-            
-            <input type="text" id="name" placeholder="Plant Name (e.g. Desert Marigold)">
-            <input type="text" id="scientific" placeholder="Scientific Name">
-            
-            <label>Plant Photo:</label>
-            <input type="file" id="imageUpload" accept="image/*">
-            <div id="imagePreview" class="image-preview"></div>
-            
-            <label>Plant Type:</label>
-            <select id="type">
-                <option value="Tree">Tree</option>
-                <option value="Shrub">Shrub</option>
-                <option value="Flower">Flower</option>
-                <option value="Wildflower">Wildflower</option>
-                <option value="Herb">Herb</option>
-                <option value="Vine">Vine</option>
-            </select>
-            
-            <div class="checkbox-group">
-                <label for="arizonaNative">Arizona Native?</label>
-                <input type="checkbox" id="arizonaNative">
-            </div>
-            
-            <div class="checkbox-group">
-                <label for="seedPktCurrent">Seed Pkt Current?</label>
-                <input type="checkbox" id="seedPktCurrent">
-            </div>
-            
-            <textarea id="description" placeholder="Description / Notes" rows="4"></textarea>
-            
-            <div style="margin-top: 15px;">
-                <button onclick="savePlant()" style="background:#1b5e20; color:white; padding:12px 20px; border:none; border-radius:8px;">Save Plant</button>
-                <button onclick="closeModal()" style="background:#ccc; padding:12px 20px; border:none; border-radius:8px; margin-left:10px;">Cancel</button>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        let plants = [];
-        let editingIndex = null;
-        let currentImageBase64 = null;
-
-        function loadPlants() {
-            const saved = localStorage.getItem('myPlants');
-            plants = saved ? JSON.parse(saved) : [];
-            renderPlants();
-        }
-
-        function renderPlants(filteredPlants = plants) {
-            const grid = document.getElementById('plants-grid');
-            grid.innerHTML = '';
-            
-            if (filteredPlants.length === 0) {
-                grid.innerHTML = `<p style="grid-column: 1/-1; text-align:center; padding:3rem; color:#666;">No plants found.</p>`;
-                return;
-            }
-            
-            filteredPlants.forEach((plant, index) => {
-                const originalIndex = plants.indexOf(plant);
-                const card = document.createElement('div');
-                card.className = 'plant-card';
-                card.innerHTML = `
-                    <div class="action-buttons">
-                        <button onclick="editPlant(${originalIndex})" style="background:#388e3c;color:white;border:none;padding:5px 10px;border-radius:5px;font-size:0.8rem;">Edit</button>
-                        <button onclick="deletePlant(${originalIndex})" style="background:#d32f2f;color:white;border:none;padding:5px 10px;border-radius:5px;font-size:0.8rem;">Delete</button>
-                    </div>
-                    <img src="${plant.image}" class="plant-image" alt="${plant.name}">
-                    <div class="plant-info">
-                        <h3 class="plant-name">${plant.name}</h3>
-                        <p class="scientific">${plant.scientific || ''}</p>
-                        <div class="tags">
-                            <span class="tag">${plant.type}</span>
-                            ${plant.arizonaNative ? '<span class="tag">🌵 AZ Native</span>' : ''}
-                            ${plant.seedPktCurrent ? '<span class="tag">📦 Seed Pkt</span>' : ''}
-                        </div>
-                        <p><strong>Description:</strong> ${plant.description}</p>
-                    </div>
-                `;
-                grid.appendChild(card);
-            });
-        }
-
-        function showAddForm() {
-            editingIndex = null;
-            currentImageBase64 = null;
-            document.getElementById('modalTitle').textContent = 'Add New Plant';
-            document.getElementById('name').value = '';
-            document.getElementById('scientific').value = '';
-            document.getElementById('type').value = 'Wildflower';
-            document.getElementById('arizonaNative').checked = false;
-            document.getElementById('seedPktCurrent').checked = false;
-            document.getElementById('description').value = '';
-            document.getElementById('imagePreview').style.backgroundImage = '';
-            document.getElementById('plantModal').style.display = 'flex';
-        }
-
-        function editPlant(index) {
-            editingIndex = index;
-            const p = plants[index];
-            currentImageBase64 = p.image;
-            
-            document.getElementById('modalTitle').textContent = 'Edit Plant';
-            document.getElementById('name').value = p.name;
-            document.getElementById('scientific').value = p.scientific || '';
-            document.getElementById('type').value = p.type;
-            document.getElementById('arizonaNative').checked = p.arizonaNative || false;
-            document.getElementById('seedPktCurrent').checked = p.seedPktCurrent || false;
-            document.getElementById('description').value = p.description || '';
-            document.getElementById('imagePreview').style.backgroundImage = `url('${p.image}')`;
-            document.getElementById('plantModal').style.display = 'flex';
-        }
-
-        document.getElementById('imageUpload').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            if (file.size > 5 * 1024 * 1024) return alert("Image too large (max 5MB)");
-            
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                currentImageBase64 = event.target.result;
-                document.getElementById('imagePreview').style.backgroundImage = `url('${currentImageBase64}')`;
-            };
-            reader.readAsDataURL(file);
-        });
-
-        function savePlant() {
-            if (!document.getElementById('name').value) {
-                alert("Please enter a plant name");
-                return;
-            }
-            if (!currentImageBase64) {
-                alert("Please select an image");
-                return;
-            }
-
-            const newPlant = {
-                name: document.getElementById('name').value,
-                scientific: document.getElementById('scientific').value,
-                image: currentImageBase64,
-                type: document.getElementById('type').value,
-                arizonaNative: document.getElementById('arizonaNative').checked,
-                seedPktCurrent: document.getElementById('seedPktCurrent').checked,
-                description: document.getElementById('description').value
-            };
-
-            if (editingIndex !== null) {
-                plants[editingIndex] = newPlant;
-            } else {
-                plants.push(newPlant);
-            }
-
-            localStorage.setItem('myPlants', JSON.stringify(plants));
-            closeModal();
-            renderPlants();
-        }
-
-        function deletePlant(index) {
-            if (confirm("Delete this plant?")) {
-                plants.splice(index, 1);
-                localStorage.setItem('myPlants', JSON.stringify(plants));
-                renderPlants();
-            }
-        }
-
-        function closeModal() {
-            document.getElementById('plantModal').style.display = 'none';
-        }
-
-        function clearSearch() {
-            document.getElementById('searchInput').value = '';
-            document.getElementById('clearBtn').style.display = 'none';
-            renderPlants(plants);
-        }
-
-        // ==================== IMPROVED SEARCH ====================
-        document.getElementById('searchInput').addEventListener('input', function() {
-            const term = this.value.toLowerCase().trim();
-            const clearBtn = document.getElementById('clearBtn');
-            
-            if (!term) {
-                clearBtn.style.display = 'none';
-                renderPlants(plants);
-                return;
-            }
-            
-            clearBtn.style.display = 'block';
-
-            const filtered = plants.filter(plant => {
-                const searchTerm = term;
-                
-                // Plant Name
-                if (plant.name.toLowerCase().includes(searchTerm)) return true;
-                
-                // Scientific Name
-                if (plant.scientific && plant.scientific.toLowerCase().includes(searchTerm)) return true;
-                
-                // Category / Plant Type
-                if (plant.type && plant.type.toLowerCase().includes(searchTerm)) return true;
-                
-                // Arizona Native
-                if (plant.arizonaNative) {
-                    if (searchTerm.includes('arizona') || 
-                        searchTerm.includes('az') || 
-                        searchTerm.includes('native') || 
-                        searchTerm.includes('🌵')) {
-                        return true;
-                    }
-                }
-                
+                if (plant.name.toLowerCase().includes(term)) return true;
+                if (plant.scientific && plant.scientific.toLowerCase().includes(term)) return true;
+                if (plant.type && plant.type.toLowerCase().includes(term)) return true;
+                if (plant.arizonaNative && (term.includes('arizona') || term.includes('az') || term.includes('native'))) return true;
                 return false;
             });
             
@@ -815,4 +421,3 @@
     </script>
 </body>
 </html>
-
