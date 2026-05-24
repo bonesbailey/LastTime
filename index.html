@@ -2,40 +2,20 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🌱 Seed Savers Photo Catalog</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { 
-            font-family: system-ui, sans-serif; 
-            margin:0; 
-            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); 
-            color:#2e7d32; 
-        }
-        header { background:#2e7d32; color:white; padding:1.5rem; text-align:center; }
-        .container { max-width:1200px; margin:0 auto; padding:1rem; }
-        .add-btn { 
-            background:#2e7d32; color:white; border:none; padding:14px 28px; 
-            font-size:1.1rem; border-radius:8px; cursor:pointer; margin:1rem 0; 
-        }
-        .plants-grid { 
-            display:grid; 
-            grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); 
-            gap:1.5rem; 
-        }
-        .plant-card { 
-            background:white; border-radius:12px; overflow:hidden; 
-            box-shadow:0 4px 12px rgba(0,0,0,0.1); 
-        }
+        body { font-family: system-ui, sans-serif; margin:0; background: linear-gradient(135deg, #e8f5e9, #c8e6c9); color:#2e7d32; }
+        header { background:#2e7d32; color:white; padding:20px; text-align:center; }
+        .container { max-width:1200px; margin:0 auto; padding:15px; }
+        .add-btn { background:#2e7d32; color:white; border:none; padding:15px 30px; font-size:1.2rem; border-radius:8px; cursor:pointer; }
+        .plants-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:20px; }
+        .plant-card { background:white; border-radius:12px; overflow:hidden; box-shadow:0 4px 12px rgba(0,0,0,0.1); }
         .plant-card img { width:100%; height:220px; object-fit:cover; }
-        .plant-info { padding:1rem; }
-        .modal { 
-            display:none; position:fixed; top:0; left:0; right:0; bottom:0; 
-            background:rgba(0,0,0,0.7); align-items:center; justify-content:center; z-index:1000; 
-        }
-        .modal-content { 
-            background:white; padding:2rem; border-radius:12px; width:90%; max-width:500px; 
-        }
+        .plant-info { padding:15px; }
+        .modal { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.7); align-items:center; justify-content:center; z-index:1000; }
+        .modal-content { background:white; padding:25px; border-radius:12px; width:90%; max-width:500px; }
     </style>
 </head>
 <body>
@@ -46,13 +26,12 @@
         <div id="plants-grid" class="plants-grid"></div>
     </div>
 
-    <!-- Add Modal -->
     <div id="add-modal" class="modal">
         <div class="modal-content">
             <h2>Add New Plant</h2>
-            <input type="text" id="photo-url" placeholder="Photo URL" style="width:100%; padding:10px; margin:8px 0;">
-            <input type="text" id="name" placeholder="Plant Name" style="width:100%; padding:10px; margin:8px 0;">
-            <select id="type" style="width:100%; padding:10px; margin:8px 0;">
+            <input type="text" id="photo-url" placeholder="Photo URL" style="width:100%;padding:10px;margin:10px 0;">
+            <input type="text" id="name" placeholder="Plant Name" style="width:100%;padding:10px;margin:10px 0;">
+            <select id="type" style="width:100%;padding:10px;margin:10px 0;">
                 <option value="">Plant Type</option>
                 <option>Tree</option><option>Shrub</option><option>Flower</option>
                 <option>Wildflower</option><option>Herb</option><option>Vine</option>
@@ -60,33 +39,29 @@
             <label><input type="checkbox" id="native"> Arizona Native?</label><br><br>
             <label><input type="checkbox" id="seed-pkt"> Seed Packet Current?</label><br><br>
             
-            <buttosb_publishable_pvYXlRIO7P8x55mGec5L5A_cY3poUBgn onclick="savePlant()" style="background:#2e7d32;color:white;padding:12px 24px;border:none;border-radius:8px;margin-right:10px;">Save Plant</button>
+            <button onclick="savePlant()" style="background:#2e7d32;color:white;padding:12px 24px;border:none;border-radius:8px;">Save Plant</button>
             <button onclick="hideModal()">Cancel</button>
         </div>
     </div>
 
     <script>
-        // === YOUR KEYS ===
         const supabaseUrl = 'https://npivukmvibypwxaypzps.supabase.co';
-        const supabaseKey = 'sb_publishable_pvYXlRIO7P8x55mGec5L5A_cY3poUBg';   // ← PASTE YOUR FULL KEY HEREsb_publishable_pv................
+        const supabaseKey = 'sb_publishable_pvYXlRIO7P8x55mGec5L5A_cY3poUBg';
 
         const supabase = Supabase.createClient(supabaseUrl, supabaseKey);
 
         let plants = [];
 
         async function loadPlants() {
-            const { data, error } = await supabase.from('plants').select('*').order('created_at', { ascending: false });
-            if (error) console.error(error);
-            else {
-                plants = data || [];
-                renderPlants();
-            }
+            const { data } = await supabase.from('plants').select('*').order('created_at', { ascending: false });
+            plants = data || [];
+            renderPlants();
         }
 
         function renderPlants() {
             const grid = document.getElementById('plants-grid');
             grid.innerHTML = plants.length === 0 
-                ? '<p style="grid-column:1/-1;text-align:center;color:#555;">No plants yet. Add the first one!</p>'
+                ? '<p style="text-align:center; color:#555; grid-column:1/-1;">No plants yet. Add the first one!</p>'
                 : plants.map(p => `
                     <div class="plant-card">
                         <img src="${p.photo || 'https://via.placeholder.com/300x220?text=No+Photo'}" alt="${p.name}">
@@ -115,14 +90,14 @@
             if (!newPlant.name) return alert("Plant name is required!");
 
             const { error } = await supabase.from('plants').insert([newPlant]);
-            if (error) alert("Error saving: " + error.message);
+            if (error) alert("Error: " + error.message);
             else {
-                alert("✅ Plant added!");
+                alert("✅ Plant added successfully!");
                 hideModal();
+                loadPlants();
             }
         }
 
-        // Initialize
         window.onload = loadPlants;
     </script>
 </body>
