@@ -48,9 +48,9 @@
             font-size: 1.05rem;
         }
         input[type="checkbox"] { 
-            width: 22px; 
-            height: 22px; 
-            margin-right: 10px; 
+            width: 24px; 
+            height: 24px; 
+            margin-right: 12px; 
         }
         button { background: #2e7d32; color: white; padding: 14px 24px; border: none; border-radius: 8px; font-size: 1.1rem; cursor: pointer; }
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; }
@@ -73,7 +73,7 @@
         <h3>Add New Plant</h3>
         <input type="text" id="name" placeholder="Common Name">
         <input type="text" id="scientific" placeholder="Scientific Name (optional)">
-        <input type="text" id="photo" placeholder="Photo URL (optional)">
+        <input type="text" id="photo" placeholder="Photo URL (paste here)">
         
         <select id="type">
             <option value="">Plant Type</option>
@@ -94,8 +94,8 @@
         <button onclick="addPlant()">Save Plant</button>
         <button onclick="hideAddForm()" style="background:#777; margin-left:10px;">Cancel</button>
         
-        <small style="color:#555; display:block; margin-top:10px;">
-            Tip: Upload photo to <a href="https://imgur.com/upload" target="_blank">imgur.com</a> → right-click → "Copy image address"
+        <small style="color:#555; display:block; margin-top:15px;">
+            💡 Tip: Go to <a href="https://imgur.com/upload" target="_blank">imgur.com</a>, upload photo, right-click image → "Copy image address", then paste here.
         </small>
     </div>
 
@@ -143,10 +143,16 @@
         }
 
         function showAddForm() {
-            document.getElementById('add-box').style.display = 'block';
-            document.getElementById('name').focus();
+            const form = document.getElementById('add-box');
+            form.style.display = 'block';
+            
             // Scroll smoothly to the form
-            document.getElementById('add-box').scrollIntoView({ behavior: "smooth" });
+            form.scrollIntoView({ behavior: "smooth" });
+            
+            // Focus on the Photo URL field after a short delay (so scroll finishes)
+            setTimeout(() => {
+                document.getElementById('photo').focus();
+            }, 600);
         }
 
         function hideAddForm() {
@@ -174,7 +180,7 @@
             plants.push(newPlant);
             localStorage.setItem('plants', JSON.stringify(plants));
             
-            // Clear form and hide it
+            // Clear and hide form
             document.getElementById('name').value = '';
             document.getElementById('scientific').value = '';
             document.getElementById('photo').value = '';
