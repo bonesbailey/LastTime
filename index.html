@@ -12,10 +12,46 @@
             background: linear-gradient(135deg, #e8f5e9, #c8e6c9); 
         }
         h1 { text-align: center; color: #2e7d32; }
-        .add-box { background: white; padding: 20px; border-radius: 12px; margin: 20px 0; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        input, select, textarea { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
+        .add-btn { 
+            display: block; 
+            margin: 20px auto; 
+            background: #2e7d32; 
+            color: white; 
+            padding: 16px 32px; 
+            font-size: 1.2rem; 
+            border: none; 
+            border-radius: 12px; 
+            cursor: pointer; 
+        }
+        .add-box { 
+            background: white; 
+            padding: 20px; 
+            border-radius: 12px; 
+            margin: 20px 0; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1); 
+            display: none; 
+        }
+        input, select, textarea { 
+            width: 100%; 
+            padding: 12px; 
+            margin: 8px 0; 
+            border: 1px solid #ccc; 
+            border-radius: 8px; 
+            box-sizing: border-box; 
+        }
         textarea { height: 80px; resize: vertical; }
-        label { display: block; margin: 12px 0 4px; font-weight: bold; }
+        label { 
+            display: flex; 
+            align-items: center; 
+            margin: 15px 0; 
+            font-weight: bold; 
+            font-size: 1.05rem;
+        }
+        input[type="checkbox"] { 
+            width: 22px; 
+            height: 22px; 
+            margin-right: 10px; 
+        }
         button { background: #2e7d32; color: white; padding: 14px 24px; border: none; border-radius: 8px; font-size: 1.1rem; cursor: pointer; }
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; }
         .card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
@@ -31,7 +67,9 @@
 <body>
     <h1>🌱 Seed Savers Catalog</h1>
 
-    <div class="add-box">
+    <button class="add-btn" onclick="showAddForm()">+ Add New Plant</button>
+
+    <div id="add-box" class="add-box">
         <h3>Add New Plant</h3>
         <input type="text" id="name" placeholder="Common Name">
         <input type="text" id="scientific" placeholder="Scientific Name (optional)">
@@ -53,7 +91,8 @@
         
         <textarea id="notes" placeholder="Notes / Growing tips / Description..."></textarea>
         
-        <button onclick="addPlant()">Add Plant</button>
+        <button onclick="addPlant()">Save Plant</button>
+        <button onclick="hideAddForm()" style="background:#777; margin-left:10px;">Cancel</button>
         
         <small style="color:#555; display:block; margin-top:10px;">
             Tip: Upload photo to <a href="https://imgur.com/upload" target="_blank">imgur.com</a> → right-click → "Copy image address"
@@ -76,7 +115,7 @@
             grid.innerHTML = '';
 
             if (plants.length === 0) {
-                grid.innerHTML = '<p style="grid-column:1/-1; text-align:center; color:#666; padding:30px;">No plants yet. Add some above!</p>';
+                grid.innerHTML = '<p style="grid-column:1/-1; text-align:center; color:#666; padding:30px;">No plants yet. Click "+ Add New Plant" above!</p>';
                 return;
             }
 
@@ -103,6 +142,17 @@
             });
         }
 
+        function showAddForm() {
+            document.getElementById('add-box').style.display = 'block';
+            document.getElementById('name').focus();
+            // Scroll smoothly to the form
+            document.getElementById('add-box').scrollIntoView({ behavior: "smooth" });
+        }
+
+        function hideAddForm() {
+            document.getElementById('add-box').style.display = 'none';
+        }
+
         function addPlant() {
             const name = document.getElementById('name').value.trim();
             
@@ -124,7 +174,7 @@
             plants.push(newPlant);
             localStorage.setItem('plants', JSON.stringify(plants));
             
-            // Clear form
+            // Clear form and hide it
             document.getElementById('name').value = '';
             document.getElementById('scientific').value = '';
             document.getElementById('photo').value = '';
@@ -133,6 +183,7 @@
             document.getElementById('seedpkt').checked = false;
             document.getElementById('notes').value = '';
             
+            hideAddForm();
             renderPlants();
             alert("✅ Plant added successfully!");
         }
