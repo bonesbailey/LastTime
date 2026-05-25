@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🌱 Seed Savers Catalog</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { 
             font-family: system-ui, sans-serif; 
@@ -13,55 +14,25 @@
         }
         h1 { text-align: center; color: #2e7d32; }
         .add-btn { 
-            display: block; 
-            margin: 20px auto; 
-            background: #2e7d32; 
-            color: white; 
-            padding: 16px 32px; 
-            font-size: 1.2rem; 
-            border: none; 
-            border-radius: 12px; 
-            cursor: pointer; 
+            display: block; margin: 20px auto; background: #2e7d32; color: white; 
+            padding: 16px 32px; font-size: 1.2rem; border: none; border-radius: 12px; cursor: pointer; 
         }
         .add-box { 
-            background: white; 
-            padding: 20px; 
-            border-radius: 12px; 
-            margin: 20px 0; 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1); 
-            display: none; 
+            background: white; padding: 20px; border-radius: 12px; margin: 20px 0; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1); display: none; 
         }
-        input, select, textarea { 
-            width: 100%; 
-            padding: 12px; 
-            margin: 8px 0; 
-            border: 1px solid #ccc; 
-            border-radius: 8px; 
-            box-sizing: border-box; 
-        }
+        input, select, textarea { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
         textarea { height: 80px; resize: vertical; }
         label { 
-            display: flex; 
-            align-items: center; 
-            margin: 15px 0; 
-            font-weight: bold; 
-            font-size: 1.05rem;
+            display: flex; align-items: center; margin: 15px 0; font-weight: bold; font-size: 1.05rem;
         }
         input[type="checkbox"] { 
-            width: 24px; 
-            height: 24px; 
-            margin-right: 12px; 
+            width: 24px; height: 24px; margin-right: 12px; accent-color: #2e7d32; 
         }
-        button { background: #2e7d32; color: white; padding: 14px 24px; border: none; border-radius: 8px; font-size: 1.1rem; cursor: pointer; }
+        button { background: #2e7d32; color: white; padding: 14px 24px; border: none; border-radius: 8px; cursor: pointer; }
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; }
         .card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         .card img { width: 100%; height: 200px; object-fit: cover; cursor: pointer; }
-        .no-photo { 
-            width: 100%; height: 200px; background: #e8f5e9; 
-            display: flex; align-items: center; justify-content: center; 
-            color: #2e7d32; font-size: 1.1rem; 
-        }
-        .info { padding: 15px; line-height: 1.5; }
     </style>
 </head>
 <body>
@@ -73,99 +44,67 @@
         <h3>Add New Plant</h3>
         <input type="text" id="name" placeholder="Common Name">
         <input type="text" id="scientific" placeholder="Scientific Name (optional)">
-        <input type="text" id="photo" placeholder="Photo URL (paste here)">
+        <input type="text" id="photo" placeholder="Photo URL">
         
         <select id="type">
             <option value="">Plant Type</option>
-            <option>Tree</option>
-            <option>Shrub</option>
-            <option>Flower</option>
-            <option>Wildflower</option>
-            <option>Herb</option>
-            <option>Vine</option>
-            <option>Cactus</option>
+            <option>Tree</option><option>Shrub</option><option>Flower</option>
+            <option>Wildflower</option><option>Herb</option><option>Vine</option><option>Cactus</option>
         </select>
 
         <label><input type="checkbox" id="native"> Arizona Native?</label>
         <label><input type="checkbox" id="seedpkt"> Seed Packet Updated?</label>
         
-        <textarea id="notes" placeholder="Notes / Growing tips / Description..."></textarea>
+        <textarea id="notes" placeholder="Notes / Growing tips..."></textarea>
         
         <button onclick="addPlant()">Save Plant</button>
         <button onclick="hideAddForm()" style="background:#777; margin-left:10px;">Cancel</button>
-        
-        <small style="color:#555; display:block; margin-top:15px;">
-            💡 Tip: Go to <a href="https://imgur.com/upload" target="_blank">imgur.com</a>, upload photo, right-click image → "Copy image address", then paste here.
-        </small>
     </div>
 
     <div id="grid" class="grid"></div>
 
     <script>
-        let plants = [];
+        const supabaseUrl = 'https://npivukmvibypwxaypzps.supabase.co';
+        const supabaseKey = 'sb_publishable_pvYXlRIO7P8x55mGec5L5A_cY3poUBg';   // ← Paste your sb_publishable_pv key here
 
-        function loadPlants() {
-            const saved = localStorage.getItem('plants');
-            plants = saved ? JSON.parse(saved) : [];
-            renderPlants();
+        const supabase = Supabase.createClient(supabaseUrl, supabaseKey);
+
+        async function loadPlants() {
+            const { data } = await supabase.from('plants').select('*').order('created_at', { ascending: false });
+            renderPlants(data || []);
         }
 
-        function renderPlants() {
+        function renderPlants(plants) {
             const grid = document.getElementById('grid');
-            grid.innerHTML = '';
-
-            if (plants.length === 0) {
-                grid.innerHTML = '<p style="grid-column:1/-1; text-align:center; color:#666; padding:30px;">No plants yet. Click "+ Add New Plant" above!</p>';
-                return;
-            }
-
-            plants.forEach(plant => {
-                const card = document.createElement('div');
-                card.className = 'card';
-                
-                const imgHTML = plant.photo 
-                    ? `<img src="${plant.photo}" alt="${plant.name}" onclick="window.open('${plant.photo}', '_blank')">`
-                    : `<div class="no-photo">🌱 No Photo</div>`;
-
-                card.innerHTML = `
-                    ${imgHTML}
-                    <div class="info">
-                        <strong>${plant.name}</strong><br>
-                        ${plant.scientific ? `<em>${plant.scientific}</em><br>` : ''}
-                        ${plant.type ? `Type: ${plant.type}<br>` : ''}
-                        ${plant.native ? '✅ Arizona Native<br>' : ''}
-                        ${plant.seedpkt ? '📦 Seed Packet Updated<br>' : ''}
-                        ${plant.notes ? `<small>${plant.notes}</small>` : ''}
+            grid.innerHTML = plants.length === 0 
+                ? '<p style="text-align:center; color:#666; padding:30px;">No plants yet. Add some!</p>'
+                : plants.map(p => `
+                    <div class="card">
+                        ${p.photo ? `<img src="${p.photo}" onclick="window.open('${p.photo}','_blank')">` : '<div style="height:200px;background:#e8f5e9;display:flex;align-items:center;justify-content:center;color:#2e7d32;">No Photo</div>'}
+                        <div style="padding:15px;">
+                            <strong>${p.name}</strong><br>
+                            ${p.scientific ? `<em>${p.scientific}</em><br>` : ''}
+                            ${p.type ? `Type: ${p.type}<br>` : ''}
+                            ${p.native ? '✅ Arizona Native<br>' : ''}
+                            ${p.seedpkt ? '📦 Seed Packet Updated<br>' : ''}
+                            ${p.notes ? `<small>${p.notes}</small>` : ''}
+                        </div>
                     </div>
-                `;
-                grid.appendChild(card);
-            });
+                `).join('');
         }
 
         function showAddForm() {
-            const form = document.getElementById('add-box');
-            form.style.display = 'block';
-            
-            // Scroll smoothly to the form
-            form.scrollIntoView({ behavior: "smooth" });
-            
-            // Focus on the Photo URL field after a short delay (so scroll finishes)
-            setTimeout(() => {
-                document.getElementById('photo').focus();
-            }, 600);
+            document.getElementById('add-box').style.display = 'block';
+            document.getElementById('add-box').scrollIntoView({ behavior: "smooth" });
         }
 
         function hideAddForm() {
             document.getElementById('add-box').style.display = 'none';
         }
 
-        function addPlant() {
+        async function addPlant() {
             const name = document.getElementById('name').value.trim();
-            
-            if (!name) {
-                alert("Please enter a plant name");
-                return;
-            }
+            if (!name) return alert("Plant name is required");
 
             const newPlant = {
                 name: name,
@@ -177,21 +116,13 @@
                 notes: document.getElementById('notes').value.trim()
             };
 
-            plants.push(newPlant);
-            localStorage.setItem('plants', JSON.stringify(plants));
-            
-            // Clear and hide form
-            document.getElementById('name').value = '';
-            document.getElementById('scientific').value = '';
-            document.getElementById('photo').value = '';
-            document.getElementById('type').value = '';
-            document.getElementById('native').checked = false;
-            document.getElementById('seedpkt').checked = false;
-            document.getElementById('notes').value = '';
-            
-            hideAddForm();
-            renderPlants();
-            alert("✅ Plant added successfully!");
+            const { error } = await supabase.from('plants').insert([newPlant]);
+            if (error) alert("Error: " + error.message);
+            else {
+                alert("✅ Plant added!");
+                hideAddForm();
+                loadPlants();
+            }
         }
 
         window.onload = loadPlants;
