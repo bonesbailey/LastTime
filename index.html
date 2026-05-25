@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🌱 Seed Savers Photo Catalog</title>
+    <title>🌱 Seed Savers photo Catalog</title>
     <style>
         body { 
             font-family: system-ui, sans-serif; 
@@ -12,9 +12,9 @@
             background: linear-gradient(135deg, #e8f5e9, #c8e6c9); 
         }
         h1 { text-align: center; color: #2e7d32; }
-        .add-box { background: white; padding: 20px; border-radius: 12px; margin: 20px 0; }
-        input, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; }
-        button { background: #2e7d32; color: white; padding: 14px 24px; border: none; border-radius: 8px; font-size: 1.1rem; }
+        .add-box { background: white; padding: 20px; border-radius: 12px; margin: 20px 0; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
+        button { background: #2e7d32; color: white; padding: 14px 24px; border: none; border-radius: 8px; font-size: 1.1rem; cursor: pointer; }
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 15px; }
         .card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         .card img { width: 100%; height: 200px; object-fit: cover; }
@@ -26,7 +26,7 @@
     <div class="add-box">
         <h3>Add New Plant</h3>
         <input type="text" id="name" placeholder="Plant Name">
-        <input type="text" id="photo" placeholder="Photo URL (imgur or any direct link)">
+        <input type="text" id="photo" placeholder="Photo URL (optional)">
         <button onclick="addPlant()">Add Plant</button>
     </div>
 
@@ -46,7 +46,7 @@
             grid.innerHTML = '';
 
             if (plants.length === 0) {
-                grid.innerHTML = '<p style="grid-column:1/-1; text-align:center; color:#666;">No plants yet. Add some above!</p>';
+                grid.innerHTML = '<p style="grid-column:1/-1; text-align:center; color:#666; padding:20px;">No plants yet. Add some above!</p>';
                 return;
             }
 
@@ -54,7 +54,7 @@
                 const card = document.createElement('div');
                 card.className = 'card';
                 card.innerHTML = `
-                    <img src="${plant.photo || 'https://via.placeholder.com/300x200?text=No+Photo'}" alt="${plant.name}">
+                    <img src="${plant.photo || 'https://picsum.photos/300/200'}" alt="${plant.name}">
                     <div style="padding:15px;">
                         <strong>${plant.name}</strong>
                     </div>
@@ -79,10 +79,9 @@
             document.getElementById('photo').value = '';
             
             renderPlants();
-            alert("Plant added!");
+            alert("✅ Plant added successfully!");
         }
 
-        // Load when page opens
         window.onload = loadPlants;
     </script>
 </body>
