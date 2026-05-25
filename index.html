@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🌱 Seed Savers Catalog</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { font-family: system-ui, sans-serif; margin:0; padding:15px; background: linear-gradient(135deg, #e8f5e9, #c8e6c9); }
         h1 { text-align:center; color:#2e7d32; }
@@ -42,23 +41,24 @@
         <textarea id="notes" placeholder="Notes..."></textarea>
         
         <button onclick="addPlant()">Save Plant</button>
-        <button onclick="hideAddForm()" style="background:#777; margin-left:10px;">Cancel</button>
+        <button onclick="hideAddForm()" style="background:#777;">Cancel</button>
     </div>
 
     <div id="grid" class="grid"></div>
 
     <script>
-        const supabaseUrl = 'https://npivukmvibypwxaypzps.supabase.co';
-        const supabaseKey = 'sb_publishable_pvYXlRIO7P8x55mGec5L5A_cY3poUBg';   // ← REPLACE WITH YOUR FULL KEY
-
-        const supabase = Supabase.createClient(supabaseUrl, supabaseKey);
+        let plants = [];
 
         async function loadPlants() {
-            const { data } = await supabase.from('plants').select('*').order('created_at', { ascending: false });
-            renderPlants(data || []);
+            try {
+                const res = await fetch('plants.json');
+                const data = await res.json();
+                plants = data.plants || [];
+            } catch(e) {}
+            renderPlants();
         }
 
-        function renderPlants(plants) {
+        function renderPlants() {
             const grid = document.getElementById('grid');
             grid.innerHTML = plants.length === 0 
                 ? '<p style="text-align:center;color:#666;padding:40px;">No plants yet.</p>'
@@ -86,7 +86,7 @@
             document.getElementById('add-box').style.display = 'none';
         }
 
-        async function addPlant() {
+        function addPlant() {
             const name = document.getElementById('name').value.trim();
             if (!name) return alert("Plant name is required");
 
@@ -100,13 +100,14 @@
                 notes: document.getElementById('notes').value.trim()
             };
 
-            const { error } = await supabase.from('plants').insert([newPlant]);
-            if (error) alert("Error: " + error.message);
-            else {
-                alert("✅ Plant saved!");
-                hideAddForm();
-                loadPlants();
-            }
+            plants.unshift(newPlant);
+            renderPlants();
+
+            const jsonString = JSON.stringify({ plants: plants }, null, 2);
+            console.log(jsonString);
+
+            alert("Plant added!\n\n1. Press OK\n2. Open browser Console (F12)\n3. Copy the JSON that appears\n4. Paste it into plants.json on GitHub");
+            hideAddForm();
         }
 
         window.onload = loadPlants;
