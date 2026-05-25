@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🌱 Seed Savers photo Catalog</title>
+    <title>🌱 Seed Savers Catalog</title>
     <style>
         body { 
             font-family: system-ui, sans-serif; 
@@ -18,6 +18,16 @@
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 15px; }
         .card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         .card img { width: 100%; height: 200px; object-fit: cover; }
+        .no-photo { 
+            width: 100%; 
+            height: 200px; 
+            background: #e8f5e9; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            color: #2e7d32; 
+            font-size: 1rem; 
+        }
     </style>
 </head>
 <body>
@@ -46,19 +56,29 @@
             grid.innerHTML = '';
 
             if (plants.length === 0) {
-                grid.innerHTML = '<p style="grid-column:1/-1; text-align:center; color:#666; padding:20px;">No plants yet. Add some above!</p>';
+                grid.innerHTML = '<p style="grid-column:1/-1; text-align:center; color:#666; padding:30px;">No plants yet. Add some above!</p>';
                 return;
             }
 
             plants.forEach(plant => {
                 const card = document.createElement('div');
                 card.className = 'card';
-                card.innerHTML = `
-                    <img src="${plant.photo || 'https://picsum.photos/300/200'}" alt="${plant.name}">
-                    <div style="padding:15px;">
-                        <strong>${plant.name}</strong>
-                    </div>
-                `;
+                
+                if (plant.photo) {
+                    card.innerHTML = `
+                        <img src="${plant.photo}" alt="${plant.name}">
+                        <div style="padding:15px;">
+                            <strong>${plant.name}</strong>
+                        </div>
+                    `;
+                } else {
+                    card.innerHTML = `
+                        <div class="no-photo">🌱 No Photo</div>
+                        <div style="padding:15px;">
+                            <strong>${plant.name}</strong>
+                        </div>
+                    `;
+                }
                 grid.appendChild(card);
             });
         }
