@@ -3,70 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Seed Savers</title>
+    <title>🌱 Seed Savers Photo Catalog</title>
     <style>
-        body { font-family: system-ui, sans-serif; margin:0; padding:15px; background:#e8f5e9; }
-        h1 { color:#2e7d32; text-align:center; }
-        .box { margin:20px 0; padding:15px; background:white; border-radius:12px; }
-        input { width:100%; padding:12px; margin:8px 0; box-sizing:border-box; }
-        button { background:#2e7d32; color:white; padding:12px 24px; border:none; border-radius:8px; font-size:1.1rem; }
-        .grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(250px, 1fr)); gap:15px; }
-        .card { background:white; border-radius:12px; overflow:hidden; box-shadow:0 4px 10px rgba(0,0,0,0.1); }
-        .card img { width:100%; height:200px; object-fit:cover; }
+        body { 
+            font-family: system-ui, sans-serif; 
+            margin: 0; 
+            padding: 15px; 
+            background: linear-gradient(135deg, #e8f5e9, #c8e6c9); 
+        }
+        h1 { text-align: center; color: #2e7d32; }
+        .add-box { background: white; padding: 20px; border-radius: 12px; margin: 20px 0; }
+        input, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; }
+        button { background: #2e7d32; color: white; padding: 14px 24px; border: none; border-radius: 8px; font-size: 1.1rem; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 15px; }
+        .card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .card img { width: 100%; height: 200px; object-fit: cover; }
     </style>
 </head>
 <body>
     <h1>🌱 Seed Savers Catalog</h1>
 
-    <div class="box">
+    <div class="add-box">
         <h3>Add New Plant</h3>
         <input type="text" id="name" placeholder="Plant Name">
-        <input type="text" id="photo" placeholder="Photo URL">
+        <input type="text" id="photo" placeholder="Photo URL (imgur or any direct link)">
         <button onclick="addPlant()">Add Plant</button>
     </div>
 
     <div id="grid" class="grid"></div>
 
     <script>
-        console.log("Script loaded successfully");
+        let plants = [];
 
-        const supabaseUrl = 'https://npivukmvibypwxaypzps.supabase.co';
-        const supabaseKey = 'sb_publishable_pvYXlRIO7P8x55mGec5L5A_cY3poUBg';   // ← Replace this line
-
-        const supabase = Supabase.createClient(supabaseUrl, supabaseKey);
-
-        async function loadPlants() {
-            console.log("Loading plants...");
-            const { data, error } = await supabase.from('plants').select('*');
-            if (error) console.error(error);
-            else render(data || []);
+        function loadPlants() {
+            const saved = localStorage.getItem('plants');
+            plants = saved ? JSON.parse(saved) : [];
+            renderPlants();
         }
 
-        function render(plants) {
+        function renderPlants() {
             const grid = document.getElementById('grid');
-            grid.innerHTML = plants.map(p => `
-                <div class="card">
-                    <img src="${p.photo || 'https://via.placeholder.com/300x200?text=No+Photo'}" alt="${p.name}">
-                    <div style="padding:12px"><strong>${p.name}</strong></div>
-                </div>
-            `).join('');
+            grid.innerHTML = '';
+
+            if (plants.length === 0) {
+                grid.innerHTML = '<p style="grid-column:1/-1; text-align:center; color:#666;">No plants yet. Add some above!</p>';
+                return;
+            }
+
+            plants.forEach(plant => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <img src="${plant.photo || 'https://via.placeholder.com/300x200?text=No+Photo'}" alt="${plant.name}">
+                    <div style="padding:15px;">
+                        <strong>${plant.name}</strong>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
         }
 
-        async function addPlant() {
+        function addPlant() {
             const name = document.getElementById('name').value.trim();
             const photo = document.getElementById('photo').value.trim();
-            if (!name) return alert("Name required");
 
-            const { error } = await supabase.from('plants').insert([{ name, photo }]);
-            if (error) alert("Error: " + error.message);
-            else {
-                alert("Added!");
-                document.getElementById('name').value = '';
-                document.getElementById('photo').value = '';
-                loadPlants();
+            if (!name) {
+                alert("Please enter a plant name");
+                return;
             }
+
+            plants.push({ name, photo });
+            localStorage.setItem('plants', JSON.stringify(plants));
+            
+            document.getElementById('name').value = '';
+            document.getElementById('photo').value = '';
+            
+            renderPlants();
+            alert("Plant added!");
         }
 
+        // Load when page opens
         window.onload = loadPlants;
     </script>
 </body>
