@@ -38,6 +38,26 @@
             margin: 20px auto;
         }
 
+        .toolbar {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 0 auto 20px;
+            flex-wrap: wrap;
+        }
+
+        .toolbar button {
+            background: white;
+            color: #2e7d32;
+            padding: 8px 16px;
+            font-size: 0.9rem;
+            border: 1px solid #2e7d32;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .toolbar button:hover { background: #e8f5e9; }
+
         .search-container {
             display: flex;
             gap: 10px;
@@ -216,6 +236,11 @@
 
     <button class="add-btn" onclick="showAddForm()">+ Add New Plant</button>
 
+    <div class="toolbar">
+        <button onclick="exportPlants()" title="Download plants.json so you can commit it to the repo">📤 Export plants.json</button>
+        <button onclick="syncFromServer()" title="Replace local plants with the published plants.json">🔄 Load from Server</button>
+    </div>
+
     <div class="top-bar">
         <div class="search-container">
             <input type="text" id="searchInput" placeholder="🔍 Search by name, type, Arizona native...">
@@ -272,10 +297,59 @@
         let editingIndex = null;
         let currentImageBase64 = null;
 
-        function loadPlants() {
+        async function loadPlants() {
             const saved = localStorage.getItem('myPlants');
-            plants = saved ? JSON.parse(saved) : [];
+            if (saved) {
+                plants = JSON.parse(saved);
+                renderPlants();
+                return;
+            }
+            try {
+                const res = await fetch('plants.json?t=' + Date.now());
+                if (res.ok) {
+                    const data = await res.json();
+                    plants = data.plants || [];
+                    localStorage.setItem('myPlants', JSON.stringify(plants));
+                } else {
+                    plants = [];
+                }
+            } catch (e) {
+                plants = [];
+            }
             renderPlants();
+        }
+
+        function exportPlants() {
+            const data = JSON.stringify({ plants: plants }, null, 2);
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'plants.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            alert("Downloaded plants.json.\n\nNext: replace the plants.json in your repo folder with this file, then commit and push.");
+        }
+
+        async function syncFromServer() {
+            if (!confirm("This will replace ALL local plants with the published version. Export first if you have unsaved changes. Continue?")) return;
+            try {
+                const res = await fetch('plants.json?t=' + Date.now());
+                if (!res.ok) throw new Error("plants.json not found (HTTP " + res.status + ")");
+                const data = await res.json();
+                const serverPlants = data.plants || [];
+                if (serverPlants.length === 0 && plants.length > 0) {
+                    if (!confirm("Server has 0 plants but you have " + plants.length + " local plants. Really replace with empty list?")) return;
+                }
+                plants = serverPlants;
+                localStorage.setItem('myPlants', JSON.stringify(plants));
+                renderPlants();
+                alert("Loaded " + plants.length + " plants from server.");
+            } catch (e) {
+                alert("Could not load plants.json: " + e.message);
+            }
         }
 
         function renderPlants(filteredPlants = plants) {
