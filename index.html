@@ -58,6 +58,32 @@
 
         .toolbar button:hover { background: #e8f5e9; }
 
+        .unlock-btn {
+            background: #f57f17;
+            color: white;
+            padding: 10px 24px;
+            font-size: 1rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            display: block;
+            margin: 0 auto 10px;
+        }
+
+        .unlock-btn:hover { background: #e65100; }
+
+        .editing-banner {
+            text-align: center;
+            background: #fff3e0;
+            border: 1px solid #f57f17;
+            color: #e65100;
+            padding: 8px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-weight: bold;
+            display: none;
+        }
+
         .search-container {
             display: flex;
             gap: 10px;
@@ -141,9 +167,13 @@
             position: absolute;
             top: 10px;
             right: 10px;
-            display: flex;
+            display: none;
             gap: 8px;
             z-index: 10;
+        }
+
+        .action-buttons.visible {
+            display: flex;
         }
 
         .action-buttons button {
@@ -234,11 +264,14 @@
 <body>
     <h1>🌱 My Plant Catalog</h1>
 
-    <button class="add-btn" onclick="showAddForm()">+ Add New Plant</button>
+    <!-- Unlock button: only visible when ?edit=mg is in the URL -->
+    <button class="unlock-btn" id="unlockBtn" onclick="unlockEditing()" style="display:none;">🔓 Unlock Editing</button>
+    <div class="editing-banner" id="editingBanner">✏️ Editing Mode Active — Edit and Delete buttons are now visible</div>
+
+    <button class="add-btn" id="addBtn" onclick="showAddForm()" style="display:none;">+ Add New Plant</button>
 
     <div class="toolbar">
         <button onclick="downloadBackup()" title="Download a JSON backup of all plants">💾 Download Backup</button>
-        <button id="migrateBtn" onclick="migrateLocalPlants()" title="Upload plants saved on this device into the shared catalog" style="display:none;">📥 Import Local Plants to Shared</button>
     </div>
 
     <div class="top-bar">
@@ -302,9 +335,6 @@
             getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject
         } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js";
 
-        // ============================================================
-        // PASTE YOUR FIREBASE CONFIG BELOW (from Firebase Console)
-        // ============================================================
         const firebaseConfig = {
             apiKey: "AIzaSyDz4itNQG0J4DFLhiLu1rE8pnvCm3I7LHs",
             authDomain: "lasttime-plants.firebaseapp.com",
@@ -315,19 +345,35 @@
             measurementId: "G-BEZMS2Q3SC"
         };
 
+        // ============================================================
+        // SECRET URL PASSWORD — change "mg" to update the password
+        // Usage: knottylady.com?edit=mg
+        // ============================================================
+        const EDIT_PASSWORD = "mg";
+
         const grid = document.getElementById('plants-grid');
 
-        if (firebaseConfig.apiKey === "PASTE_HERE") {
-            grid.innerHTML = `
-                <div style="grid-column:1/-1; padding:2rem; background:white; border-radius:12px; max-width:640px; margin:0 auto; box-shadow:0 4px 12px rgba(0,0,0,0.1);">
-                    <h2 style="color:#d32f2f; margin-top:0;">⚠ Firebase not configured yet</h2>
-                    <p>This page needs a Firebase project before it can load or save plants.</p>
-                    <p>Open <code>index.html</code> in a text editor and replace the <code>PASTE_HERE</code> values at the top of the script section with the config from your Firebase Console (Project Settings → Your apps → SDK setup).</p>
-                </div>
-            `;
-        } else {
-            initApp();
+        // Check if the secret URL parameter is present
+        const urlParams = new URLSearchParams(window.location.search);
+        const hasEditAccess = urlParams.get('edit') === EDIT_PASSWORD;
+
+        // Show unlock button only if secret URL is used
+        if (hasEditAccess) {
+            document.getElementById('unlockBtn').style.display = 'block';
         }
+
+        let editingEnabled = false;
+
+        function unlockEditing() {
+            editingEnabled = true;
+            document.getElementById('unlockBtn').style.display = 'none';
+            document.getElementById('editingBanner').style.display = 'block';
+            document.getElementById('addBtn').style.display = 'block';
+            // Show all action buttons on cards
+            document.querySelectorAll('.action-buttons').forEach(el => el.classList.add('visible'));
+        }
+
+        initApp();
 
         function initApp() {
             const app = initializeApp(firebaseConfig);
@@ -342,12 +388,9 @@
 
             const plantsCol = collection(db, 'plants');
 
-            // Real-time subscription: every browser viewing the page
-            // re-renders within ~1 second whenever anyone changes anything.
             onSnapshot(query(plantsCol, orderBy('createdAt', 'desc')), (snapshot) => {
                 plants = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
                 applyCurrentFilter();
-                maybeShowMigrationButton();
             }, (error) => {
                 grid.innerHTML = `<p style="grid-column:1/-1; text-align:center; padding:3rem; color:#d32f2f;">Cannot load catalog: ${error.message}</p>`;
             });
@@ -382,7 +425,7 @@
                     const id = escapeHtml(plant.id);
                     const imgUrl = escapeHtml(plant.imageUrl || '');
                     card.innerHTML = `
-                        <div class="action-buttons">
+                        <div class="action-buttons ${editingEnabled ? 'visible' : ''}">
                             <button class="edit-btn" data-action="edit" data-id="${id}">Edit</button>
                             <button class="delete-btn" data-action="delete" data-id="${id}">Delete</button>
                         </div>
@@ -573,74 +616,13 @@
                 URL.revokeObjectURL(url);
             }
 
-            function maybeShowMigrationButton() {
-                const btn = document.getElementById('migrateBtn');
-                const saved = localStorage.getItem('myPlants');
-                if (!saved) { btn.style.display = 'none'; return; }
-                try {
-                    const arr = JSON.parse(saved);
-                    btn.style.display = (Array.isArray(arr) && arr.length > 0) ? 'inline-block' : 'none';
-                } catch (e) {
-                    btn.style.display = 'none';
-                }
-            }
-
-            async function migrateLocalPlants() {
-                const saved = localStorage.getItem('myPlants');
-                if (!saved) return;
-                let localPlants;
-                try { localPlants = JSON.parse(saved); } catch (e) { return; }
-                if (!Array.isArray(localPlants) || localPlants.length === 0) return;
-                if (!confirm(`Import ${localPlants.length} local plant(s) into the shared catalog? Everyone will see them.`)) return;
-
-                const btn = document.getElementById('migrateBtn');
-                btn.disabled = true;
-                btn.textContent = 'Importing...';
-
-                let imported = 0;
-                for (let i = 0; i < localPlants.length; i++) {
-                    const p = localPlants[i];
-                    try {
-                        let imageUrl = '', imagePath = '';
-                        if (p.image && typeof p.image === 'string' && p.image.startsWith('data:')) {
-                            const res = await fetch(p.image);
-                            const blob = await res.blob();
-                            imagePath = `plants/${Date.now()}-${i}-migrated.jpg`;
-                            const fileRef = storageRef(storage, imagePath);
-                            await uploadBytes(fileRef, blob);
-                            imageUrl = await getDownloadURL(fileRef);
-                        }
-                        await addDoc(plantsCol, {
-                            name: p.name || 'Untitled',
-                            scientific: p.scientific || '',
-                            type: p.type || 'Wildflower',
-                            arizonaNative: !!p.arizonaNative,
-                            seedPktCurrent: !!p.seedPktCurrent,
-                            description: p.description || '',
-                            imageUrl: imageUrl,
-                            imagePath: imagePath,
-                            createdAt: serverTimestamp()
-                        });
-                        imported++;
-                    } catch (e) {
-                        console.error('Failed to import plant:', p.name, e);
-                    }
-                }
-
-                alert(`Imported ${imported} of ${localPlants.length} plants. Clearing local copy from this device.`);
-                localStorage.removeItem('myPlants');
-                btn.style.display = 'none';
-                btn.disabled = false;
-                btn.textContent = '📥 Import Local Plants to Shared';
-            }
-
-            // Expose handlers used by inline onclick attributes.
+            // Expose handlers used by inline onclick attributes
             window.showAddForm = showAddForm;
             window.savePlant = savePlant;
             window.closeModal = closeModal;
             window.clearSearch = clearSearch;
             window.downloadBackup = downloadBackup;
-            window.migrateLocalPlants = migrateLocalPlants;
+            window.unlockEditing = unlockEditing;
         }
     </script>
 </body>
