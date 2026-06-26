@@ -131,6 +131,17 @@
             position: relative;
         }
 
+        .photo-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 6px;
+        }
+
+        .photo-row .plant-side {
+            flex: 1;
+            min-width: 0;
+        }
+
         .card img.plant-image {
             width: 100%;
             height: 380px;
@@ -148,6 +159,48 @@
             justify-content: center;
             color: #2e7d32;
             font-size: 1.3rem;
+        }
+
+        .seed-side {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            flex-shrink: 0;
+            width: 28%;
+        }
+
+        .seed-side img.seed-image {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            object-fit: cover;
+            border: 2px solid #2e7d32;
+            border-radius: 6px;
+            cursor: pointer;
+            display: block;
+        }
+
+        .seed-label {
+            font-size: 0.75rem;
+            color: #2e7d32;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .no-seed-photo {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            background: #e8f5e9;
+            border: 2px dashed #a5d6a7;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #a5d6a7;
+            font-size: 0.7rem;
+            text-align: center;
+            padding: 4px;
+            box-sizing: border-box;
         }
 
         .plant-info { padding: 15px; }
@@ -295,6 +348,10 @@
             <input type="file" id="imageUpload" accept="image/*">
             <div id="imagePreview" class="image-preview"></div>
 
+            <label>Seed Photo (optional):</label>
+            <input type="file" id="seedImageUpload" accept="image/*">
+            <div id="seedImagePreview" class="image-preview"></div>
+
             <label>Plant Type:</label>
             <select id="type">
                 <option value="Tree">Tree</option>
@@ -385,6 +442,9 @@
             let currentImageFile = null;
             let currentImageUrl = null;
             let currentImagePath = null;
+            let currentSeedImageFile = null;
+            let currentSeedImageUrl = null;
+            let currentSeedImagePath = null;
 
             const plantsCol = collection(db, 'plants');
 
@@ -424,14 +484,25 @@
                     card.className = 'card';
                     const id = escapeHtml(plant.id);
                     const imgUrl = escapeHtml(plant.imageUrl || '');
+                    const seedUrl = escapeHtml(plant.seedImageUrl || '');
                     card.innerHTML = `
                         <div class="action-buttons ${editingEnabled ? 'visible' : ''}">
                             <button class="edit-btn" data-action="edit" data-id="${id}">Edit</button>
                             <button class="delete-btn" data-action="delete" data-id="${id}">Delete</button>
                         </div>
-                        ${plant.imageUrl
-                            ? `<img src="${imgUrl}" class="plant-image" alt="${escapeHtml(plant.name)}" data-action="open" data-url="${imgUrl}">`
-                            : `<div class="no-photo">🌱 No Photo</div>`}
+                        <div class="photo-row">
+                            <div class="plant-side">
+                                ${plant.imageUrl
+                                    ? `<img src="${imgUrl}" class="plant-image" alt="${escapeHtml(plant.name)}" data-action="open" data-url="${imgUrl}">`
+                                    : `<div class="no-photo">🌱 No Photo</div>`}
+                            </div>
+                            <div class="seed-side">
+                                ${plant.seedImageUrl
+                                    ? `<img src="${seedUrl}" class="seed-image" alt="Seeds" data-action="open" data-url="${seedUrl}">`
+                                    : `<div class="no-seed-photo">🌰 No Seed Photo</div>`}
+                                <span class="seed-label">Seeds</span>
+                            </div>
+                        </div>
                         <div class="plant-info">
                             <h3 class="plant-name">${escapeHtml(plant.name)}</h3>
                             ${plant.scientific ? `<p class="scientific">${escapeHtml(plant.scientific)}</p>` : ''}
@@ -461,6 +532,9 @@
                 currentImageFile = null;
                 currentImageUrl = null;
                 currentImagePath = null;
+                currentSeedImageFile = null;
+                currentSeedImageUrl = null;
+                currentSeedImagePath = null;
                 document.getElementById('modalTitle').textContent = 'Add New Plant';
                 document.getElementById('name').value = '';
                 document.getElementById('scientific').value = '';
@@ -470,6 +544,8 @@
                 document.getElementById('description').value = '';
                 document.getElementById('imagePreview').style.backgroundImage = '';
                 document.getElementById('imageUpload').value = '';
+                document.getElementById('seedImagePreview').style.backgroundImage = '';
+                document.getElementById('seedImageUpload').value = '';
                 document.getElementById('plantModal').style.display = 'flex';
             }
 
@@ -480,6 +556,9 @@
                 currentImageFile = null;
                 currentImageUrl = p.imageUrl || null;
                 currentImagePath = p.imagePath || null;
+                currentSeedImageFile = null;
+                currentSeedImageUrl = p.seedImageUrl || null;
+                currentSeedImagePath = p.seedImagePath || null;
 
                 document.getElementById('modalTitle').textContent = 'Edit Plant';
                 document.getElementById('name').value = p.name || '';
@@ -490,6 +569,8 @@
                 document.getElementById('description').value = p.description || '';
                 document.getElementById('imagePreview').style.backgroundImage = p.imageUrl ? `url('${p.imageUrl}')` : '';
                 document.getElementById('imageUpload').value = '';
+                document.getElementById('seedImagePreview').style.backgroundImage = p.seedImageUrl ? `url('${p.seedImageUrl}')` : '';
+                document.getElementById('seedImageUpload').value = '';
                 document.getElementById('plantModal').style.display = 'flex';
             }
 
@@ -505,6 +586,22 @@
                 const reader = new FileReader();
                 reader.onload = (event) => {
                     document.getElementById('imagePreview').style.backgroundImage = `url('${event.target.result}')`;
+                };
+                reader.readAsDataURL(file);
+            });
+
+            document.getElementById('seedImageUpload').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                if (file.size > 10 * 1024 * 1024) {
+                    alert("Seed image too large (max 10MB).");
+                    e.target.value = '';
+                    return;
+                }
+                currentSeedImageFile = file;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    document.getElementById('seedImagePreview').style.backgroundImage = `url('${event.target.result}')`;
                 };
                 reader.readAsDataURL(file);
             });
@@ -539,6 +636,23 @@
                         return;
                     }
 
+                    // Handle seed image upload
+                    let seedImageUrl = currentSeedImageUrl;
+                    let seedImagePath = currentSeedImagePath;
+                    let oldSeedImagePathToDelete = null;
+
+                    if (currentSeedImageFile) {
+                        const safeSeedName = currentSeedImageFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+                        const newSeedPath = `plants/seeds/${Date.now()}-${safeSeedName}`;
+                        const seedFileRef = storageRef(storage, newSeedPath);
+                        await uploadBytes(seedFileRef, currentSeedImageFile);
+                        seedImageUrl = await getDownloadURL(seedFileRef);
+                        if (editingPlantId && seedImagePath && seedImagePath !== newSeedPath) {
+                            oldSeedImagePathToDelete = seedImagePath;
+                        }
+                        seedImagePath = newSeedPath;
+                    }
+
                     const data = {
                         name: name,
                         scientific: document.getElementById('scientific').value.trim(),
@@ -547,7 +661,9 @@
                         seedPktCurrent: document.getElementById('seedPktCurrent').checked,
                         description: document.getElementById('description').value.trim(),
                         imageUrl: imageUrl,
-                        imagePath: imagePath
+                        imagePath: imagePath,
+                        seedImageUrl: seedImageUrl || null,
+                        seedImagePath: seedImagePath || null
                     };
 
                     if (editingPlantId) {
@@ -559,6 +675,9 @@
 
                     if (oldImagePathToDelete) {
                         try { await deleteObject(storageRef(storage, oldImagePathToDelete)); } catch (e) {}
+                    }
+                    if (oldSeedImagePathToDelete) {
+                        try { await deleteObject(storageRef(storage, oldSeedImagePathToDelete)); } catch (e) {}
                     }
 
                     closeModal();
@@ -578,6 +697,9 @@
                     await deleteDoc(doc(db, 'plants', id));
                     if (p.imagePath) {
                         try { await deleteObject(storageRef(storage, p.imagePath)); } catch (e) {}
+                    }
+                    if (p.seedImagePath) {
+                        try { await deleteObject(storageRef(storage, p.seedImagePath)); } catch (e) {}
                     }
                 } catch (e) {
                     alert("Delete failed: " + e.message);
