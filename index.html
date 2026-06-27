@@ -58,6 +58,173 @@
 
         .toolbar button:hover { background: #e8f5e9; }
 
+        /* ── Page Navigation Tabs ── */
+        .page-nav {
+            display: flex;
+            justify-content: center;
+            gap: 0;
+            margin: 0 auto 24px;
+            max-width: 500px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        .page-tab {
+            flex: 1;
+            padding: 14px 20px;
+            font-size: 1rem;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            background: #a5d6a7;
+            color: #1b5e20;
+            transition: background 0.2s, color 0.2s;
+            letter-spacing: 0.02em;
+        }
+
+        .page-tab:first-child { border-right: 2px solid #e8f5e9; }
+        .page-tab.active { background: #2e7d32; color: white; }
+        .page-tab:hover:not(.active) { background: #81c784; }
+
+        /* ── Seed Inventory page ── */
+        #seedPage { display: none; max-width: 1000px; margin: 0 auto; }
+
+        .seed-page-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .seed-page-header h2 { margin: 0; color: #1b5e20; }
+
+        .total-badge {
+            background: #2e7d32;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 1rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .seed-add-btn {
+            background: #2e7d32;
+            color: white;
+            padding: 10px 22px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            display: none;
+        }
+
+        .seed-add-btn:hover { background: #1b5e20; }
+
+        /* Inventory table */
+        .inv-table-wrap {
+            overflow-x: auto;
+            border-radius: 12px;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+        }
+
+        .inv-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            font-size: 0.95rem;
+        }
+
+        .inv-table th {
+            background: #2e7d32;
+            color: white;
+            padding: 11px 14px;
+            text-align: center;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .inv-table td {
+            padding: 10px 14px;
+            text-align: center;
+            border-bottom: 1px solid #e8f5e9;
+            vertical-align: middle;
+        }
+
+        .inv-table tr:nth-child(even) td { background: #f1f8e9; }
+        .inv-table tr:hover td { background: #e8f5e9; }
+
+        .inv-table td.seed-name { text-align: left; font-weight: 600; color: #1b5e20; }
+
+        .status-pill {
+            display: inline-block;
+            padding: 3px 12px;
+            border-radius: 12px;
+            font-size: 0.82rem;
+            font-weight: 600;
+        }
+
+        .pill-yes      { background: #c8e6c9; color: #1b5e20; }
+        .pill-partially { background: #fff9c4; color: #f57f17; }
+        .pill-printed  { background: #e3f2fd; color: #1565c0; }
+        .pill-folded   { background: #f3e5f5; color: #6a1b9a; }
+        .pill-glued    { background: #fce4ec; color: #880e4f; }
+        .pill-filled   { background: #e8f5e9; color: #2e7d32; }
+
+        .inv-actions { display: flex; gap: 6px; justify-content: center; }
+        .inv-edit-btn   { background: #388e3c; color: white; border: none; padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 0.82rem; display: none; }
+        .inv-delete-btn { background: #d32f2f; color: white; border: none; padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 0.82rem; display: none; }
+        .inv-edit-btn.visible, .inv-delete-btn.visible { display: inline-block; }
+
+        .inv-empty { text-align: center; padding: 3rem; color: #888; font-size: 1rem; }
+
+        /* ── Seed Modal ── */
+        #seedModal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        #seedModal .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 460px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        #seedModal h2 { color: #2e7d32; margin-top: 0; }
+
+        #seedModal label {
+            display: block;
+            margin: 12px 0 4px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #1b5e20;
+        }
+
+        #seedModal input, #seedModal select {
+            width: 100%;
+            padding: 11px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-family: inherit;
+            font-size: 1rem;
+        }
+
+        /* ── Plant page styles (unchanged) ── */
         .unlock-btn {
             background: #c62828;
             color: white;
@@ -132,16 +299,8 @@
             position: relative;
         }
 
-        .photo-row {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .photo-row .plant-side {
-            flex: 1;
-            min-width: 0;
-        }
+        .photo-row { display: flex; align-items: center; gap: 6px; }
+        .photo-row .plant-side { flex: 1; min-width: 0; }
 
         .card img.plant-image {
             width: 100%;
@@ -181,12 +340,7 @@
             display: block;
         }
 
-        .seed-label {
-            font-size: 0.75rem;
-            color: #2e7d32;
-            font-weight: 600;
-            text-align: center;
-        }
+        .seed-label { font-size: 0.75rem; color: #2e7d32; font-weight: 600; text-align: center; }
 
         .no-seed-photo {
             width: 100%;
@@ -209,13 +363,7 @@
         .scientific { font-style: italic; color: #666; margin: 0 0 0.6rem 0; }
 
         .tags { display: flex; gap: 8px; flex-wrap: wrap; margin: 0.6rem 0; }
-        .tag {
-            background: #e8f5e9;
-            color: #2e7d32;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-        }
+        .tag { background: #e8f5e9; color: #2e7d32; padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; }
 
         .action-buttons {
             position: absolute;
@@ -226,9 +374,7 @@
             z-index: 10;
         }
 
-        .action-buttons.visible {
-            display: flex;
-        }
+        .action-buttons.visible { display: flex; }
 
         .action-buttons button {
             border: none;
@@ -290,12 +436,7 @@
             margin: 10px 0;
         }
 
-        .checkbox-group {
-            display: flex;
-            align-items: center;
-            margin: 15px 0;
-            font-size: 1.05rem;
-        }
+        .checkbox-group { display: flex; align-items: center; margin: 15px 0; font-size: 1.05rem; }
 
         .checkbox-group input[type="checkbox"] {
             width: 26px;
@@ -305,54 +446,82 @@
             cursor: pointer;
         }
 
-        .checkbox-group label {
-            cursor: pointer;
-            user-select: none;
-        }
+        .checkbox-group label { cursor: pointer; user-select: none; }
 
         .modal-actions { margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap; }
-        .save-btn { background: #2e7d32; color: white; padding: 12px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 1rem; }
-        .cancel-btn { background: #777; color: white; padding: 12px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 1rem; }
+        .save-btn   { background: #2e7d32; color: white; padding: 12px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 1rem; }
+        .cancel-btn { background: #777;    color: white; padding: 12px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 1rem; }
     </style>
 </head>
 <body>
     <h1>🌱 My Plant Catalog</h1>
 
-    <!-- Unlock button: only visible when ?edit=mg is in the URL -->
-    <button class="unlock-btn" id="unlockBtn" onclick="unlockEditing()" style="display:none;">🔓 Unlock Editing</button>
-    <div class="editing-banner" id="editingBanner">✏️ Editing Mode Active — Edit and Delete buttons are now visible</div>
-
-    <button class="add-btn" id="addBtn" onclick="showAddForm()" style="display:none;">+ Add New Plant</button>
-
-    <div class="toolbar">
-        <button onclick="downloadBackup()" title="Download a JSON backup of all plants">💾 Download Backup</button>
+    <!-- Page Navigation Tabs -->
+    <div class="page-nav">
+        <button class="page-tab active" id="tabPhotos" onclick="showPage('photos')">🌿 Plant Photos</button>
+        <button class="page-tab"        id="tabSeeds"  onclick="showPage('seeds')">🌰 Seed Inventory</button>
     </div>
 
-    <div class="top-bar">
-        <div class="search-container">
-            <input type="text" id="searchInput" placeholder="🔍 Search by name, type, Arizona native...">
-            <button id="clearBtn" onclick="clearSearch()">← Back to All</button>
+    <!-- ══ PLANT PHOTOS PAGE ══ -->
+    <div id="photosPage">
+        <button class="unlock-btn" id="unlockBtn" onclick="unlockEditing()" style="display:none;">🔓 Unlock Editing</button>
+        <div class="editing-banner" id="editingBanner">✏️ Editing Mode Active — Edit and Delete buttons are now visible</div>
+        <button class="add-btn" id="addBtn" onclick="showAddForm()" style="display:none;">+ Add New Plant</button>
+
+        <div class="toolbar">
+            <button onclick="downloadBackup()" title="Download a JSON backup of all plants">💾 Download Backup</button>
+        </div>
+
+        <div class="top-bar">
+            <div class="search-container">
+                <input type="text" id="searchInput" placeholder="🔍 Search by name, type, Arizona native...">
+                <button id="clearBtn" onclick="clearSearch()">← Back to All</button>
+            </div>
+        </div>
+
+        <div class="grid" id="plants-grid"></div>
+    </div>
+
+    <!-- ══ SEED INVENTORY PAGE ══ -->
+    <div id="seedPage">
+        <div class="seed-page-header">
+            <h2>🌰 Seed Inventory</h2>
+            <span class="total-badge">Total Packets: <span id="totalPackets">0</span></span>
+            <button class="seed-add-btn" id="seedAddBtn" onclick="showSeedForm()">+ Add Seed Record</button>
+        </div>
+
+        <div class="inv-table-wrap">
+            <table class="inv-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Seed Source</th>
+                        <th>Seed</th>
+                        <th>Cleaned</th>
+                        <th>Seed Packets</th>
+                        <th># Packets</th>
+                        <th id="actionsHeader" style="display:none;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="seedTableBody">
+                    <tr><td colspan="7" class="inv-empty">Loading seed inventory…</td></tr>
+                </tbody>
+            </table>
         </div>
     </div>
 
-    <div class="grid" id="plants-grid"></div>
-
-    <!-- Add/Edit Modal -->
+    <!-- ══ PLANT Add/Edit Modal (unchanged) ══ -->
     <div class="modal" id="plantModal">
         <div class="modal-content">
             <h2 id="modalTitle">Add New Plant</h2>
-
             <input type="text" id="name" placeholder="Plant Name (e.g. Desert Marigold)">
             <input type="text" id="scientific" placeholder="Scientific Name">
-
             <label>Plant Photo:</label>
             <input type="file" id="imageUpload" accept="image/*">
             <div id="imagePreview" class="image-preview"></div>
-
             <label>Seed Photo (optional):</label>
             <input type="file" id="seedImageUpload" accept="image/*">
             <div id="seedImagePreview" class="image-preview"></div>
-
             <label>Plant Type:</label>
             <select id="type">
                 <option value="Tree">Tree</option>
@@ -363,22 +532,51 @@
                 <option value="Vine">Vine</option>
                 <option value="Cactus">Cactus</option>
             </select>
-
             <div class="checkbox-group">
                 <input type="checkbox" id="arizonaNative">
                 <label for="arizonaNative">Arizona Native?</label>
             </div>
-
             <div class="checkbox-group">
                 <input type="checkbox" id="seedPktCurrent">
                 <label for="seedPktCurrent">Seed Pkt Current?</label>
             </div>
-
             <textarea id="description" placeholder="Description / Notes"></textarea>
-
             <div class="modal-actions">
-                <button class="save-btn" onclick="savePlant()">Save Plant</button>
+                <button class="save-btn"   onclick="savePlant()">Save Plant</button>
                 <button class="cancel-btn" onclick="closeModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ SEED Add/Edit Modal ══ -->
+    <div id="seedModal" style="display:none; position:fixed; top:0;left:0;right:0;bottom:0; background:rgba(0,0,0,0.7); align-items:center; justify-content:center; z-index:1000;">
+        <div class="modal-content">
+            <h2 id="seedModalTitle">Add Seed Record</h2>
+            <label>Date</label>
+            <input type="date" id="sDate">
+            <label>Seed Source</label>
+            <input type="text" id="sSeedSource" placeholder="e.g. Desert Botanical Garden">
+            <label>Seed</label>
+            <input type="text" id="sSeed" placeholder="e.g. Desert Marigold">
+            <label>Cleaned</label>
+            <select id="sCleaned">
+                <option value="">— Select —</option>
+                <option value="Yes">Yes</option>
+                <option value="Partially">Partially</option>
+            </select>
+            <label>Seed Packets</label>
+            <select id="sSeedPackets">
+                <option value="">— Select —</option>
+                <option value="Printed">Printed</option>
+                <option value="Folded">Folded</option>
+                <option value="Glued">Glued</option>
+                <option value="Filled">Filled</option>
+            </select>
+            <label># Packets</label>
+            <input type="number" id="sNumPackets" min="0" placeholder="0">
+            <div class="modal-actions">
+                <button class="save-btn"   onclick="saveSeedRecord()">Save Record</button>
+                <button class="cancel-btn" onclick="closeSeedModal()">Cancel</button>
             </div>
         </div>
     </div>
@@ -409,344 +607,386 @@
         // ============================================================
         const EDIT_PASSWORD = "mg";
 
-        const grid = document.getElementById('plants-grid');
+        const app = initializeApp(firebaseConfig);
+        const db  = getFirestore(app);
+        const storage = getStorage(app);
 
-        // Check if the secret URL parameter is present
-        const urlParams = new URLSearchParams(window.location.search);
+        const urlParams    = new URLSearchParams(window.location.search);
         const hasEditAccess = urlParams.get('edit') === EDIT_PASSWORD;
+        let editingEnabled  = false;
 
-        // Show unlock button only if secret URL is used
         if (hasEditAccess) {
             document.getElementById('unlockBtn').style.display = 'block';
         }
 
-        let editingEnabled = false;
-
         function unlockEditing() {
             editingEnabled = true;
-            document.getElementById('unlockBtn').style.display = 'none';
+            document.getElementById('unlockBtn').style.display    = 'none';
             document.getElementById('editingBanner').style.display = 'block';
-            document.getElementById('addBtn').style.display = 'block';
-            // Show all action buttons on cards
+            document.getElementById('addBtn').style.display        = 'block';
+            document.getElementById('seedAddBtn').style.display    = 'block';
+            document.getElementById('actionsHeader').style.display = '';
             document.querySelectorAll('.action-buttons').forEach(el => el.classList.add('visible'));
+            document.querySelectorAll('.inv-edit-btn, .inv-delete-btn').forEach(el => el.classList.add('visible'));
         }
 
-        initApp();
+        // ── Page switching ────────────────────────────────────────────
+        window.showPage = function(page) {
+            document.getElementById('photosPage').style.display = page === 'photos' ? 'block' : 'none';
+            document.getElementById('seedPage').style.display   = page === 'seeds'  ? 'block' : 'none';
+            document.getElementById('tabPhotos').classList.toggle('active', page === 'photos');
+            document.getElementById('tabSeeds').classList.toggle('active',  page === 'seeds');
+        };
 
-        function initApp() {
-            const app = initializeApp(firebaseConfig);
-            const db = getFirestore(app);
-            const storage = getStorage(app);
+        // ══════════════════════════════════════════════════════════════
+        // PLANT PHOTOS — existing logic (unchanged)
+        // ══════════════════════════════════════════════════════════════
+        const grid = document.getElementById('plants-grid');
+        let plants = [];
+        let editingPlantId = null;
+        let currentImageFile = null, currentImageUrl = null, currentImagePath = null;
+        let currentSeedImageFile = null, currentSeedImageUrl = null, currentSeedImagePath = null;
 
-            let plants = [];
-            let editingPlantId = null;
-            let currentImageFile = null;
-            let currentImageUrl = null;
-            let currentImagePath = null;
-            let currentSeedImageFile = null;
-            let currentSeedImageUrl = null;
-            let currentSeedImagePath = null;
+        const plantsCol = collection(db, 'plants');
 
-            const plantsCol = collection(db, 'plants');
+        onSnapshot(query(plantsCol, orderBy('createdAt', 'desc')), (snapshot) => {
+            plants = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            applyCurrentFilter();
+        }, (error) => {
+            grid.innerHTML = `<p style="grid-column:1/-1;text-align:center;padding:3rem;color:#d32f2f;">Cannot load catalog: ${error.message}</p>`;
+        });
 
-            onSnapshot(query(plantsCol, orderBy('createdAt', 'desc')), (snapshot) => {
-                plants = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-                applyCurrentFilter();
-            }, (error) => {
-                grid.innerHTML = `<p style="grid-column:1/-1; text-align:center; padding:3rem; color:#d32f2f;">Cannot load catalog: ${error.message}</p>`;
-            });
-
-            function applyCurrentFilter() {
-                const term = document.getElementById('searchInput').value.toLowerCase().trim();
-                if (!term) { renderPlants(plants); return; }
-                renderPlants(plants.filter(p => matchesSearch(p, term)));
-            }
-
-            function matchesSearch(plant, term) {
-                if (plant.name && plant.name.toLowerCase().includes(term)) return true;
-                if (plant.scientific && plant.scientific.toLowerCase().includes(term)) return true;
-                if (plant.type && plant.type.toLowerCase().includes(term)) return true;
-                if (plant.arizonaNative && (term.includes('arizona') || term.includes('az') || term.includes('native') || term.includes('🌵'))) return true;
-                return false;
-            }
-
-            function escapeHtml(s) {
-                return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-            }
-
-            function renderPlants(list) {
-                grid.innerHTML = '';
-                if (list.length === 0) {
-                    grid.innerHTML = `<p style="grid-column: 1/-1; text-align:center; padding:3rem; color:#666;">No plants found.</p>`;
-                    return;
-                }
-                list.forEach((plant) => {
-                    const card = document.createElement('div');
-                    card.className = 'card';
-                    const id = escapeHtml(plant.id);
-                    const imgUrl = escapeHtml(plant.imageUrl || '');
-                    const seedUrl = escapeHtml(plant.seedImageUrl || '');
-                    card.innerHTML = `
-                        <div class="action-buttons ${editingEnabled ? 'visible' : ''}">
-                            <button class="edit-btn" data-action="edit" data-id="${id}">Edit</button>
-                            <button class="delete-btn" data-action="delete" data-id="${id}">Delete</button>
-                        </div>
-                        <div class="photo-row">
-                            <div class="plant-side">
-                                ${plant.imageUrl
-                                    ? `<img src="${imgUrl}" class="plant-image" alt="${escapeHtml(plant.name)}" data-action="open" data-url="${imgUrl}">`
-                                    : `<div class="no-photo">🌱 No Photo</div>`}
-                            </div>
-                            <div class="seed-side">
-                                ${plant.seedImageUrl
-                                    ? `<img src="${seedUrl}" class="seed-image" alt="Seeds" data-action="open" data-url="${seedUrl}">`
-                                    : `<div class="no-seed-photo">🌰 No Seed Photo</div>`}
-                                <span class="seed-label">Seeds</span>
-                            </div>
-                        </div>
-                        <div class="plant-info">
-                            <h3 class="plant-name">${escapeHtml(plant.name)}</h3>
-                            ${plant.scientific ? `<p class="scientific">${escapeHtml(plant.scientific)}</p>` : ''}
-                            <div class="tags">
-                                <span class="tag">${escapeHtml(plant.type)}</span>
-                                ${plant.arizonaNative ? '<span class="tag">🌵 AZ Native</span>' : ''}
-                                ${plant.seedPktCurrent ? '<span class="tag">📦 Seed Pkt</span>' : ''}
-                            </div>
-                            ${plant.description ? `<p><strong>Description:</strong> ${escapeHtml(plant.description)}</p>` : ''}
-                        </div>
-                    `;
-                    grid.appendChild(card);
-                });
-            }
-
-            grid.addEventListener('click', (e) => {
-                const t = e.target.closest('[data-action]');
-                if (!t) return;
-                const action = t.dataset.action;
-                if (action === 'edit') editPlant(t.dataset.id);
-                else if (action === 'delete') deletePlant(t.dataset.id);
-                else if (action === 'open') window.open(t.dataset.url, '_blank');
-            });
-
-            function showAddForm() {
-                editingPlantId = null;
-                currentImageFile = null;
-                currentImageUrl = null;
-                currentImagePath = null;
-                currentSeedImageFile = null;
-                currentSeedImageUrl = null;
-                currentSeedImagePath = null;
-                document.getElementById('modalTitle').textContent = 'Add New Plant';
-                document.getElementById('name').value = '';
-                document.getElementById('scientific').value = '';
-                document.getElementById('type').value = 'Wildflower';
-                document.getElementById('arizonaNative').checked = false;
-                document.getElementById('seedPktCurrent').checked = false;
-                document.getElementById('description').value = '';
-                document.getElementById('imagePreview').style.backgroundImage = '';
-                document.getElementById('imageUpload').value = '';
-                document.getElementById('seedImagePreview').style.backgroundImage = '';
-                document.getElementById('seedImageUpload').value = '';
-                document.getElementById('plantModal').style.display = 'flex';
-            }
-
-            function editPlant(id) {
-                const p = plants.find(x => x.id === id);
-                if (!p) return;
-                editingPlantId = id;
-                currentImageFile = null;
-                currentImageUrl = p.imageUrl || null;
-                currentImagePath = p.imagePath || null;
-                currentSeedImageFile = null;
-                currentSeedImageUrl = p.seedImageUrl || null;
-                currentSeedImagePath = p.seedImagePath || null;
-
-                document.getElementById('modalTitle').textContent = 'Edit Plant';
-                document.getElementById('name').value = p.name || '';
-                document.getElementById('scientific').value = p.scientific || '';
-                document.getElementById('type').value = p.type || 'Wildflower';
-                document.getElementById('arizonaNative').checked = !!p.arizonaNative;
-                document.getElementById('seedPktCurrent').checked = !!p.seedPktCurrent;
-                document.getElementById('description').value = p.description || '';
-                document.getElementById('imagePreview').style.backgroundImage = p.imageUrl ? `url('${p.imageUrl}')` : '';
-                document.getElementById('imageUpload').value = '';
-                document.getElementById('seedImagePreview').style.backgroundImage = p.seedImageUrl ? `url('${p.seedImageUrl}')` : '';
-                document.getElementById('seedImageUpload').value = '';
-                document.getElementById('plantModal').style.display = 'flex';
-            }
-
-            document.getElementById('imageUpload').addEventListener('change', function(e) {
-                const file = e.target.files[0];
-                if (!file) return;
-                if (file.size > 10 * 1024 * 1024) {
-                    alert("Image too large (max 10MB).");
-                    e.target.value = '';
-                    return;
-                }
-                currentImageFile = file;
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    document.getElementById('imagePreview').style.backgroundImage = `url('${event.target.result}')`;
-                };
-                reader.readAsDataURL(file);
-            });
-
-            document.getElementById('seedImageUpload').addEventListener('change', function(e) {
-                const file = e.target.files[0];
-                if (!file) return;
-                if (file.size > 10 * 1024 * 1024) {
-                    alert("Seed image too large (max 10MB).");
-                    e.target.value = '';
-                    return;
-                }
-                currentSeedImageFile = file;
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    document.getElementById('seedImagePreview').style.backgroundImage = `url('${event.target.result}')`;
-                };
-                reader.readAsDataURL(file);
-            });
-
-            async function savePlant() {
-                const name = document.getElementById('name').value.trim();
-                if (!name) { alert("Please enter a plant name"); return; }
-
-                const saveBtn = document.querySelector('.save-btn');
-                saveBtn.disabled = true;
-                saveBtn.textContent = 'Saving...';
-
-                try {
-                    let imageUrl = currentImageUrl;
-                    let imagePath = currentImagePath;
-                    let oldImagePathToDelete = null;
-
-                    if (currentImageFile) {
-                        const safeName = currentImageFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-                        const newPath = `plants/${Date.now()}-${safeName}`;
-                        const fileRef = storageRef(storage, newPath);
-                        await uploadBytes(fileRef, currentImageFile);
-                        imageUrl = await getDownloadURL(fileRef);
-                        if (editingPlantId && imagePath && imagePath !== newPath) {
-                            oldImagePathToDelete = imagePath;
-                        }
-                        imagePath = newPath;
-                    }
-
-                    if (!imageUrl) {
-                        alert("Please select an image");
-                        return;
-                    }
-
-                    // Handle seed image upload
-                    let seedImageUrl = currentSeedImageUrl;
-                    let seedImagePath = currentSeedImagePath;
-                    let oldSeedImagePathToDelete = null;
-
-                    if (currentSeedImageFile) {
-                        const safeSeedName = currentSeedImageFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-                        const newSeedPath = `plants/seeds/${Date.now()}-${safeSeedName}`;
-                        const seedFileRef = storageRef(storage, newSeedPath);
-                        await uploadBytes(seedFileRef, currentSeedImageFile);
-                        seedImageUrl = await getDownloadURL(seedFileRef);
-                        if (editingPlantId && seedImagePath && seedImagePath !== newSeedPath) {
-                            oldSeedImagePathToDelete = seedImagePath;
-                        }
-                        seedImagePath = newSeedPath;
-                    }
-
-                    const data = {
-                        name: name,
-                        scientific: document.getElementById('scientific').value.trim(),
-                        type: document.getElementById('type').value,
-                        arizonaNative: document.getElementById('arizonaNative').checked,
-                        seedPktCurrent: document.getElementById('seedPktCurrent').checked,
-                        description: document.getElementById('description').value.trim(),
-                        imageUrl: imageUrl,
-                        imagePath: imagePath,
-                        seedImageUrl: seedImageUrl || null,
-                        seedImagePath: seedImagePath || null
-                    };
-
-                    if (editingPlantId) {
-                        await updateDoc(doc(db, 'plants', editingPlantId), data);
-                    } else {
-                        data.createdAt = serverTimestamp();
-                        await addDoc(plantsCol, data);
-                    }
-
-                    if (oldImagePathToDelete) {
-                        try { await deleteObject(storageRef(storage, oldImagePathToDelete)); } catch (e) {}
-                    }
-                    if (oldSeedImagePathToDelete) {
-                        try { await deleteObject(storageRef(storage, oldSeedImagePathToDelete)); } catch (e) {}
-                    }
-
-                    closeModal();
-                } catch (e) {
-                    alert("Save failed: " + e.message);
-                } finally {
-                    saveBtn.disabled = false;
-                    saveBtn.textContent = 'Save Plant';
-                }
-            }
-
-            async function deletePlant(id) {
-                if (!confirm("Delete this plant for EVERYONE? This cannot be undone.")) return;
-                const p = plants.find(x => x.id === id);
-                if (!p) return;
-                try {
-                    await deleteDoc(doc(db, 'plants', id));
-                    if (p.imagePath) {
-                        try { await deleteObject(storageRef(storage, p.imagePath)); } catch (e) {}
-                    }
-                    if (p.seedImagePath) {
-                        try { await deleteObject(storageRef(storage, p.seedImagePath)); } catch (e) {}
-                    }
-                } catch (e) {
-                    alert("Delete failed: " + e.message);
-                }
-            }
-
-            function closeModal() {
-                document.getElementById('plantModal').style.display = 'none';
-            }
-
-            function clearSearch() {
-                document.getElementById('searchInput').value = '';
-                document.getElementById('clearBtn').style.display = 'none';
-                renderPlants(plants);
-            }
-
-            document.getElementById('searchInput').addEventListener('input', function() {
-                const term = this.value.toLowerCase().trim();
-                const clearBtn = document.getElementById('clearBtn');
-                if (!term) { clearBtn.style.display = 'none'; renderPlants(plants); return; }
-                clearBtn.style.display = 'block';
-                renderPlants(plants.filter(p => matchesSearch(p, term)));
-            });
-
-            function downloadBackup() {
-                const exportable = plants.map(({ id, createdAt, ...rest }) => rest);
-                const data = JSON.stringify({ plants: exportable }, null, 2);
-                const blob = new Blob([data], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `plants-backup-${new Date().toISOString().slice(0,10)}.json`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            }
-
-            // Expose handlers used by inline onclick attributes
-            window.showAddForm = showAddForm;
-            window.savePlant = savePlant;
-            window.closeModal = closeModal;
-            window.clearSearch = clearSearch;
-            window.downloadBackup = downloadBackup;
-            window.unlockEditing = unlockEditing;
+        function applyCurrentFilter() {
+            const term = document.getElementById('searchInput').value.toLowerCase().trim();
+            if (!term) { renderPlants(plants); return; }
+            renderPlants(plants.filter(p => matchesSearch(p, term)));
         }
+
+        function matchesSearch(plant, term) {
+            if (plant.name       && plant.name.toLowerCase().includes(term))       return true;
+            if (plant.scientific && plant.scientific.toLowerCase().includes(term)) return true;
+            if (plant.type       && plant.type.toLowerCase().includes(term))       return true;
+            if (plant.arizonaNative && (term.includes('arizona') || term.includes('az') || term.includes('native') || term.includes('🌵'))) return true;
+            return false;
+        }
+
+        function escapeHtml(s) {
+            return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        }
+
+        function renderPlants(list) {
+            grid.innerHTML = '';
+            if (list.length === 0) {
+                grid.innerHTML = `<p style="grid-column:1/-1;text-align:center;padding:3rem;color:#666;">No plants found.</p>`;
+                return;
+            }
+            list.forEach((plant) => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                const id     = escapeHtml(plant.id);
+                const imgUrl = escapeHtml(plant.imageUrl || '');
+                const seedUrl= escapeHtml(plant.seedImageUrl || '');
+                card.innerHTML = `
+                    <div class="action-buttons ${editingEnabled ? 'visible' : ''}">
+                        <button class="edit-btn"   data-action="edit"   data-id="${id}">Edit</button>
+                        <button class="delete-btn" data-action="delete" data-id="${id}">Delete</button>
+                    </div>
+                    <div class="photo-row">
+                        <div class="plant-side">
+                            ${plant.imageUrl
+                                ? `<img src="${imgUrl}" class="plant-image" alt="${escapeHtml(plant.name)}" data-action="open" data-url="${imgUrl}">`
+                                : `<div class="no-photo">🌱 No Photo</div>`}
+                        </div>
+                        <div class="seed-side">
+                            ${plant.seedImageUrl
+                                ? `<img src="${seedUrl}" class="seed-image" alt="Seeds" data-action="open" data-url="${seedUrl}">`
+                                : `<div class="no-seed-photo">🌰 No Seed Photo</div>`}
+                            <span class="seed-label">Seeds</span>
+                        </div>
+                    </div>
+                    <div class="plant-info">
+                        <h3 class="plant-name">${escapeHtml(plant.name)}</h3>
+                        ${plant.scientific ? `<p class="scientific">${escapeHtml(plant.scientific)}</p>` : ''}
+                        <div class="tags">
+                            <span class="tag">${escapeHtml(plant.type)}</span>
+                            ${plant.arizonaNative    ? '<span class="tag">🌵 AZ Native</span>'  : ''}
+                            ${plant.seedPktCurrent   ? '<span class="tag">📦 Seed Pkt</span>'   : ''}
+                        </div>
+                        ${plant.description ? `<p><strong>Description:</strong> ${escapeHtml(plant.description)}</p>` : ''}
+                    </div>`;
+                grid.appendChild(card);
+            });
+        }
+
+        grid.addEventListener('click', (e) => {
+            const t = e.target.closest('[data-action]');
+            if (!t) return;
+            const action = t.dataset.action;
+            if (action === 'edit')   editPlant(t.dataset.id);
+            else if (action === 'delete') deletePlant(t.dataset.id);
+            else if (action === 'open')   window.open(t.dataset.url, '_blank');
+        });
+
+        function showAddForm() {
+            editingPlantId = null;
+            currentImageFile = null; currentImageUrl = null; currentImagePath = null;
+            currentSeedImageFile = null; currentSeedImageUrl = null; currentSeedImagePath = null;
+            document.getElementById('modalTitle').textContent = 'Add New Plant';
+            document.getElementById('name').value = '';
+            document.getElementById('scientific').value = '';
+            document.getElementById('type').value = 'Wildflower';
+            document.getElementById('arizonaNative').checked = false;
+            document.getElementById('seedPktCurrent').checked = false;
+            document.getElementById('description').value = '';
+            document.getElementById('imagePreview').style.backgroundImage = '';
+            document.getElementById('imageUpload').value = '';
+            document.getElementById('seedImagePreview').style.backgroundImage = '';
+            document.getElementById('seedImageUpload').value = '';
+            document.getElementById('plantModal').style.display = 'flex';
+        }
+
+        function editPlant(id) {
+            const p = plants.find(x => x.id === id);
+            if (!p) return;
+            editingPlantId = id;
+            currentImageFile = null; currentImageUrl = p.imageUrl || null; currentImagePath = p.imagePath || null;
+            currentSeedImageFile = null; currentSeedImageUrl = p.seedImageUrl || null; currentSeedImagePath = p.seedImagePath || null;
+            document.getElementById('modalTitle').textContent = 'Edit Plant';
+            document.getElementById('name').value = p.name || '';
+            document.getElementById('scientific').value = p.scientific || '';
+            document.getElementById('type').value = p.type || 'Wildflower';
+            document.getElementById('arizonaNative').checked = !!p.arizonaNative;
+            document.getElementById('seedPktCurrent').checked = !!p.seedPktCurrent;
+            document.getElementById('description').value = p.description || '';
+            document.getElementById('imagePreview').style.backgroundImage = p.imageUrl ? `url('${p.imageUrl}')` : '';
+            document.getElementById('imageUpload').value = '';
+            document.getElementById('seedImagePreview').style.backgroundImage = p.seedImageUrl ? `url('${p.seedImageUrl}')` : '';
+            document.getElementById('seedImageUpload').value = '';
+            document.getElementById('plantModal').style.display = 'flex';
+        }
+
+        document.getElementById('imageUpload').addEventListener('change', function(e) {
+            const file = e.target.files[0]; if (!file) return;
+            if (file.size > 10 * 1024 * 1024) { alert("Image too large (max 10MB)."); e.target.value = ''; return; }
+            currentImageFile = file;
+            const reader = new FileReader();
+            reader.onload = (ev) => { document.getElementById('imagePreview').style.backgroundImage = `url('${ev.target.result}')`; };
+            reader.readAsDataURL(file);
+        });
+
+        document.getElementById('seedImageUpload').addEventListener('change', function(e) {
+            const file = e.target.files[0]; if (!file) return;
+            if (file.size > 10 * 1024 * 1024) { alert("Seed image too large (max 10MB)."); e.target.value = ''; return; }
+            currentSeedImageFile = file;
+            const reader = new FileReader();
+            reader.onload = (ev) => { document.getElementById('seedImagePreview').style.backgroundImage = `url('${ev.target.result}')`; };
+            reader.readAsDataURL(file);
+        });
+
+        async function savePlant() {
+            const name = document.getElementById('name').value.trim();
+            if (!name) { alert("Please enter a plant name"); return; }
+            const saveBtn = document.querySelector('#plantModal .save-btn');
+            saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
+            try {
+                let imageUrl = currentImageUrl, imagePath = currentImagePath, oldImagePathToDelete = null;
+                if (currentImageFile) {
+                    const safeName = currentImageFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+                    const newPath  = `plants/${Date.now()}-${safeName}`;
+                    const fileRef  = storageRef(storage, newPath);
+                    await uploadBytes(fileRef, currentImageFile);
+                    imageUrl = await getDownloadURL(fileRef);
+                    if (editingPlantId && imagePath && imagePath !== newPath) oldImagePathToDelete = imagePath;
+                    imagePath = newPath;
+                }
+                if (!imageUrl) { alert("Please select an image"); return; }
+
+                let seedImageUrl = currentSeedImageUrl, seedImagePath = currentSeedImagePath, oldSeedImagePathToDelete = null;
+                if (currentSeedImageFile) {
+                    const safeSeedName = currentSeedImageFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+                    const newSeedPath  = `plants/seeds/${Date.now()}-${safeSeedName}`;
+                    const seedFileRef  = storageRef(storage, newSeedPath);
+                    await uploadBytes(seedFileRef, currentSeedImageFile);
+                    seedImageUrl = await getDownloadURL(seedFileRef);
+                    if (editingPlantId && seedImagePath && seedImagePath !== newSeedPath) oldSeedImagePathToDelete = seedImagePath;
+                    seedImagePath = newSeedPath;
+                }
+
+                const data = {
+                    name, scientific: document.getElementById('scientific').value.trim(),
+                    type: document.getElementById('type').value,
+                    arizonaNative: document.getElementById('arizonaNative').checked,
+                    seedPktCurrent: document.getElementById('seedPktCurrent').checked,
+                    description: document.getElementById('description').value.trim(),
+                    imageUrl, imagePath,
+                    seedImageUrl: seedImageUrl || null,
+                    seedImagePath: seedImagePath || null
+                };
+
+                if (editingPlantId) { await updateDoc(doc(db, 'plants', editingPlantId), data); }
+                else { data.createdAt = serverTimestamp(); await addDoc(plantsCol, data); }
+
+                if (oldImagePathToDelete)     { try { await deleteObject(storageRef(storage, oldImagePathToDelete)); }     catch(e){} }
+                if (oldSeedImagePathToDelete) { try { await deleteObject(storageRef(storage, oldSeedImagePathToDelete)); } catch(e){} }
+                closeModal();
+            } catch(e) { alert("Save failed: " + e.message); }
+            finally { saveBtn.disabled = false; saveBtn.textContent = 'Save Plant'; }
+        }
+
+        async function deletePlant(id) {
+            if (!confirm("Delete this plant for EVERYONE? This cannot be undone.")) return;
+            const p = plants.find(x => x.id === id); if (!p) return;
+            try {
+                await deleteDoc(doc(db, 'plants', id));
+                if (p.imagePath)     { try { await deleteObject(storageRef(storage, p.imagePath)); }     catch(e){} }
+                if (p.seedImagePath) { try { await deleteObject(storageRef(storage, p.seedImagePath)); } catch(e){} }
+            } catch(e) { alert("Delete failed: " + e.message); }
+        }
+
+        function closeModal() { document.getElementById('plantModal').style.display = 'none'; }
+
+        function clearSearch() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('clearBtn').style.display = 'none';
+            renderPlants(plants);
+        }
+
+        document.getElementById('searchInput').addEventListener('input', function() {
+            const term = this.value.toLowerCase().trim();
+            const clearBtn = document.getElementById('clearBtn');
+            if (!term) { clearBtn.style.display = 'none'; renderPlants(plants); return; }
+            clearBtn.style.display = 'block';
+            renderPlants(plants.filter(p => matchesSearch(p, term)));
+        });
+
+        function downloadBackup() {
+            const exportable = plants.map(({ id, createdAt, ...rest }) => rest);
+            const data = JSON.stringify({ plants: exportable }, null, 2);
+            const blob = new Blob([data], { type: 'application/json' });
+            const url  = URL.createObjectURL(blob);
+            const a    = document.createElement('a');
+            a.href = url; a.download = `plants-backup-${new Date().toISOString().slice(0,10)}.json`;
+            document.body.appendChild(a); a.click();
+            document.body.removeChild(a); URL.revokeObjectURL(url);
+        }
+
+        // ══════════════════════════════════════════════════════════════
+        // SEED INVENTORY — Firebase live table
+        // ══════════════════════════════════════════════════════════════
+        const seedsCol = collection(db, 'seedInventory');
+        let seeds = [];
+        let editingSeedId = null;
+
+        onSnapshot(query(seedsCol, orderBy('createdAt', 'desc')), (snapshot) => {
+            seeds = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderSeeds();
+        }, (err) => {
+            document.getElementById('seedTableBody').innerHTML =
+                `<tr><td colspan="7" class="inv-empty" style="color:#d32f2f;">Cannot load inventory: ${err.message}</td></tr>`;
+        });
+
+        function pillClass(val) {
+            const map = { Yes:'pill-yes', Partially:'pill-partially', Printed:'pill-printed', Folded:'pill-folded', Glued:'pill-glued', Filled:'pill-filled' };
+            return map[val] || '';
+        }
+
+        function renderSeeds() {
+            const tbody = document.getElementById('seedTableBody');
+            const total = seeds.reduce((sum, s) => sum + (parseInt(s.numPackets) || 0), 0);
+            document.getElementById('totalPackets').textContent = total;
+
+            if (seeds.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="inv-empty">No seed records yet. ${editingEnabled ? 'Click "+ Add Seed Record" to get started.' : ''}</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = seeds.map(s => {
+                const dateStr = s.date ? new Date(s.date + 'T00:00:00').toLocaleDateString() : '—';
+                const cleaned = s.cleaned    ? `<span class="status-pill ${pillClass(s.cleaned)}">${escapeHtml(s.cleaned)}</span>`     : '—';
+                const packets = s.seedPackets ? `<span class="status-pill ${pillClass(s.seedPackets)}">${escapeHtml(s.seedPackets)}</span>` : '—';
+                return `<tr>
+                    <td>${dateStr}</td>
+                    <td>${escapeHtml(s.seedSource || '')}</td>
+                    <td class="seed-name">${escapeHtml(s.seed || '')}</td>
+                    <td>${cleaned}</td>
+                    <td>${packets}</td>
+                    <td>${s.numPackets ?? '—'}</td>
+                    <td>
+                        <div class="inv-actions">
+                            <button class="inv-edit-btn ${editingEnabled ? 'visible' : ''}"   onclick="editSeedRecord('${escapeHtml(s.id)}')">Edit</button>
+                            <button class="inv-delete-btn ${editingEnabled ? 'visible' : ''}" onclick="deleteSeedRecord('${escapeHtml(s.id)}')">Delete</button>
+                        </div>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        function showSeedForm() {
+            editingSeedId = null;
+            document.getElementById('seedModalTitle').textContent = 'Add Seed Record';
+            document.getElementById('sDate').value        = '';
+            document.getElementById('sSeedSource').value  = '';
+            document.getElementById('sSeed').value        = '';
+            document.getElementById('sCleaned').value     = '';
+            document.getElementById('sSeedPackets').value = '';
+            document.getElementById('sNumPackets').value  = '';
+            document.getElementById('seedModal').style.display = 'flex';
+        }
+
+        function editSeedRecord(id) {
+            const s = seeds.find(x => x.id === id); if (!s) return;
+            editingSeedId = id;
+            document.getElementById('seedModalTitle').textContent = 'Edit Seed Record';
+            document.getElementById('sDate').value        = s.date        || '';
+            document.getElementById('sSeedSource').value  = s.seedSource  || '';
+            document.getElementById('sSeed').value        = s.seed        || '';
+            document.getElementById('sCleaned').value     = s.cleaned     || '';
+            document.getElementById('sSeedPackets').value = s.seedPackets || '';
+            document.getElementById('sNumPackets').value  = s.numPackets  ?? '';
+            document.getElementById('seedModal').style.display = 'flex';
+        }
+
+        async function saveSeedRecord() {
+            const seed = document.getElementById('sSeed').value.trim();
+            if (!seed) { alert("Please enter a seed name."); return; }
+            const saveBtn = document.querySelector('#seedModal .save-btn');
+            saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
+            try {
+                const data = {
+                    date:        document.getElementById('sDate').value,
+                    seedSource:  document.getElementById('sSeedSource').value.trim(),
+                    seed,
+                    cleaned:     document.getElementById('sCleaned').value,
+                    seedPackets: document.getElementById('sSeedPackets').value,
+                    numPackets:  parseInt(document.getElementById('sNumPackets').value) || 0
+                };
+                if (editingSeedId) { await updateDoc(doc(db, 'seedInventory', editingSeedId), data); }
+                else { data.createdAt = serverTimestamp(); await addDoc(seedsCol, data); }
+                closeSeedModal();
+            } catch(e) { alert("Save failed: " + e.message); }
+            finally { saveBtn.disabled = false; saveBtn.textContent = 'Save Record'; }
+        }
+
+        async function deleteSeedRecord(id) {
+            if (!confirm("Delete this seed record for EVERYONE? This cannot be undone.")) return;
+            try { await deleteDoc(doc(db, 'seedInventory', id)); }
+            catch(e) { alert("Delete failed: " + e.message); }
+        }
+
+        function closeSeedModal() { document.getElementById('seedModal').style.display = 'none'; }
+
+        // Expose to global scope for onclick attributes
+        window.showAddForm       = showAddForm;
+        window.savePlant         = savePlant;
+        window.closeModal        = closeModal;
+        window.clearSearch       = clearSearch;
+        window.downloadBackup    = downloadBackup;
+        window.unlockEditing     = unlockEditing;
+        window.showSeedForm      = showSeedForm;
+        window.saveSeedRecord    = saveSeedRecord;
+        window.editSeedRecord    = editSeedRecord;
+        window.deleteSeedRecord  = deleteSeedRecord;
+        window.closeSeedModal    = closeSeedModal;
     </script>
 </body>
 </html>
