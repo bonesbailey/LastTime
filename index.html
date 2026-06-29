@@ -302,6 +302,18 @@
         .photo-row { display: flex; align-items: center; gap: 6px; }
         .photo-row .plant-side { flex: 1; min-width: 0; }
 
+        .photo-credit {
+            font-size: 0.78rem;
+            color: #555;
+            background: #f1f8e9;
+            padding: 4px 10px;
+            border-bottom: 1px solid #c8e6c9;
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .photo-credit span { white-space: nowrap; }
+
         .card img.plant-image {
             width: 100%;
             height: 380px;
@@ -436,6 +448,23 @@
             margin: 10px 0;
         }
 
+        .paste-zone {
+            width: 100%;
+            padding: 10px;
+            border: 2px dashed #a5d6a7;
+            border-radius: 8px;
+            background: #f9fffe;
+            color: #2e7d32;
+            font-size: 0.88rem;
+            text-align: center;
+            cursor: pointer;
+            box-sizing: border-box;
+            margin: 4px 0 10px;
+            transition: background 0.2s;
+        }
+        .paste-zone:hover, .paste-zone.drag-over { background: #e8f5e9; border-color: #2e7d32; }
+        .paste-zone:focus { outline: 2px solid #2e7d32; }
+
         .checkbox-group { display: flex; align-items: center; margin: 15px 0; font-size: 1.05rem; }
 
         .checkbox-group input[type="checkbox"] {
@@ -518,9 +547,15 @@
             <input type="text" id="scientific" placeholder="Scientific Name">
             <label>Plant Photo:</label>
             <input type="file" id="imageUpload" accept="image/*">
+            <div class="paste-zone" id="plantPasteZone" tabindex="0" title="Click here then paste (Ctrl+V) or drag-and-drop a photo">📋 Click here, then paste a photo (Ctrl+V) — or drag &amp; drop</div>
             <div id="imagePreview" class="image-preview"></div>
+            <label>Photo Taken By:</label>
+            <input type="text" id="photoCredit" placeholder="e.g. Dorothy">
+            <label>Photo Date:</label>
+            <input type="date" id="photoDate">
             <label>Seed Photo (optional):</label>
             <input type="file" id="seedImageUpload" accept="image/*">
+            <div class="paste-zone" id="seedPasteZone" tabindex="0" title="Click here then paste (Ctrl+V) or drag-and-drop a seed photo">📋 Click here, then paste a seed photo (Ctrl+V) — or drag &amp; drop</div>
             <div id="seedImagePreview" class="image-preview"></div>
             <label>Plant Type:</label>
             <select id="type">
@@ -536,10 +571,8 @@
                 <input type="checkbox" id="arizonaNative">
                 <label for="arizonaNative">Arizona Native?</label>
             </div>
-            <div class="checkbox-group">
-                <input type="checkbox" id="seedPktCurrent">
-                <label for="seedPktCurrent">Seed Pkt Current?</label>
-            </div>
+            <label for="seedPktCount" style="font-weight:600;font-size:0.95rem;color:#1b5e20;margin:4px 0 2px;display:block;">Seed Pkt Count (0 = none)</label>
+            <input type="number" id="seedPktCount" min="0" placeholder="0" style="width:120px;margin:4px 0 12px;">
             <textarea id="description" placeholder="Description / Notes"></textarea>
             <div class="modal-actions">
                 <button class="save-btn"   onclick="savePlant()">Save Plant</button>
@@ -691,6 +724,11 @@
                         <button class="edit-btn"   data-action="edit"   data-id="${id}">Edit</button>
                         <button class="delete-btn" data-action="delete" data-id="${id}">Delete</button>
                     </div>
+                    ${(plant.photoCredit || plant.photoDate) ? `
+                    <div class="photo-credit">
+                        ${plant.photoCredit ? `<span>📷 Photo taken by ${escapeHtml(plant.photoCredit)}</span>` : ''}
+                        ${plant.photoDate   ? `<span>📅 ${new Date(plant.photoDate + 'T00:00:00').toLocaleDateString()}</span>` : ''}
+                    </div>` : ''}
                     <div class="photo-row">
                         <div class="plant-side">
                             ${plant.imageUrl
@@ -709,8 +747,8 @@
                         ${plant.scientific ? `<p class="scientific">${escapeHtml(plant.scientific)}</p>` : ''}
                         <div class="tags">
                             <span class="tag">${escapeHtml(plant.type)}</span>
-                            ${plant.arizonaNative    ? '<span class="tag">🌵 AZ Native</span>'  : ''}
-                            ${plant.seedPktCurrent   ? '<span class="tag">📦 Seed Pkt</span>'   : ''}
+                            ${plant.arizonaNative ? '<span class="tag">🌵 AZ Native</span>' : ''}
+                            ${(plant.seedPktCount && plant.seedPktCount > 0) ? `<span class="tag">📦 ${escapeHtml(String(plant.seedPktCount))} Seed Pkt</span>` : ''}
                         </div>
                         ${plant.description ? `<p><strong>Description:</strong> ${escapeHtml(plant.description)}</p>` : ''}
                     </div>`;
@@ -736,7 +774,9 @@
             document.getElementById('scientific').value = '';
             document.getElementById('type').value = 'Wildflower';
             document.getElementById('arizonaNative').checked = false;
-            document.getElementById('seedPktCurrent').checked = false;
+            document.getElementById('seedPktCount').value = '';
+            document.getElementById('photoCredit').value = '';
+            document.getElementById('photoDate').value = '';
             document.getElementById('description').value = '';
             document.getElementById('imagePreview').style.backgroundImage = '';
             document.getElementById('imageUpload').value = '';
@@ -756,7 +796,9 @@
             document.getElementById('scientific').value = p.scientific || '';
             document.getElementById('type').value = p.type || 'Wildflower';
             document.getElementById('arizonaNative').checked = !!p.arizonaNative;
-            document.getElementById('seedPktCurrent').checked = !!p.seedPktCurrent;
+            document.getElementById('seedPktCount').value = p.seedPktCount ?? '';
+            document.getElementById('photoCredit').value = p.photoCredit || '';
+            document.getElementById('photoDate').value = p.photoDate || '';
             document.getElementById('description').value = p.description || '';
             document.getElementById('imagePreview').style.backgroundImage = p.imageUrl ? `url('${p.imageUrl}')` : '';
             document.getElementById('imageUpload').value = '';
@@ -782,6 +824,72 @@
             reader.onload = (ev) => { document.getElementById('seedImagePreview').style.backgroundImage = `url('${ev.target.result}')`; };
             reader.readAsDataURL(file);
         });
+
+        // ── Paste & drag-drop helpers ──────────────────────────────────
+        function applyImageFile(file, previewId, isSeed) {
+            if (!file || !file.type.startsWith('image/')) { alert("That doesn't look like an image file."); return; }
+            if (file.size > 10 * 1024 * 1024) { alert("Image too large (max 10MB)."); return; }
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                document.getElementById(previewId).style.backgroundImage = `url('${ev.target.result}')`;
+            };
+            reader.readAsDataURL(file);
+            if (isSeed) { currentSeedImageFile = file; }
+            else        { currentImageFile = file; }
+        }
+
+        function setupPasteZone(zoneId, previewId, isSeed) {
+            const zone = document.getElementById(zoneId);
+
+            // Click to focus so paste event fires
+            zone.addEventListener('click', () => zone.focus());
+
+            // Keyboard paste (Ctrl+V) when zone is focused
+            zone.addEventListener('paste', (e) => {
+                const items = (e.clipboardData || window.clipboardData).items;
+                for (const item of items) {
+                    if (item.kind === 'file' && item.type.startsWith('image/')) {
+                        e.preventDefault();
+                        applyImageFile(item.getAsFile(), previewId, isSeed);
+                        return;
+                    }
+                }
+            });
+
+            // Global paste: if modal is open, catch paste anywhere in document
+            document.addEventListener('paste', (e) => {
+                const modal = document.getElementById('plantModal');
+                if (modal.style.display !== 'flex') return;
+                // Only act if this zone is focused or no other input is focused
+                const active = document.activeElement;
+                const isInput = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT');
+                if (isInput && active !== zone) return;
+                const items = (e.clipboardData || window.clipboardData).items;
+                for (const item of items) {
+                    if (item.kind === 'file' && item.type.startsWith('image/')) {
+                        // If focused on this zone specifically, use it; otherwise use plant zone by default
+                        if (active === zone || (!isSeed && active.tagName !== 'DIV')) {
+                            e.preventDefault();
+                            applyImageFile(item.getAsFile(), previewId, isSeed);
+                            return;
+                        }
+                    }
+                }
+            });
+
+            // Drag & drop
+            zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('drag-over'); });
+            zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                zone.classList.remove('drag-over');
+                const file = e.dataTransfer.files[0];
+                applyImageFile(file, previewId, isSeed);
+            });
+        }
+
+        setupPasteZone('plantPasteZone', 'imagePreview',     false);
+        setupPasteZone('seedPasteZone',  'seedImagePreview', true);
 
         async function savePlant() {
             const name = document.getElementById('name').value.trim();
@@ -816,7 +924,9 @@
                     name, scientific: document.getElementById('scientific').value.trim(),
                     type: document.getElementById('type').value,
                     arizonaNative: document.getElementById('arizonaNative').checked,
-                    seedPktCurrent: document.getElementById('seedPktCurrent').checked,
+                    seedPktCount: parseInt(document.getElementById('seedPktCount').value) || 0,
+                    photoCredit: document.getElementById('photoCredit').value.trim(),
+                    photoDate: document.getElementById('photoDate').value,
                     description: document.getElementById('description').value.trim(),
                     imageUrl, imagePath,
                     seedImageUrl: seedImageUrl || null,
