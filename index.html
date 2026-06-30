@@ -512,6 +512,7 @@
 
         <div class="toolbar">
             <button onclick="downloadBackup()" title="Download a JSON backup of all plants">💾 Download Backup</button>
+            <button id="sortBtn" onclick="cycleSort()" title="Sort plants">🔤 Sort: Newest First</button>
         </div>
 
         <div class="top-bar">
@@ -699,6 +700,23 @@
 
         const plantsCol = collection(db, 'plants');
 
+        // Sort state: 'newest' | 'az' | 'za'
+        let sortMode = 'newest';
+        const sortLabels = { newest: '🔤 Sort: Newest First', az: '🔤 Sort: A → Z', za: '🔤 Sort: Z → A' };
+        const sortNext   = { newest: 'az', az: 'za', za: 'newest' };
+
+        function cycleSort() {
+            sortMode = sortNext[sortMode];
+            document.getElementById('sortBtn').textContent = sortLabels[sortMode];
+            applyCurrentFilter();
+        }
+
+        function sortedPlants(list) {
+            if (sortMode === 'az') return [...list].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+            if (sortMode === 'za') return [...list].sort((a, b) => (b.name || '').localeCompare(a.name || ''));
+            return list; // newest — already ordered by Firestore
+        }
+
         onSnapshot(query(plantsCol, orderBy('createdAt', 'desc')), (snapshot) => {
             plants = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
             applyCurrentFilter();
@@ -708,8 +726,8 @@
 
         function applyCurrentFilter() {
             const term = document.getElementById('searchInput').value.toLowerCase().trim();
-            if (!term) { renderPlants(plants); return; }
-            renderPlants(plants.filter(p => matchesSearch(p, term)));
+            const base = term ? plants.filter(p => matchesSearch(p, term)) : plants;
+            renderPlants(sortedPlants(base));
         }
 
         function matchesSearch(plant, term) {
@@ -1080,6 +1098,7 @@
         window.closeModal        = closeModal;
         window.clearSearch       = clearSearch;
         window.downloadBackup    = downloadBackup;
+        window.cycleSort         = cycleSort;
         window.unlockEditing     = unlockEditing;
         window.showSeedForm      = showSeedForm;
         window.saveSeedRecord    = saveSeedRecord;
