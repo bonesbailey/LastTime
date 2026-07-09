@@ -541,13 +541,15 @@
                         <th>Seed Source</th>
                         <th>Seed</th>
                         <th>Cleaned</th>
-                        <th>Seed Packets</th>
+                        <th>Seed Pkts Printed</th>
+                        <th>Seed Pkts Processed</th>
+                        <th>Notes</th>
                         <th># Packets</th>
                         <th id="actionsHeader" style="display:none;">Actions</th>
                     </tr>
                 </thead>
                 <tbody id="seedTableBody">
-                    <tr><td colspan="7" class="inv-empty">Loading seed inventory…</td></tr>
+                    <tr><td colspan="9" class="inv-empty">Loading seed inventory…</td></tr>
                 </tbody>
             </table>
         </div>
@@ -615,7 +617,9 @@
                 <option value="Yes">Yes</option>
                 <option value="Partially">Partially</option>
             </select>
-            <label>Seed Packets</label>
+            <label>Seed Pkts Printed</label>
+            <input type="number" id="sPktsPrinted" min="0" placeholder="0">
+            <label>Seed Pkts Processed</label>
             <select id="sSeedPackets">
                 <option value="">— Select —</option>
                 <option value="Printed">Printed</option>
@@ -623,6 +627,8 @@
                 <option value="Glued">Glued</option>
                 <option value="Filled">Filled</option>
             </select>
+            <label>Notes</label>
+            <input type="text" id="sNotes" placeholder="Notes">
             <label># Packets</label>
             <input type="number" id="sNumPackets" min="0" placeholder="0">
             <div class="modal-actions">
@@ -999,7 +1005,7 @@
             renderSeeds();
         }, (err) => {
             document.getElementById('seedTableBody').innerHTML =
-                `<tr><td colspan="7" class="inv-empty" style="color:#d32f2f;">Cannot load inventory: ${err.message}</td></tr>`;
+                `<tr><td colspan="9" class="inv-empty" style="color:#d32f2f;">Cannot load inventory: ${err.message}</td></tr>`;
         });
 
         function pillClass(val) {
@@ -1013,7 +1019,7 @@
             document.getElementById('totalPackets').textContent = total;
 
             if (seeds.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="inv-empty">No seed records yet. ${editingEnabled ? 'Click "+ Add Seed Record" to get started.' : ''}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="9" class="inv-empty">No seed records yet. ${editingEnabled ? 'Click "+ Add Seed Record" to get started.' : ''}</td></tr>`;
                 return;
             }
 
@@ -1026,7 +1032,9 @@
                     <td>${escapeHtml(s.seedSource || '')}</td>
                     <td class="seed-name">${escapeHtml(s.seed || '')}</td>
                     <td>${cleaned}</td>
+                    <td>${s.pktsPrinted ?? '—'}</td>
                     <td>${packets}</td>
+                    <td>${escapeHtml(s.notes || '')}</td>
                     <td>${s.numPackets ?? '—'}</td>
                     <td>
                         <div class="inv-actions">
@@ -1045,7 +1053,9 @@
             document.getElementById('sSeedSource').value  = '';
             document.getElementById('sSeed').value        = '';
             document.getElementById('sCleaned').value     = '';
+            document.getElementById('sPktsPrinted').value = '';
             document.getElementById('sSeedPackets').value = '';
+            document.getElementById('sNotes').value       = '';
             document.getElementById('sNumPackets').value  = '';
             document.getElementById('seedModal').style.display = 'flex';
         }
@@ -1058,7 +1068,9 @@
             document.getElementById('sSeedSource').value  = s.seedSource  || '';
             document.getElementById('sSeed').value        = s.seed        || '';
             document.getElementById('sCleaned').value     = s.cleaned     || '';
+            document.getElementById('sPktsPrinted').value = s.pktsPrinted ?? '';
             document.getElementById('sSeedPackets').value = s.seedPackets || '';
+            document.getElementById('sNotes').value       = s.notes       || '';
             document.getElementById('sNumPackets').value  = s.numPackets  ?? '';
             document.getElementById('seedModal').style.display = 'flex';
         }
@@ -1074,7 +1086,9 @@
                     seedSource:  document.getElementById('sSeedSource').value.trim(),
                     seed,
                     cleaned:     document.getElementById('sCleaned').value,
+                    pktsPrinted: parseInt(document.getElementById('sPktsPrinted').value) || 0,
                     seedPackets: document.getElementById('sSeedPackets').value,
+                    notes:       document.getElementById('sNotes').value.trim(),
                     numPackets:  parseInt(document.getElementById('sNumPackets').value) || 0
                 };
                 if (editingSeedId) { await updateDoc(doc(db, 'seedInventory', editingSeedId), data); }
