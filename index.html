@@ -134,9 +134,11 @@
 
         .inv-table {
             width: 100%;
+            min-width: 1270px;
             border-collapse: collapse;
             background: white;
             font-size: 0.95rem;
+            table-layout: fixed;
         }
 
         .inv-table th {
@@ -175,9 +177,9 @@
         .pill-glued    { background: #fce4ec; color: #880e4f; }
         .pill-filled   { background: #e8f5e9; color: #2e7d32; }
 
-        .inv-actions { display: flex; gap: 6px; justify-content: center; }
-        .inv-edit-btn   { background: #388e3c; color: white; border: none; padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 0.82rem; display: none; }
-        .inv-delete-btn { background: #d32f2f; color: white; border: none; padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 0.82rem; display: none; }
+        .inv-actions { display: flex; gap: 6px; justify-content: center; flex-wrap: nowrap; }
+        .inv-edit-btn   { background: #388e3c; color: white; border: none; padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 0.82rem; display: none; white-space: nowrap; }
+        .inv-delete-btn { background: #d32f2f; color: white; border: none; padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 0.82rem; display: none; white-space: nowrap; }
         .inv-edit-btn.visible, .inv-delete-btn.visible { display: inline-block; }
 
         .inv-empty { text-align: center; padding: 3rem; color: #888; font-size: 1rem; }
@@ -535,6 +537,17 @@
 
         <div class="inv-table-wrap">
             <table class="inv-table">
+                <colgroup>
+                    <col style="width:105px;">
+                    <col style="width:150px;">
+                    <col style="width:150px;">
+                    <col style="width:100px;">
+                    <col style="width:120px;">
+                    <col style="width:150px;">
+                    <col style="width:260px;">
+                    <col style="width:95px;">
+                    <col style="width:140px;">
+                </colgroup>
                 <thead>
                     <tr>
                         <th>Date</th>
