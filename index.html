@@ -301,8 +301,8 @@
             position: relative;
         }
 
-        .photo-row { display: flex; align-items: center; gap: 6px; }
-        .photo-row .plant-side { flex: 1; min-width: 0; }
+        .photo-row { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px; }
+        .photo-row .plant-side { flex: 0 0 82%; max-width: 82%; min-width: 0; margin: 0 auto; }
 
         .card img.plant-image {
             width: 100%;
@@ -329,7 +329,8 @@
             align-items: center;
             gap: 4px;
             flex-shrink: 0;
-            width: 49%;
+            width: 60%;
+            margin: 0 auto;
         }
 
         .seed-side img.seed-image {
