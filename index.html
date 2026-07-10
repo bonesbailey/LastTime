@@ -301,6 +301,29 @@
             position: relative;
         }
 
+        .photo-wrap { position: relative; width: 100%; }
+
+        .download-btn {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.9);
+            border: 1px solid #2e7d32;
+            color: #2e7d32;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            text-decoration: none;
+            cursor: pointer;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+        }
+
+        .download-btn:hover { background: #2e7d32; color: white; }
+
         .photo-row { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px; }
         .photo-row .plant-side { flex: 0 0 82%; max-width: 82%; min-width: 0; margin: 0 auto; }
 
@@ -790,12 +813,12 @@
                     <div class="photo-row">
                         <div class="plant-side">
                             ${plant.imageUrl
-                                ? `<img src="${imgUrl}" class="plant-image" alt="${escapeHtml(plant.name)}" data-action="open" data-url="${imgUrl}">`
+                                ? `<div class="photo-wrap"><img src="${imgUrl}" class="plant-image" alt="${escapeHtml(plant.name)}" data-action="open" data-url="${imgUrl}"><a class="download-btn" href="${imgUrl}" download="${escapeHtml(plant.name)}-photo.jpg" target="_blank" title="Save photo" onclick="event.stopPropagation();">⬇</a></div>`
                                 : `<div class="no-photo">🌱 No Photo</div>`}
                         </div>
                         <div class="seed-side">
                             ${plant.seedImageUrl
-                                ? `<img src="${seedUrl}" class="seed-image" alt="Seeds" data-action="open" data-url="${seedUrl}">`
+                                ? `<div class="photo-wrap"><img src="${seedUrl}" class="seed-image" alt="Seeds" data-action="open" data-url="${seedUrl}"><a class="download-btn" href="${seedUrl}" download="${escapeHtml(plant.name)}-seed-photo.jpg" target="_blank" title="Save seed photo" onclick="event.stopPropagation();">⬇</a></div>`
                                 : `<div class="no-seed-photo">🌰 No Seed Photo</div>`}
                             <span class="seed-label">Seeds</span>
                         </div>
