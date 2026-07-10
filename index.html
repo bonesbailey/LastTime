@@ -601,7 +601,7 @@
 
             <label>Plant Photo:</label>
             <input type="file" id="imageUpload" accept="image/*" style="display:none;">
-            <div class="drop-zone" id="plantDropZone">📂 <strong>Click to browse</strong> &nbsp;·&nbsp; or drag &amp; drop a photo here</div>
+            <div class="drop-zone" id="plantDropZone">📂 <strong>Click to browse</strong></div>
             <div id="imagePreview" class="image-preview"></div>
 
             <label>Photo Taken By:</label>
@@ -611,7 +611,7 @@
 
             <label>Seed Photo (optional):</label>
             <input type="file" id="seedImageUpload" accept="image/*" style="display:none;">
-            <div class="drop-zone" id="seedDropZone">📂 <strong>Click to browse</strong> &nbsp;·&nbsp; or drag &amp; drop a seed photo here</div>
+            <div class="drop-zone" id="seedDropZone">📂 <strong>Click to browse</strong></div>
             <div id="seedImagePreview" class="image-preview"></div>
 
             <label>Plant Type:</label>
@@ -907,16 +907,6 @@
                 const file = e.target.files[0];
                 if (file) loadImageFile(file, previewId, isSeed);
                 input.value = '';
-            });
-            // Drag-over styling
-            zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
-            zone.addEventListener('dragleave', ()  => zone.classList.remove('drag-over'));
-            // Drop
-            zone.addEventListener('drop', e => {
-                e.preventDefault();
-                zone.classList.remove('drag-over');
-                const file = e.dataTransfer.files[0];
-                if (file) loadImageFile(file, previewId, isSeed);
             });
         }
 
