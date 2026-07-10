@@ -324,6 +324,22 @@
 
         .download-btn:hover { background: #2e7d32; color: white; }
 
+        .notes-badge {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.9);
+            border: 1px solid #2e7d32;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+        }
+
         .photo-row { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px; }
         .photo-row .plant-side { flex: 0 0 82%; max-width: 82%; min-width: 0; margin: 0 auto; }
 
@@ -515,6 +531,31 @@
         .modal-actions { margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap; }
         .save-btn   { background: #2e7d32; color: white; padding: 12px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 1rem; }
         .cancel-btn { background: #777;    color: white; padding: 12px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 1rem; }
+
+        .notes-toolbar { display: flex; gap: 8px; margin-bottom: 10px; }
+        .notes-toolbar .fmt-btn {
+            padding: 6px 14px;
+            border: 1px solid #2e7d32;
+            background: white;
+            color: #2e7d32;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .notes-toolbar .fmt-btn:hover { background: #2e7d32; color: white; }
+        .notes-editor {
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            min-height: 180px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 12px;
+            background: white;
+            font-size: 15px;
+            line-height: 1.5;
+        }
+        .notes-editor[contenteditable="false"] { background: #f9f9f9; }
+        .copy-btn { background: #1565c0; color: white; padding: 12px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 1rem; }
     </style>
 </head>
 <body>
@@ -634,6 +675,24 @@
             <div class="modal-actions">
                 <button class="save-btn"   onclick="savePlant()">Save Plant</button>
                 <button class="cancel-btn" onclick="closeModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ PLANT Notes Modal (double-click plant photo) ══ -->
+    <div class="modal" id="notesModal">
+        <div class="modal-content" style="max-width:600px;">
+            <h2>📝 Notes — <span id="notesModalPlantName"></span></h2>
+            <div class="notes-toolbar" id="notesToolbar">
+                <button type="button" class="fmt-btn" onclick="document.execCommand('bold')" title="Bold"><b>B</b></button>
+                <button type="button" class="fmt-btn" onclick="document.execCommand('hiliteColor', false, '#d3d3d3')" title="Highlight grey">🖍️ Highlight</button>
+                <button type="button" class="fmt-btn" onclick="document.execCommand('removeFormat')" title="Clear formatting">Clear</button>
+            </div>
+            <div id="notesEditor" class="notes-editor" contenteditable="true"></div>
+            <div class="modal-actions">
+                <button type="button" class="save-btn" id="notesSaveBtn" onclick="saveNotes()">Save Notes</button>
+                <button type="button" class="copy-btn" onclick="copyNotesText()">📋 Copy Text</button>
+                <button type="button" class="cancel-btn" onclick="closeNotesModal()">Close</button>
             </div>
         </div>
     </div>
@@ -813,7 +872,7 @@
                     <div class="photo-row">
                         <div class="plant-side">
                             ${plant.imageUrl
-                                ? `<div class="photo-wrap"><img src="${imgUrl}" class="plant-image" alt="${escapeHtml(plant.name)}" data-action="open" data-url="${imgUrl}"><a class="download-btn" href="${imgUrl}" download="${escapeHtml(plant.name)}-photo.jpg" target="_blank" title="Save photo" onclick="event.stopPropagation();">⬇</a></div>`
+                                ? `<div class="photo-wrap"><img src="${imgUrl}" class="plant-image" alt="${escapeHtml(plant.name)}" data-action="open" data-url="${imgUrl}" data-id="${id}" title="Double-click to view/add notes"><a class="download-btn" href="${imgUrl}" download="${escapeHtml(plant.name)}-photo.jpg" target="_blank" title="Save photo" onclick="event.stopPropagation();">⬇</a>${plant.notes ? `<span class="notes-badge" title="Has notes">📝</span>` : ''}</div>`
                                 : `<div class="no-photo">🌱 No Photo</div>`}
                         </div>
                         <div class="seed-side">
@@ -843,8 +902,71 @@
             const action = t.dataset.action;
             if (action === 'edit')   editPlant(t.dataset.id);
             else if (action === 'delete') deletePlant(t.dataset.id);
-            else if (action === 'open')   window.open(t.dataset.url, '_blank');
+            else if (action === 'open') {
+                if (t.classList.contains('plant-image')) {
+                    // Delay opening the photo briefly in case this is the first click of a double-click
+                    clearTimeout(t._openTimer);
+                    t._openTimer = setTimeout(() => window.open(t.dataset.url, '_blank'), 250);
+                } else {
+                    window.open(t.dataset.url, '_blank');
+                }
+            }
         });
+
+        grid.addEventListener('dblclick', (e) => {
+            const t = e.target.closest('.plant-image');
+            if (!t) return;
+            clearTimeout(t._openTimer);
+            openNotesModal(t.dataset.id);
+        });
+
+        // ── Plant Notes (double-click plant photo) ─────────────────────
+        let currentNotesPlantId = null;
+
+        window.openNotesModal = function(id) {
+            const plant = plants.find(p => p.id === id);
+            if (!plant) return;
+            currentNotesPlantId = id;
+            document.getElementById('notesModalPlantName').textContent = plant.name || '';
+            const editor = document.getElementById('notesEditor');
+            editor.innerHTML = plant.notes || '';
+
+            const canEdit = editingEnabled;
+            editor.setAttribute('contenteditable', canEdit ? 'true' : 'false');
+            document.getElementById('notesToolbar').style.display   = canEdit ? 'flex' : 'none';
+            document.getElementById('notesSaveBtn').style.display   = canEdit ? 'inline-block' : 'none';
+
+            document.getElementById('notesModal').style.display = 'flex';
+        };
+
+        window.closeNotesModal = function() {
+            document.getElementById('notesModal').style.display = 'none';
+            currentNotesPlantId = null;
+        };
+
+        window.copyNotesText = function() {
+            const editor = document.getElementById('notesEditor');
+            navigator.clipboard.writeText(editor.innerText).then(() => {
+                alert('Notes text copied!');
+            }).catch(() => {
+                alert('Could not copy automatically — please select the text and copy manually.');
+            });
+        };
+
+        window.saveNotes = async function() {
+            if (!currentNotesPlantId) return;
+            const saveBtn = document.getElementById('notesSaveBtn');
+            saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
+            try {
+                const html = document.getElementById('notesEditor').innerHTML;
+                await updateDoc(doc(db, 'plants', currentNotesPlantId), { notes: html });
+                closeNotesModal();
+            } catch (e) {
+                alert('Save failed: ' + e.message);
+            } finally {
+                saveBtn.disabled = false; saveBtn.textContent = 'Save Notes';
+            }
+        };
 
         function showAddForm() {
             editingPlantId = null;
