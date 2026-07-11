@@ -401,7 +401,8 @@
         }
 
         .plant-info { padding: 15px; }
-        .plant-name { font-size: 1.4rem; margin: 0 0 0.3rem 0; color: #1b5e20; }
+        .plant-name { font-size: 1.4rem; margin: 0 0 0.3rem 0; color: #1b5e20; cursor: pointer; }
+        .plant-name:hover { text-decoration: underline; }
         .scientific { font-style: italic; color: #666; margin: 0 0 0.6rem 0; }
 
         .tags { display: flex; gap: 8px; flex-wrap: wrap; margin: 0.6rem 0; }
@@ -872,7 +873,7 @@
                     <div class="photo-row">
                         <div class="plant-side">
                             ${plant.imageUrl
-                                ? `<div class="photo-wrap"><img src="${imgUrl}" class="plant-image" alt="${escapeHtml(plant.name)}" data-action="open" data-url="${imgUrl}" data-id="${id}" title="Double-click to view/add notes"><a class="download-btn" href="${imgUrl}" download="${escapeHtml(plant.name)}-photo.jpg" target="_blank" title="Save photo" onclick="event.stopPropagation();">⬇</a>${plant.notes ? `<span class="notes-badge" title="Has notes">📝</span>` : ''}</div>`
+                                ? `<div class="photo-wrap"><img src="${imgUrl}" class="plant-image" alt="${escapeHtml(plant.name)}" data-action="open" data-url="${imgUrl}" data-id="${id}"><a class="download-btn" href="${imgUrl}" download="${escapeHtml(plant.name)}-photo.jpg" target="_blank" title="Save photo" onclick="event.stopPropagation();">⬇</a>${plant.notes ? `<span class="notes-badge" title="Has notes">📝</span>` : ''}</div>`
                                 : `<div class="no-photo">🌱 No Photo</div>`}
                         </div>
                         <div class="seed-side">
@@ -883,7 +884,7 @@
                         </div>
                     </div>
                     <div class="plant-info">
-                        <h3 class="plant-name">${escapeHtml(plant.name)}</h3>
+                        <h3 class="plant-name" data-action="notes" data-id="${id}" title="Click to view/add notes">${escapeHtml(plant.name)}</h3>
                         ${plant.scientific ? `<p class="scientific">${escapeHtml(plant.scientific)}</p>` : ''}
                         <div class="tags">
                             <span class="tag">${escapeHtml(plant.type)}</span>
@@ -903,24 +904,19 @@
             if (action === 'edit')   editPlant(t.dataset.id);
             else if (action === 'delete') deletePlant(t.dataset.id);
             else if (action === 'open') {
-                if (t.classList.contains('plant-image')) {
-                    // Delay opening the photo briefly in case this is the first click of a double-click
-                    clearTimeout(t._openTimer);
-                    t._openTimer = setTimeout(() => window.open(t.dataset.url, '_blank'), 250);
-                } else {
-                    window.open(t.dataset.url, '_blank');
-                }
+                window.open(t.dataset.url, '_blank');
+            } else if (action === 'notes') {
+                openNotesModal(t.dataset.id);
             }
         });
 
         grid.addEventListener('dblclick', (e) => {
-            const t = e.target.closest('.plant-image');
+            const t = e.target.closest('.plant-name');
             if (!t) return;
-            clearTimeout(t._openTimer);
             openNotesModal(t.dataset.id);
         });
 
-        // ── Plant Notes (double-click plant photo) ─────────────────────
+        // ── Plant Notes (click or double-click plant name) ─────────────
         let currentNotesPlantId = null;
 
         window.openNotesModal = function(id) {
