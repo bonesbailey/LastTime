@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>🌱 My Plant Catalog</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         body {
             font-family: system-ui, sans-serif;
@@ -408,6 +410,50 @@
         .tags { display: flex; gap: 8px; flex-wrap: wrap; margin: 0.6rem 0; }
         .tag { background: #e8f5e9; color: #2e7d32; padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; }
 
+        .doc-preview {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #e8f5e9;
+            border: 1px solid #a5d6a7;
+            border-radius: 8px;
+            padding: 8px 10px;
+            margin: 6px 0 10px;
+            font-size: 0.9rem;
+            color: #1b5e20;
+        }
+        .doc-remove-btn {
+            margin-left: auto;
+            background: none;
+            border: none;
+            color: #c62828;
+            font-size: 1rem;
+            cursor: pointer;
+            line-height: 1;
+        }
+        .doc-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0.6rem 0;
+        }
+        .doc-link {
+            color: #1b5e20;
+            font-weight: 600;
+            text-decoration: none;
+            background: #e8f5e9;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+        }
+        .doc-link:hover { text-decoration: underline; }
+        .doc-download-btn {
+            position: static;
+            width: 24px;
+            height: 24px;
+            font-size: 13px;
+        }
+
         /* Always-visible bar above the plant photo */
         .photo-credit {
             background: #f1f8e9;
@@ -656,6 +702,11 @@
             <div class="drop-zone" id="seedDropZone">📂 <strong>Click to browse</strong></div>
             <div id="seedImagePreview" class="image-preview"></div>
 
+            <label>Attached Document (Word file, auto-converted to PDF):</label>
+            <input type="file" id="docUpload" accept=".doc,.docx" style="display:none;">
+            <div class="drop-zone" id="docDropZone">📄 <strong>Click to browse</strong></div>
+            <div id="docPreview" class="doc-preview" style="display:none;"></div>
+
             <label>Plant Type:</label>
             <select id="type">
                 <option value="Tree">Tree</option>
@@ -800,6 +851,8 @@
         let editingPlantId = null;
         let currentImageFile = null, currentImageUrl = null, currentImagePath = null;
         let currentSeedImageFile = null, currentSeedImageUrl = null, currentSeedImagePath = null;
+        let currentDocumentUrl = null, currentDocumentPath = null, currentDocumentName = null;
+        let pendingDocumentBlob = null, originalDocumentPath = null;
 
         const plantsCol = collection(db, 'plants');
 
@@ -892,6 +945,7 @@
                             ${(plant.seedPktCount > 0) ? `<span class="tag">📦 ${escapeHtml(String(plant.seedPktCount))} Seed Pkt</span>` : ''}
                         </div>
                         ${plant.description ? `<p><strong>Description:</strong> ${escapeHtml(plant.description)}</p>` : ''}
+                        ${plant.documentUrl ? `<div class="doc-row"><a class="doc-link" href="${escapeHtml(plant.documentUrl)}" target="_blank" rel="noopener" title="Open PDF">📄 ${escapeHtml(plant.documentName || 'Document')}.pdf</a><a class="download-btn doc-download-btn" href="${escapeHtml(plant.documentUrl)}" download="${escapeHtml(plant.documentName || 'document')}.pdf" title="Download PDF">⬇</a></div>` : ''}
                     </div>`;
                 grid.appendChild(card);
             });
@@ -968,6 +1022,10 @@
             editingPlantId = null;
             currentImageFile = null; currentImageUrl = null; currentImagePath = null;
             currentSeedImageFile = null; currentSeedImageUrl = null; currentSeedImagePath = null;
+            currentDocumentUrl = null; currentDocumentPath = null; currentDocumentName = null;
+            pendingDocumentBlob = null; originalDocumentPath = null;
+            document.getElementById('docPreview').style.display = 'none';
+            document.getElementById('docPreview').innerHTML = '';
             document.getElementById('modalTitle').textContent = 'Add New Plant';
             document.getElementById('name').value = '';
             document.getElementById('scientific').value = '';
@@ -988,6 +1046,16 @@
             editingPlantId = id;
             currentImageFile = null; currentImageUrl = p.imageUrl || null; currentImagePath = p.imagePath || null;
             currentSeedImageFile = null; currentSeedImageUrl = p.seedImageUrl || null; currentSeedImagePath = p.seedImagePath || null;
+            currentDocumentUrl = p.documentUrl || null; currentDocumentPath = p.documentPath || null; currentDocumentName = p.documentName || null;
+            pendingDocumentBlob = null; originalDocumentPath = p.documentPath || null;
+            const docPreviewEl = document.getElementById('docPreview');
+            if (p.documentUrl) {
+                docPreviewEl.style.display = 'flex';
+                docPreviewEl.innerHTML = `📄 ${escapeHtml(p.documentName || 'Document')}.pdf <button type="button" class="doc-remove-btn" title="Remove document" onclick="clearDocument()">✕</button>`;
+            } else {
+                docPreviewEl.style.display = 'none';
+                docPreviewEl.innerHTML = '';
+            }
             document.getElementById('modalTitle').textContent = 'Edit Plant';
             document.getElementById('name').value = p.name || '';
             document.getElementById('scientific').value = p.scientific || '';
@@ -1030,6 +1098,71 @@
 
         setupDropZone('plantDropZone', 'imageUpload',     'imagePreview',     false);
         setupDropZone('seedDropZone',  'seedImageUpload', 'seedImagePreview', true);
+
+        // ── Word document → PDF conversion ──────────────────────────────
+        // Uses mammoth.js to pull the text/formatting out of a .docx file as
+        // HTML, then html2pdf.js to render that HTML into an actual PDF file.
+        // This happens entirely in the browser — nothing is sent to a server.
+        // Note: only modern .docx files are supported (not old .doc), and
+        // complex Word formatting (columns, headers/footers, exact fonts)
+        // may not carry over perfectly since this isn't Word itself doing
+        // the conversion.
+        async function convertDocxToPdfBlob(file) {
+            const arrayBuffer = await file.arrayBuffer();
+            const { value: html } = await mammoth.convertToHtml({ arrayBuffer });
+            const container = document.createElement('div');
+            container.innerHTML = html || '<p><em>(empty document)</em></p>';
+            container.style.cssText = 'padding:20px;font-family:Georgia,serif;color:#000;background:#fff;max-width:650px;';
+            document.body.appendChild(container);
+            try {
+                const pdfBlob = await html2pdf().from(container).set({
+                    margin: 10,
+                    filename: 'document.pdf',
+                    html2canvas: { scale: 2 },
+                    jsPDF: { unit: 'mm', format: 'letter' }
+                }).outputPdf('blob');
+                return pdfBlob;
+            } finally {
+                document.body.removeChild(container);
+            }
+        }
+
+        function setupDocDropZone() {
+            const zone  = document.getElementById('docDropZone');
+            const input = document.getElementById('docUpload');
+            zone.addEventListener('click', () => input.click());
+            input.addEventListener('change', async e => {
+                const file = e.target.files[0];
+                input.value = '';
+                if (!file) return;
+                if (!file.name.toLowerCase().endsWith('.docx')) {
+                    alert('Please choose a modern Word file (.docx). Older .doc files aren\'t supported for conversion.');
+                    return;
+                }
+                const preview = document.getElementById('docPreview');
+                preview.style.display = 'flex';
+                preview.innerHTML = `📄 Converting "${escapeHtml(file.name)}"…`;
+                try {
+                    pendingDocumentBlob = await convertDocxToPdfBlob(file);
+                    currentDocumentName = file.name.replace(/\.docx$/i, '');
+                    preview.innerHTML = `📄 ${escapeHtml(currentDocumentName)}.pdf (ready — click Save Plant) <button type="button" class="doc-remove-btn" title="Remove" onclick="clearDocument()">✕</button>`;
+                } catch (err) {
+                    preview.innerHTML = `⚠️ Conversion failed: ${escapeHtml(err.message)}`;
+                    pendingDocumentBlob = null;
+                }
+            });
+        }
+        setupDocDropZone();
+
+        window.clearDocument = function() {
+            pendingDocumentBlob = null;
+            currentDocumentUrl = null;
+            currentDocumentPath = null;
+            currentDocumentName = null;
+            const preview = document.getElementById('docPreview');
+            preview.style.display = 'none';
+            preview.innerHTML = '';
+        };
 
         // Ctrl+V paste while modal is open (pastes to plant photo slot)
         document.addEventListener('paste', e => {
@@ -1078,6 +1211,20 @@
                     seedImagePath = newSeedPath;
                 }
 
+                let documentUrl = currentDocumentUrl, documentPath = currentDocumentPath, documentName = currentDocumentName;
+                let oldDocumentPathToDelete = null;
+                if (pendingDocumentBlob) {
+                    const safeDocName = (documentName || 'document').replace(/[^a-zA-Z0-9.-]/g, '_');
+                    const newDocPath  = `plants/documents/${Date.now()}-${safeDocName}.pdf`;
+                    const docFileRef  = storageRef(storage, newDocPath);
+                    await uploadBytes(docFileRef, pendingDocumentBlob, { contentType: 'application/pdf' });
+                    documentUrl = await getDownloadURL(docFileRef);
+                    if (originalDocumentPath && originalDocumentPath !== newDocPath) oldDocumentPathToDelete = originalDocumentPath;
+                    documentPath = newDocPath;
+                } else if (!documentUrl && originalDocumentPath) {
+                    oldDocumentPathToDelete = originalDocumentPath;
+                }
+
                 const data = {
                     name, scientific: document.getElementById('scientific').value.trim(),
                     type: document.getElementById('type').value,
@@ -1088,7 +1235,10 @@
                     description:   document.getElementById('description').value.trim(),
                     imageUrl, imagePath,
                     seedImageUrl:  seedImageUrl  || null,
-                    seedImagePath: seedImagePath || null
+                    seedImagePath: seedImagePath || null,
+                    documentUrl:   documentUrl  || null,
+                    documentPath:  documentPath || null,
+                    documentName:  documentName || null
                 };
 
                 if (editingPlantId) { await updateDoc(doc(db, 'plants', editingPlantId), data); }
@@ -1096,6 +1246,7 @@
 
                 if (oldImagePathToDelete)     { try { await deleteObject(storageRef(storage, oldImagePathToDelete)); }     catch(e){} }
                 if (oldSeedImagePathToDelete) { try { await deleteObject(storageRef(storage, oldSeedImagePathToDelete)); } catch(e){} }
+                if (oldDocumentPathToDelete)  { try { await deleteObject(storageRef(storage, oldDocumentPathToDelete)); }  catch(e){} }
                 closeModal();
             } catch(e) { alert("Save failed: " + e.message); }
             finally { saveBtn.disabled = false; saveBtn.textContent = 'Save Plant'; }
@@ -1108,6 +1259,7 @@
                 await deleteDoc(doc(db, 'plants', id));
                 if (p.imagePath)     { try { await deleteObject(storageRef(storage, p.imagePath)); }     catch(e){} }
                 if (p.seedImagePath) { try { await deleteObject(storageRef(storage, p.seedImagePath)); } catch(e){} }
+                if (p.documentPath)  { try { await deleteObject(storageRef(storage, p.documentPath)); }  catch(e){} }
             } catch(e) { alert("Delete failed: " + e.message); }
         }
 
