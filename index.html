@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>🌱 My Plant Catalog</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         body {
             font-family: system-ui, sans-serif;
@@ -702,8 +700,8 @@
             <div class="drop-zone" id="seedDropZone">📂 <strong>Click to browse</strong></div>
             <div id="seedImagePreview" class="image-preview"></div>
 
-            <label>Attached Document (Word file, auto-converted to PDF):</label>
-            <input type="file" id="docUpload" accept=".doc,.docx" style="display:none;">
+            <label>Attached Document (PDF):</label>
+            <input type="file" id="docUpload" accept=".pdf" style="display:none;">
             <div class="drop-zone" id="docDropZone">📄 <strong>Click to browse</strong></div>
             <div id="docPreview" class="doc-preview" style="display:none;"></div>
 
@@ -852,7 +850,7 @@
         let currentImageFile = null, currentImageUrl = null, currentImagePath = null;
         let currentSeedImageFile = null, currentSeedImageUrl = null, currentSeedImagePath = null;
         let currentDocumentUrl = null, currentDocumentPath = null, currentDocumentName = null;
-        let pendingDocumentBlob = null, originalDocumentPath = null;
+        let pendingDocumentFile = null, originalDocumentPath = null;
 
         const plantsCol = collection(db, 'plants');
 
@@ -1023,7 +1021,7 @@
             currentImageFile = null; currentImageUrl = null; currentImagePath = null;
             currentSeedImageFile = null; currentSeedImageUrl = null; currentSeedImagePath = null;
             currentDocumentUrl = null; currentDocumentPath = null; currentDocumentName = null;
-            pendingDocumentBlob = null; originalDocumentPath = null;
+            pendingDocumentFile = null; originalDocumentPath = null;
             document.getElementById('docPreview').style.display = 'none';
             document.getElementById('docPreview').innerHTML = '';
             document.getElementById('modalTitle').textContent = 'Add New Plant';
@@ -1047,7 +1045,7 @@
             currentImageFile = null; currentImageUrl = p.imageUrl || null; currentImagePath = p.imagePath || null;
             currentSeedImageFile = null; currentSeedImageUrl = p.seedImageUrl || null; currentSeedImagePath = p.seedImagePath || null;
             currentDocumentUrl = p.documentUrl || null; currentDocumentPath = p.documentPath || null; currentDocumentName = p.documentName || null;
-            pendingDocumentBlob = null; originalDocumentPath = p.documentPath || null;
+            pendingDocumentFile = null; originalDocumentPath = p.documentPath || null;
             const docPreviewEl = document.getElementById('docPreview');
             if (p.documentUrl) {
                 docPreviewEl.style.display = 'flex';
@@ -1099,63 +1097,33 @@
         setupDropZone('plantDropZone', 'imageUpload',     'imagePreview',     false);
         setupDropZone('seedDropZone',  'seedImageUpload', 'seedImagePreview', true);
 
-        // ── Word document → PDF conversion ──────────────────────────────
-        // Uses mammoth.js to pull the text/formatting out of a .docx file as
-        // HTML, then html2pdf.js to render that HTML into an actual PDF file.
-        // This happens entirely in the browser — nothing is sent to a server.
-        // Note: only modern .docx files are supported (not old .doc), and
-        // complex Word formatting (columns, headers/footers, exact fonts)
-        // may not carry over perfectly since this isn't Word itself doing
-        // the conversion.
-        async function convertDocxToPdfBlob(file) {
-            const arrayBuffer = await file.arrayBuffer();
-            const { value: html } = await mammoth.convertToHtml({ arrayBuffer });
-            const container = document.createElement('div');
-            container.innerHTML = html || '<p><em>(empty document)</em></p>';
-            container.style.cssText = 'padding:20px;font-family:Georgia,serif;color:#000;background:#fff;max-width:650px;';
-            document.body.appendChild(container);
-            try {
-                const pdfBlob = await html2pdf().from(container).set({
-                    margin: 10,
-                    filename: 'document.pdf',
-                    html2canvas: { scale: 2 },
-                    jsPDF: { unit: 'mm', format: 'letter' }
-                }).outputPdf('blob');
-                return pdfBlob;
-            } finally {
-                document.body.removeChild(container);
-            }
-        }
-
+        // ── PDF document attachment ──────────────────────────────────────
+        // Accepts a PDF file directly (convert your Word doc to PDF yourself
+        // first, e.g. via Word's Save As > PDF, for full formatting fidelity).
         function setupDocDropZone() {
             const zone  = document.getElementById('docDropZone');
             const input = document.getElementById('docUpload');
             zone.addEventListener('click', () => input.click());
-            input.addEventListener('change', async e => {
+            input.addEventListener('change', e => {
                 const file = e.target.files[0];
                 input.value = '';
                 if (!file) return;
-                if (!file.name.toLowerCase().endsWith('.docx')) {
-                    alert('Please choose a modern Word file (.docx). Older .doc files aren\'t supported for conversion.');
+                if (!file.name.toLowerCase().endsWith('.pdf')) {
+                    alert('Please choose a PDF file.');
                     return;
                 }
+                if (file.size > 20 * 1024 * 1024) { alert('PDF too large (max 20MB).'); return; }
+                pendingDocumentFile = file;
+                currentDocumentName = file.name.replace(/\.pdf$/i, '');
                 const preview = document.getElementById('docPreview');
                 preview.style.display = 'flex';
-                preview.innerHTML = `📄 Converting "${escapeHtml(file.name)}"…`;
-                try {
-                    pendingDocumentBlob = await convertDocxToPdfBlob(file);
-                    currentDocumentName = file.name.replace(/\.docx$/i, '');
-                    preview.innerHTML = `📄 ${escapeHtml(currentDocumentName)}.pdf (ready — click Save Plant) <button type="button" class="doc-remove-btn" title="Remove" onclick="clearDocument()">✕</button>`;
-                } catch (err) {
-                    preview.innerHTML = `⚠️ Conversion failed: ${escapeHtml(err.message)}`;
-                    pendingDocumentBlob = null;
-                }
+                preview.innerHTML = `📄 ${escapeHtml(currentDocumentName)}.pdf (ready — click Save Plant) <button type="button" class="doc-remove-btn" title="Remove" onclick="clearDocument()">✕</button>`;
             });
         }
         setupDocDropZone();
 
         window.clearDocument = function() {
-            pendingDocumentBlob = null;
+            pendingDocumentFile = null;
             currentDocumentUrl = null;
             currentDocumentPath = null;
             currentDocumentName = null;
@@ -1213,11 +1181,11 @@
 
                 let documentUrl = currentDocumentUrl, documentPath = currentDocumentPath, documentName = currentDocumentName;
                 let oldDocumentPathToDelete = null;
-                if (pendingDocumentBlob) {
+                if (pendingDocumentFile) {
                     const safeDocName = (documentName || 'document').replace(/[^a-zA-Z0-9.-]/g, '_');
                     const newDocPath  = `plants/documents/${Date.now()}-${safeDocName}.pdf`;
                     const docFileRef  = storageRef(storage, newDocPath);
-                    await uploadBytes(docFileRef, pendingDocumentBlob, { contentType: 'application/pdf' });
+                    await uploadBytes(docFileRef, pendingDocumentFile, { contentType: 'application/pdf' });
                     documentUrl = await getDownloadURL(docFileRef);
                     if (originalDocumentPath && originalDocumentPath !== newDocPath) oldDocumentPathToDelete = originalDocumentPath;
                     documentPath = newDocPath;
