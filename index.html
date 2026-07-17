@@ -58,6 +58,38 @@
 
         .toolbar button:hover { background: #e8f5e9; }
 
+        .storage-usage {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #f1f8f2;
+            border: 1px solid #c8e6c9;
+            border-radius: 20px;
+            padding: 6px 14px;
+            font-size: 0.85rem;
+            color: #1b5e20;
+        }
+        .storage-usage .bar-track {
+            width: 90px;
+            height: 8px;
+            background: #dcedc8;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .storage-usage .bar-fill {
+            height: 100%;
+            background: #43a047;
+            transition: width 0.3s ease;
+        }
+        .storage-usage.warn .bar-fill { background: #f9a825; }
+        .storage-usage.danger .bar-fill { background: #e53935; }
+        .storage-usage.warn { color: #e65100; border-color: #ffe0b2; background: #fff8e1; }
+        .storage-usage.danger { color: #b71c1c; border-color: #ffcdd2; background: #ffebee; }
+        .storage-usage button {
+            background: none; border: none; cursor: pointer; font-size: 0.9rem;
+            padding: 0 2px; color: inherit;
+        }
+
         /* ── Page Navigation Tabs ── */
         .page-nav {
             display: flex;
@@ -625,6 +657,11 @@
         <div class="toolbar">
             <button onclick="downloadBackup()" title="Download a JSON backup of all plants">💾 Download Backup</button>
             <button id="sortBtn" onclick="cycleSort()" title="Sort plants">🔤 Sort: Newest First</button>
+            <span class="storage-usage" id="storageUsage" title="Estimated Firebase Storage usage (photos + documents)">
+                📦 <span id="storageUsageText">Storage: checking…</span>
+                <span class="bar-track"><span class="bar-fill" id="storageUsageBar" style="width:0%;"></span></span>
+                <button onclick="updateStorageUsage()" title="Refresh">🔄</button>
+            </span>
         </div>
 
         <div class="top-bar">
@@ -700,8 +737,8 @@
             <div class="drop-zone" id="seedDropZone">📂 <strong>Click to browse</strong></div>
             <div id="seedImagePreview" class="image-preview"></div>
 
-            <label>Attached Document (PDF):</label>
-            <input type="file" id="docUpload" accept=".pdf" style="display:none;">
+            <label>Attached Document (PDF or Word):</label>
+            <input type="file" id="docUpload" accept=".pdf,.docx" style="display:none;">
             <div class="drop-zone" id="docDropZone">📄 <strong>Click to browse</strong></div>
             <div id="docPreview" class="doc-preview" style="display:none;"></div>
 
@@ -791,7 +828,7 @@
             onSnapshot, serverTimestamp, query, orderBy
         } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
         import {
-            getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject
+            getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject, listAll, getMetadata
         } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js";
 
         const firebaseConfig = {
@@ -849,7 +886,7 @@
         let editingPlantId = null;
         let currentImageFile = null, currentImageUrl = null, currentImagePath = null;
         let currentSeedImageFile = null, currentSeedImageUrl = null, currentSeedImagePath = null;
-        let currentDocumentUrl = null, currentDocumentPath = null, currentDocumentName = null;
+        let currentDocumentUrl = null, currentDocumentPath = null, currentDocumentName = null, currentDocumentExt = null;
         let pendingDocumentFile = null, originalDocumentPath = null;
 
         const plantsCol = collection(db, 'plants');
@@ -943,7 +980,7 @@
                             ${(plant.seedPktCount > 0) ? `<span class="tag">📦 ${escapeHtml(String(plant.seedPktCount))} Seed Pkt</span>` : ''}
                         </div>
                         ${plant.description ? `<p><strong>Description:</strong> ${escapeHtml(plant.description)}</p>` : ''}
-                        ${plant.documentUrl ? `<div class="doc-row"><a class="doc-link" href="${escapeHtml(plant.documentUrl)}" target="_blank" rel="noopener" title="Open PDF">📄 ${escapeHtml(plant.documentName || 'Document')}.pdf</a><a class="download-btn doc-download-btn" href="${escapeHtml(plant.documentUrl)}" download="${escapeHtml(plant.documentName || 'document')}.pdf" title="Download PDF">⬇</a></div>` : ''}
+                        ${plant.documentUrl ? `<div class="doc-row"><a class="doc-link" href="${escapeHtml(plant.documentUrl)}" target="_blank" rel="noopener" title="Open document">📄 ${escapeHtml(plant.documentName || 'Document')}.${escapeHtml(plant.documentExt || 'pdf')}</a><a class="download-btn doc-download-btn" href="${escapeHtml(plant.documentUrl)}" download="${escapeHtml(plant.documentName || 'document')}.${escapeHtml(plant.documentExt || 'pdf')}" title="Download document">⬇</a></div>` : ''}
                     </div>`;
                 grid.appendChild(card);
             });
@@ -1020,7 +1057,7 @@
             editingPlantId = null;
             currentImageFile = null; currentImageUrl = null; currentImagePath = null;
             currentSeedImageFile = null; currentSeedImageUrl = null; currentSeedImagePath = null;
-            currentDocumentUrl = null; currentDocumentPath = null; currentDocumentName = null;
+            currentDocumentUrl = null; currentDocumentPath = null; currentDocumentName = null; currentDocumentExt = null;
             pendingDocumentFile = null; originalDocumentPath = null;
             document.getElementById('docPreview').style.display = 'none';
             document.getElementById('docPreview').innerHTML = '';
@@ -1044,12 +1081,12 @@
             editingPlantId = id;
             currentImageFile = null; currentImageUrl = p.imageUrl || null; currentImagePath = p.imagePath || null;
             currentSeedImageFile = null; currentSeedImageUrl = p.seedImageUrl || null; currentSeedImagePath = p.seedImagePath || null;
-            currentDocumentUrl = p.documentUrl || null; currentDocumentPath = p.documentPath || null; currentDocumentName = p.documentName || null;
+            currentDocumentUrl = p.documentUrl || null; currentDocumentPath = p.documentPath || null; currentDocumentName = p.documentName || null; currentDocumentExt = p.documentExt || 'pdf';
             pendingDocumentFile = null; originalDocumentPath = p.documentPath || null;
             const docPreviewEl = document.getElementById('docPreview');
             if (p.documentUrl) {
                 docPreviewEl.style.display = 'flex';
-                docPreviewEl.innerHTML = `📄 ${escapeHtml(p.documentName || 'Document')}.pdf <button type="button" class="doc-remove-btn" title="Remove document" onclick="clearDocument()">✕</button>`;
+                docPreviewEl.innerHTML = `📄 ${escapeHtml(p.documentName || 'Document')}.${escapeHtml(p.documentExt || 'pdf')} <button type="button" class="doc-remove-btn" title="Remove document" onclick="clearDocument()">✕</button>`;
             } else {
                 docPreviewEl.style.display = 'none';
                 docPreviewEl.innerHTML = '';
@@ -1097,9 +1134,10 @@
         setupDropZone('plantDropZone', 'imageUpload',     'imagePreview',     false);
         setupDropZone('seedDropZone',  'seedImageUpload', 'seedImagePreview', true);
 
-        // ── PDF document attachment ──────────────────────────────────────
-        // Accepts a PDF file directly (convert your Word doc to PDF yourself
-        // first, e.g. via Word's Save As > PDF, for full formatting fidelity).
+        // ── Document attachment (PDF or Word) ────────────────────────────
+        // Stores whichever file type you pick as-is — no conversion.
+        // PDFs open right in the browser when clicked; .docx files will
+        // download instead, since browsers don't preview Word docs natively.
         function setupDocDropZone() {
             const zone  = document.getElementById('docDropZone');
             const input = document.getElementById('docUpload');
@@ -1108,25 +1146,68 @@
                 const file = e.target.files[0];
                 input.value = '';
                 if (!file) return;
-                if (!file.name.toLowerCase().endsWith('.pdf')) {
-                    alert('Please choose a PDF file.');
+                const lowerName = file.name.toLowerCase();
+                const ext = lowerName.endsWith('.pdf') ? 'pdf' : lowerName.endsWith('.docx') ? 'docx' : null;
+                if (!ext) {
+                    alert('Please choose a PDF or Word (.docx) file.');
                     return;
                 }
-                if (file.size > 20 * 1024 * 1024) { alert('PDF too large (max 20MB).'); return; }
+                if (file.size > 20 * 1024 * 1024) { alert('File too large (max 20MB).'); return; }
                 pendingDocumentFile = file;
-                currentDocumentName = file.name.replace(/\.pdf$/i, '');
+                currentDocumentExt = ext;
+                currentDocumentName = file.name.replace(/\.(pdf|docx)$/i, '');
                 const preview = document.getElementById('docPreview');
                 preview.style.display = 'flex';
-                preview.innerHTML = `📄 ${escapeHtml(currentDocumentName)}.pdf (ready — click Save Plant) <button type="button" class="doc-remove-btn" title="Remove" onclick="clearDocument()">✕</button>`;
+                preview.innerHTML = `📄 ${escapeHtml(currentDocumentName)}.${ext} (ready — click Save Plant) <button type="button" class="doc-remove-btn" title="Remove" onclick="clearDocument()">✕</button>`;
             });
         }
         setupDocDropZone();
+
+        // ── Storage usage estimate ───────────────────────────────────────
+        // Firebase's free ("no-cost") quota is 5 GB. This walks every file
+        // under plants/ (photos, seed photos, documents) and sums their
+        // sizes to give a rough running total, since Firestore doesn't
+        // track this for us automatically.
+        const STORAGE_FREE_LIMIT_BYTES = 5 * 1024 * 1024 * 1024; // 5 GB
+
+        async function listAllFilesRecursive(ref) {
+            const res = await listAll(ref);
+            let files = res.items.slice();
+            for (const prefix of res.prefixes) {
+                files = files.concat(await listAllFilesRecursive(prefix));
+            }
+            return files;
+        }
+
+        window.updateStorageUsage = async function() {
+            const badge = document.getElementById('storageUsage');
+            const textEl = document.getElementById('storageUsageText');
+            const barEl = document.getElementById('storageUsageBar');
+            textEl.textContent = 'Storage: checking…';
+            badge.classList.remove('warn', 'danger');
+            try {
+                const files = await listAllFilesRecursive(storageRef(storage, 'plants'));
+                const metas = await Promise.all(files.map(f => getMetadata(f).catch(() => null)));
+                const totalBytes = metas.reduce((sum, m) => sum + (m ? m.size : 0), 0);
+                const usedGB = totalBytes / (1024 * 1024 * 1024);
+                const pct = Math.min(100, (totalBytes / STORAGE_FREE_LIMIT_BYTES) * 100);
+                textEl.textContent = `Storage: ${usedGB < 0.1 ? Math.round(totalBytes / (1024*1024)) + ' MB' : usedGB.toFixed(2) + ' GB'} of 5 GB free (${pct.toFixed(0)}%)`;
+                barEl.style.width = pct + '%';
+                if (pct >= 90) badge.classList.add('danger');
+                else if (pct >= 70) badge.classList.add('warn');
+            } catch (err) {
+                textEl.textContent = 'Storage: unavailable';
+                barEl.style.width = '0%';
+            }
+        };
+        updateStorageUsage();
 
         window.clearDocument = function() {
             pendingDocumentFile = null;
             currentDocumentUrl = null;
             currentDocumentPath = null;
             currentDocumentName = null;
+            currentDocumentExt = null;
             const preview = document.getElementById('docPreview');
             preview.style.display = 'none';
             preview.innerHTML = '';
@@ -1179,13 +1260,16 @@
                     seedImagePath = newSeedPath;
                 }
 
-                let documentUrl = currentDocumentUrl, documentPath = currentDocumentPath, documentName = currentDocumentName;
+                let documentUrl = currentDocumentUrl, documentPath = currentDocumentPath, documentName = currentDocumentName, documentExt = currentDocumentExt;
                 let oldDocumentPathToDelete = null;
                 if (pendingDocumentFile) {
                     const safeDocName = (documentName || 'document').replace(/[^a-zA-Z0-9.-]/g, '_');
-                    const newDocPath  = `plants/documents/${Date.now()}-${safeDocName}.pdf`;
+                    const docContentType = documentExt === 'docx'
+                        ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                        : 'application/pdf';
+                    const newDocPath  = `plants/documents/${Date.now()}-${safeDocName}.${documentExt}`;
                     const docFileRef  = storageRef(storage, newDocPath);
-                    await uploadBytes(docFileRef, pendingDocumentFile, { contentType: 'application/pdf' });
+                    await uploadBytes(docFileRef, pendingDocumentFile, { contentType: docContentType });
                     documentUrl = await getDownloadURL(docFileRef);
                     if (originalDocumentPath && originalDocumentPath !== newDocPath) oldDocumentPathToDelete = originalDocumentPath;
                     documentPath = newDocPath;
@@ -1206,7 +1290,8 @@
                     seedImagePath: seedImagePath || null,
                     documentUrl:   documentUrl  || null,
                     documentPath:  documentPath || null,
-                    documentName:  documentName || null
+                    documentName:  documentName || null,
+                    documentExt:   documentExt  || null
                 };
 
                 if (editingPlantId) { await updateDoc(doc(db, 'plants', editingPlantId), data); }
