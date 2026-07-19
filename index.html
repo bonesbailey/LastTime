@@ -194,6 +194,7 @@
 
         .inv-table td.seed-name { text-align: left; font-weight: 600; color: #1b5e20; cursor: pointer; }
         .inv-table td.seed-name:hover { text-decoration: underline; }
+        .seed-info-badge { font-size: 0.85rem; }
 
         .status-pill {
             display: inline-block;
@@ -1411,7 +1412,7 @@
                 return `<tr>
                     <td>${dateStr}</td>
                     <td>${escapeHtml(s.seedSource || '')}</td>
-                    <td class="seed-name" onclick="openSeedInfoModal('${escapeHtml(s.id)}')">${escapeHtml(s.seed || '')}</td>
+                    <td class="seed-name" onclick="openSeedInfoModal('${escapeHtml(s.id)}')">${escapeHtml(s.seed || '')}${(s.infoPhotoUrl || s.infoText) ? ' <span class="seed-info-badge" title="Has photo/description">🌱</span>' : ''}</td>
                     <td>${cleaned}</td>
                     <td>${s.pktsPrinted ?? '—'}</td>
                     <td>${packets}</td>
