@@ -192,7 +192,8 @@
         .inv-table tr:nth-child(even) td { background: #f1f8e9; }
         .inv-table tr:hover td { background: #e8f5e9; }
 
-        .inv-table td.seed-name { text-align: left; font-weight: 600; color: #1b5e20; }
+        .inv-table td.seed-name { text-align: left; font-weight: 600; color: #1b5e20; cursor: pointer; }
+        .inv-table td.seed-name:hover { text-decoration: underline; }
 
         .status-pill {
             display: inline-block;
@@ -821,6 +822,26 @@
         </div>
     </div>
 
+    <!-- ══ SEED INFO Modal (click seed name in Seed Inventory table) ══ -->
+    <div class="modal" id="seedInfoModal">
+        <div class="modal-content" style="max-width:500px;">
+            <h2>🌱 <span id="seedInfoModalName"></span></h2>
+
+            <label>Seed Photo:</label>
+            <input type="file" id="seedInfoPhotoUpload" accept="image/*" style="display:none;">
+            <div class="drop-zone" id="seedInfoDropZone">📂 <strong>Click to add a photo</strong></div>
+            <div id="seedInfoPhotoPreview" class="image-preview"></div>
+
+            <label>Description / How to Plant</label>
+            <textarea id="seedInfoText" placeholder="Describe the seed and how to plant it…" style="min-height:120px;"></textarea>
+
+            <div class="modal-actions">
+                <button type="button" class="save-btn" id="seedInfoSaveBtn" onclick="saveSeedInfo()">Save</button>
+                <button type="button" class="cancel-btn" onclick="closeSeedInfoModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
         import {
@@ -1373,14 +1394,21 @@
                 return;
             }
 
-            tbody.innerHTML = seeds.map(s => {
+            // Keep existing order, but push any row with a # Packets value down to the bottom.
+            const sortedSeeds = [...seeds].sort((a, b) => {
+                const aHas = (parseInt(a.numPackets) || 0) > 0 ? 1 : 0;
+                const bHas = (parseInt(b.numPackets) || 0) > 0 ? 1 : 0;
+                return aHas - bHas;
+            });
+
+            tbody.innerHTML = sortedSeeds.map(s => {
                 const dateStr = s.date ? new Date(s.date + 'T00:00:00').toLocaleDateString() : '—';
                 const cleaned = s.cleaned    ? `<span class="status-pill ${pillClass(s.cleaned)}">${escapeHtml(s.cleaned)}</span>`     : '—';
                 const packets = s.seedPackets ? `<span class="status-pill ${pillClass(s.seedPackets)}">${escapeHtml(s.seedPackets)}</span>` : '—';
                 return `<tr>
                     <td>${dateStr}</td>
                     <td>${escapeHtml(s.seedSource || '')}</td>
-                    <td class="seed-name">${escapeHtml(s.seed || '')}</td>
+                    <td class="seed-name" onclick="openSeedInfoModal('${escapeHtml(s.id)}')">${escapeHtml(s.seed || '')}</td>
                     <td>${cleaned}</td>
                     <td>${s.pktsPrinted ?? '—'}</td>
                     <td>${packets}</td>
@@ -1455,6 +1483,82 @@
         }
 
         function closeSeedModal() { document.getElementById('seedModal').style.display = 'none'; }
+
+        // ── Seed Info (click seed name in Seed Inventory table) ─────────
+        let currentSeedInfoId = null;
+        let currentSeedInfoPhotoFile = null;
+
+        window.openSeedInfoModal = function(id) {
+            const s = seeds.find(x => x.id === id);
+            if (!s) return;
+            currentSeedInfoId = id;
+            currentSeedInfoPhotoFile = null;
+
+            document.getElementById('seedInfoModalName').textContent = s.seed || '';
+            document.getElementById('seedInfoPhotoPreview').style.backgroundImage = s.infoPhotoUrl ? `url('${s.infoPhotoUrl}')` : '';
+            document.getElementById('seedInfoText').value = s.infoText || '';
+
+            const canEdit = editingEnabled;
+            document.getElementById('seedInfoText').readOnly            = !canEdit;
+            document.getElementById('seedInfoDropZone').style.display   = canEdit ? 'block' : 'none';
+            document.getElementById('seedInfoSaveBtn').style.display    = canEdit ? 'inline-block' : 'none';
+
+            document.getElementById('seedInfoModal').style.display = 'flex';
+        };
+
+        window.closeSeedInfoModal = function() {
+            document.getElementById('seedInfoModal').style.display = 'none';
+            currentSeedInfoId = null;
+            currentSeedInfoPhotoFile = null;
+        };
+
+        window.saveSeedInfo = async function() {
+            if (!currentSeedInfoId) return;
+            const saveBtn = document.getElementById('seedInfoSaveBtn');
+            saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
+            try {
+                const s = seeds.find(x => x.id === currentSeedInfoId);
+                const data = { infoText: document.getElementById('seedInfoText').value.trim() };
+
+                if (currentSeedInfoPhotoFile) {
+                    const safeName = currentSeedInfoPhotoFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+                    const newPath  = `plants/seedInventory/${Date.now()}-${safeName}`;
+                    const fileRef  = storageRef(storage, newPath);
+                    await uploadBytes(fileRef, currentSeedInfoPhotoFile);
+                    data.infoPhotoUrl  = await getDownloadURL(fileRef);
+                    data.infoPhotoPath = newPath;
+                    const oldPath = s && s.infoPhotoPath;
+                    if (oldPath && oldPath !== newPath) {
+                        try { await deleteObject(storageRef(storage, oldPath)); } catch(e){}
+                    }
+                }
+
+                await updateDoc(doc(db, 'seedInventory', currentSeedInfoId), data);
+                closeSeedInfoModal();
+            } catch (e) {
+                alert('Save failed: ' + e.message);
+            } finally {
+                saveBtn.disabled = false; saveBtn.textContent = 'Save';
+            }
+        };
+
+        function loadSeedInfoPhoto(file) {
+            if (!file || !file.type.startsWith('image/')) { alert("Please choose an image file."); return; }
+            if (file.size > 10 * 1024 * 1024) { alert("Image too large (max 10MB)."); return; }
+            const reader = new FileReader();
+            reader.onload = ev => {
+                document.getElementById('seedInfoPhotoPreview').style.backgroundImage = `url('${ev.target.result}')`;
+            };
+            reader.readAsDataURL(file);
+            currentSeedInfoPhotoFile = file;
+        }
+
+        document.getElementById('seedInfoDropZone').addEventListener('click', () => document.getElementById('seedInfoPhotoUpload').click());
+        document.getElementById('seedInfoPhotoUpload').addEventListener('change', e => {
+            const file = e.target.files[0];
+            if (file) loadSeedInfoPhoto(file);
+            e.target.value = '';
+        });
 
         // Expose to global scope for onclick attributes
         window.showAddForm       = showAddForm;
