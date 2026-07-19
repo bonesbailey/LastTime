@@ -830,7 +830,10 @@
             <label>Seed Photo:</label>
             <input type="file" id="seedInfoPhotoUpload" accept="image/*" style="display:none;">
             <div class="drop-zone" id="seedInfoDropZone">📂 <strong>Click to add a photo</strong></div>
-            <div id="seedInfoPhotoPreview" class="image-preview"></div>
+            <div class="photo-wrap">
+                <div id="seedInfoPhotoPreview" class="image-preview"></div>
+                <a class="download-btn" id="seedInfoDownloadBtn" href="#" download target="_blank" title="Save photo" style="display:none;">⬇</a>
+            </div>
 
             <label>Description / How to Plant</label>
             <textarea id="seedInfoText" placeholder="Describe the seed and how to plant it…" style="min-height:120px;"></textarea>
@@ -1497,6 +1500,15 @@
             document.getElementById('seedInfoModalName').textContent = s.seed || '';
             document.getElementById('seedInfoPhotoPreview').style.backgroundImage = s.infoPhotoUrl ? `url('${s.infoPhotoUrl}')` : '';
             document.getElementById('seedInfoText').value = s.infoText || '';
+
+            const downloadBtn = document.getElementById('seedInfoDownloadBtn');
+            if (s.infoPhotoUrl) {
+                downloadBtn.href = s.infoPhotoUrl;
+                downloadBtn.download = `${(s.seed || 'seed').replace(/[^a-zA-Z0-9.-]/g, '_')}-photo.jpg`;
+                downloadBtn.style.display = 'flex';
+            } else {
+                downloadBtn.style.display = 'none';
+            }
 
             const canEdit = editingEnabled;
             document.getElementById('seedInfoText').readOnly            = !canEdit;
