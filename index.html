@@ -93,10 +93,11 @@
         /* ── Page Navigation Tabs ── */
         .page-nav {
             display: flex;
+            flex-wrap: wrap;
             justify-content: center;
             gap: 0;
             margin: 0 auto 24px;
-            max-width: 500px;
+            max-width: 900px;
             border-radius: 12px;
             overflow: hidden;
             box-shadow: 0 2px 8px rgba(0,0,0,0.15);
@@ -104,8 +105,9 @@
 
         .page-tab {
             flex: 1;
-            padding: 14px 20px;
-            font-size: 1rem;
+            min-width: 150px;
+            padding: 14px 12px;
+            font-size: 0.92rem;
             font-weight: 700;
             border: none;
             cursor: pointer;
@@ -115,7 +117,7 @@
             letter-spacing: 0.02em;
         }
 
-        .page-tab:first-child { border-right: 2px solid #e8f5e9; }
+        .page-tab:not(:last-child) { border-right: 2px solid #e8f5e9; }
         .page-tab.active { background: #2e7d32; color: white; }
         .page-tab:hover:not(.active) { background: #81c784; }
 
@@ -635,6 +637,84 @@
         }
         .notes-editor[contenteditable="false"] { background: #f9f9f9; }
         .copy-btn { background: #1565c0; color: white; padding: 12px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 1rem; }
+
+        /* ── Garden Beds page ── */
+        #gardenBedsPage { display: none; max-width: 1400px; margin: 0 auto; }
+
+        .gb-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+        }
+
+        .gb-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        .gb-card img.gb-image {
+            width: 100%;
+            height: 220px;
+            object-fit: cover;
+            cursor: pointer;
+            display: block;
+        }
+
+        .gb-no-photo {
+            width: 100%;
+            height: 220px;
+            background: #e8f5e9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #2e7d32;
+            font-size: 1.1rem;
+        }
+
+        .gb-info { padding: 12px; text-align: center; }
+        .gb-name { font-weight: 700; color: #1b5e20; margin: 0; font-size: 1.05rem; }
+
+        .gb-actions {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: none;
+            gap: 6px;
+        }
+        .gb-actions.visible { display: flex; }
+
+        .gb-empty { grid-column: 1/-1; text-align: center; padding: 3rem; color: #888; font-size: 1rem; }
+
+        /* ── Important Dates page ── */
+        #datesPage { display: none; max-width: 1000px; margin: 0 auto; }
+
+        /* ── Meeting Minutes page ── */
+        #minutesPage { display: none; max-width: 1000px; margin: 0 auto; }
+
+        .mm-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            padding: 16px 20px;
+            margin-bottom: 16px;
+        }
+
+        .mm-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .mm-date { font-weight: 700; color: #1b5e20; font-size: 1.1rem; }
+        .mm-card ul { margin: 6px 0 0 0; padding-left: 22px; }
+        .mm-card li { margin-bottom: 4px; }
+        .mm-empty { text-align: center; padding: 3rem; color: #888; font-size: 1rem; }
     </style>
 </head>
 <body>
@@ -646,8 +726,11 @@
 
     <!-- Page Navigation Tabs -->
     <div class="page-nav">
-        <button class="page-tab active" id="tabPhotos" onclick="showPage('photos')">🌿 Plant Photos</button>
-        <button class="page-tab"        id="tabSeeds"  onclick="showPage('seeds')">🌰 Seed Inventory</button>
+        <button class="page-tab active" id="tabPhotos"     onclick="showPage('photos')">🌿 Plant Photos</button>
+        <button class="page-tab"        id="tabSeeds"      onclick="showPage('seeds')">🌰 Seed Inventory</button>
+        <button class="page-tab"        id="tabGardenBeds" onclick="showPage('gardenBeds')">🪴 Garden Beds</button>
+        <button class="page-tab"        id="tabDates"      onclick="showPage('dates')">📅 Important Dates</button>
+        <button class="page-tab"        id="tabMinutes"    onclick="showPage('minutes')">📝 Meeting Minutes</button>
     </div>
 
     <!-- ══ PLANT PHOTOS PAGE ══ -->
@@ -714,6 +797,55 @@
                     <tr><td colspan="9" class="inv-empty">Loading seed inventory…</td></tr>
                 </tbody>
             </table>
+        </div>
+    </div>
+
+    <!-- ══ GARDEN BEDS PAGE ══ -->
+    <div id="gardenBedsPage">
+        <div class="seed-page-header">
+            <h2>🪴 Garden Beds</h2>
+            <button class="seed-add-btn" id="gbAddBtn" onclick="showGardenBedForm()">+ Add Garden Bed</button>
+        </div>
+        <div class="gb-grid" id="gbGrid">
+            <p class="gb-empty">Loading garden beds…</p>
+        </div>
+    </div>
+
+    <!-- ══ IMPORTANT DATES PAGE ══ -->
+    <div id="datesPage">
+        <div class="seed-page-header">
+            <h2>📅 Important Dates</h2>
+            <button class="seed-add-btn" id="dateAddBtn" onclick="showDateForm()">+ Add Date</button>
+        </div>
+        <div class="inv-table-wrap">
+            <table class="inv-table" style="min-width:0;">
+                <colgroup>
+                    <col style="width:160px;">
+                    <col>
+                    <col style="width:140px;">
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Description</th>
+                        <th id="dateActionsHeader" style="display:none;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="datesTableBody">
+                    <tr><td colspan="3" class="inv-empty">Loading important dates…</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ══ MEETING MINUTES PAGE ══ -->
+    <div id="minutesPage">
+        <div class="seed-page-header">
+            <h2>📝 Meeting Minutes</h2>
+            <button class="seed-add-btn" id="minutesAddBtn" onclick="showMinutesForm()">+ Add Meeting</button>
+        </div>
+        <div id="minutesList">
+            <p class="mm-empty">Loading meeting minutes…</p>
         </div>
     </div>
 
@@ -837,11 +969,62 @@
             </div>
 
             <label>Description / How to Plant</label>
-            <textarea id="seedInfoText" placeholder="Describe the seed and how to plant it…" style="min-height:120px;"></textarea>
+            <textarea id="seedInfoText" placeholder="Describe the seed and how to plant it…" style="min-height:280px;"></textarea>
 
             <div class="modal-actions">
                 <button type="button" class="save-btn" id="seedInfoSaveBtn" onclick="saveSeedInfo()">Save</button>
                 <button type="button" class="cancel-btn" onclick="closeSeedInfoModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ GARDEN BED Add/Edit Modal ══ -->
+    <div class="modal" id="gardenBedModal">
+        <div class="modal-content">
+            <h2 id="gbModalTitle">Add Garden Bed</h2>
+            <label>Name / Location</label>
+            <input type="text" id="gbName" placeholder="e.g. Raised Bed 1 — Backyard">
+
+            <label>Photo:</label>
+            <input type="file" id="gbImageUpload" accept="image/*" style="display:none;">
+            <div class="drop-zone" id="gbDropZone">📂 <strong>Click to browse</strong></div>
+            <div id="gbImagePreview" class="image-preview"></div>
+
+            <div class="modal-actions">
+                <button class="save-btn"   onclick="saveGardenBed()">Save</button>
+                <button class="cancel-btn" onclick="closeGardenBedModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ IMPORTANT DATE Add/Edit Modal ══ -->
+    <div class="modal" id="dateModal">
+        <div class="modal-content">
+            <h2 id="dateModalTitle">Add Important Date</h2>
+            <label>Date</label>
+            <input type="date" id="dtDate">
+            <label>Description</label>
+            <textarea id="dtDescription" placeholder="What's happening on this date…"></textarea>
+
+            <div class="modal-actions">
+                <button class="save-btn"   onclick="saveImportantDate()">Save</button>
+                <button class="cancel-btn" onclick="closeDateModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ MEETING MINUTES Add/Edit Modal ══ -->
+    <div class="modal" id="minutesModal">
+        <div class="modal-content">
+            <h2 id="minutesModalTitle">Add Meeting Minutes</h2>
+            <label>Date</label>
+            <input type="date" id="mmDate">
+            <label>Items (one per line — each becomes a bullet)</label>
+            <textarea id="mmItems" placeholder="Discussed seed order for spring&#10;Reviewed budget&#10;Next meeting date set" style="min-height:200px;"></textarea>
+
+            <div class="modal-actions">
+                <button class="save-btn"   onclick="saveMinutes()">Save</button>
+                <button class="cancel-btn" onclick="closeMinutesModal()">Cancel</button>
             </div>
         </div>
     </div>
@@ -891,16 +1074,28 @@
             document.getElementById('addBtn').style.display        = 'block';
             document.getElementById('seedAddBtn').style.display    = 'block';
             document.getElementById('actionsHeader').style.display = '';
+            document.getElementById('gbAddBtn').style.display       = 'block';
+            document.getElementById('dateAddBtn').style.display     = 'block';
+            document.getElementById('minutesAddBtn').style.display  = 'block';
+            document.getElementById('dateActionsHeader').style.display = '';
             document.querySelectorAll('.action-buttons').forEach(el => el.classList.add('visible'));
             document.querySelectorAll('.inv-edit-btn, .inv-delete-btn').forEach(el => el.classList.add('visible'));
+            document.querySelectorAll('.gb-actions').forEach(el => el.classList.add('visible'));
+            document.querySelectorAll('.mm-edit-btn, .mm-delete-btn').forEach(el => el.classList.add('visible'));
         }
 
         // ── Page switching ────────────────────────────────────────────
         window.showPage = function(page) {
-            document.getElementById('photosPage').style.display = page === 'photos' ? 'block' : 'none';
-            document.getElementById('seedPage').style.display   = page === 'seeds'  ? 'block' : 'none';
-            document.getElementById('tabPhotos').classList.toggle('active', page === 'photos');
-            document.getElementById('tabSeeds').classList.toggle('active',  page === 'seeds');
+            document.getElementById('photosPage').style.display     = page === 'photos'     ? 'block' : 'none';
+            document.getElementById('seedPage').style.display       = page === 'seeds'       ? 'block' : 'none';
+            document.getElementById('gardenBedsPage').style.display = page === 'gardenBeds'  ? 'block' : 'none';
+            document.getElementById('datesPage').style.display      = page === 'dates'       ? 'block' : 'none';
+            document.getElementById('minutesPage').style.display    = page === 'minutes'     ? 'block' : 'none';
+            document.getElementById('tabPhotos').classList.toggle('active',     page === 'photos');
+            document.getElementById('tabSeeds').classList.toggle('active',      page === 'seeds');
+            document.getElementById('tabGardenBeds').classList.toggle('active', page === 'gardenBeds');
+            document.getElementById('tabDates').classList.toggle('active',      page === 'dates');
+            document.getElementById('tabMinutes').classList.toggle('active',    page === 'minutes');
         };
 
         // ══════════════════════════════════════════════════════════════
@@ -1572,6 +1767,262 @@
             if (file) loadSeedInfoPhoto(file);
             e.target.value = '';
         });
+
+        // ══════════════════════════════════════════════════════════════
+        // GARDEN BEDS
+        // ══════════════════════════════════════════════════════════════
+        const gardenBedsCol = collection(db, 'gardenBeds');
+        let gardenBeds = [];
+        let editingGardenBedId = null;
+        let currentGbImageFile = null, currentGbImageUrl = null, currentGbImagePath = null;
+
+        onSnapshot(query(gardenBedsCol, orderBy('createdAt', 'desc')), (snapshot) => {
+            gardenBeds = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderGardenBeds();
+        }, (error) => {
+            document.getElementById('gbGrid').innerHTML = `<p class="gb-empty">Cannot load garden beds: ${error.message}</p>`;
+        });
+
+        function renderGardenBeds() {
+            const wrap = document.getElementById('gbGrid');
+            if (gardenBeds.length === 0) {
+                wrap.innerHTML = `<p class="gb-empty">No garden beds yet. ${editingEnabled ? 'Click "+ Add Garden Bed" to get started.' : ''}</p>`;
+                return;
+            }
+            wrap.innerHTML = gardenBeds.map(b => {
+                const id = escapeHtml(b.id);
+                return `<div class="gb-card">
+                    <div class="gb-actions ${editingEnabled ? 'visible' : ''}">
+                        <button class="edit-btn"   onclick="editGardenBed('${id}')">Edit</button>
+                        <button class="delete-btn" onclick="deleteGardenBed('${id}')">Delete</button>
+                    </div>
+                    ${b.imageUrl
+                        ? `<img src="${escapeHtml(b.imageUrl)}" class="gb-image" alt="${escapeHtml(b.name || '')}" onclick="window.open('${escapeHtml(b.imageUrl)}','_blank')">`
+                        : `<div class="gb-no-photo">🪴 No Photo</div>`}
+                    <div class="gb-info"><p class="gb-name">${escapeHtml(b.name || '')}</p></div>
+                </div>`;
+            }).join('');
+        }
+
+        window.showGardenBedForm = function() {
+            editingGardenBedId = null;
+            currentGbImageFile = null; currentGbImageUrl = null; currentGbImagePath = null;
+            document.getElementById('gbModalTitle').textContent = 'Add Garden Bed';
+            document.getElementById('gbName').value = '';
+            document.getElementById('gbImagePreview').style.backgroundImage = '';
+            document.getElementById('gardenBedModal').style.display = 'flex';
+        };
+
+        window.editGardenBed = function(id) {
+            const b = gardenBeds.find(x => x.id === id); if (!b) return;
+            editingGardenBedId = id;
+            currentGbImageFile = null; currentGbImageUrl = b.imageUrl || null; currentGbImagePath = b.imagePath || null;
+            document.getElementById('gbModalTitle').textContent = 'Edit Garden Bed';
+            document.getElementById('gbName').value = b.name || '';
+            document.getElementById('gbImagePreview').style.backgroundImage = b.imageUrl ? `url('${b.imageUrl}')` : '';
+            document.getElementById('gardenBedModal').style.display = 'flex';
+        };
+
+        window.closeGardenBedModal = function() { document.getElementById('gardenBedModal').style.display = 'none'; };
+
+        window.saveGardenBed = async function() {
+            const name = document.getElementById('gbName').value.trim();
+            if (!name) { alert("Please enter a name/location."); return; }
+            const saveBtn = document.querySelector('#gardenBedModal .save-btn');
+            saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
+            try {
+                const data = { name };
+                if (currentGbImageFile) {
+                    const safeName = currentGbImageFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+                    const newPath  = `plants/gardenBeds/${Date.now()}-${safeName}`;
+                    const fileRef  = storageRef(storage, newPath);
+                    await uploadBytes(fileRef, currentGbImageFile);
+                    data.imageUrl  = await getDownloadURL(fileRef);
+                    data.imagePath = newPath;
+                    if (editingGardenBedId && currentGbImagePath && currentGbImagePath !== newPath) {
+                        try { await deleteObject(storageRef(storage, currentGbImagePath)); } catch(e){}
+                    }
+                }
+                if (editingGardenBedId) { await updateDoc(doc(db, 'gardenBeds', editingGardenBedId), data); }
+                else { data.createdAt = serverTimestamp(); await addDoc(gardenBedsCol, data); }
+                window.closeGardenBedModal();
+            } catch(e) { alert("Save failed: " + e.message); }
+            finally { saveBtn.disabled = false; saveBtn.textContent = 'Save'; }
+        };
+
+        window.deleteGardenBed = async function(id) {
+            if (!confirm("Delete this garden bed for EVERYONE? This cannot be undone.")) return;
+            try { await deleteDoc(doc(db, 'gardenBeds', id)); }
+            catch(e) { alert("Delete failed: " + e.message); }
+        };
+
+        function loadGbImageFile(file) {
+            if (!file || !file.type.startsWith('image/')) { alert("Please choose an image file."); return; }
+            if (file.size > 10 * 1024 * 1024) { alert("Image too large (max 10MB)."); return; }
+            const reader = new FileReader();
+            reader.onload = ev => { document.getElementById('gbImagePreview').style.backgroundImage = `url('${ev.target.result}')`; };
+            reader.readAsDataURL(file);
+            currentGbImageFile = file;
+        }
+
+        document.getElementById('gbDropZone').addEventListener('click', () => document.getElementById('gbImageUpload').click());
+        document.getElementById('gbImageUpload').addEventListener('change', e => {
+            const file = e.target.files[0];
+            if (file) loadGbImageFile(file);
+            e.target.value = '';
+        });
+
+        // ══════════════════════════════════════════════════════════════
+        // IMPORTANT DATES
+        // ══════════════════════════════════════════════════════════════
+        const datesCol = collection(db, 'importantDates');
+        let importantDates = [];
+        let editingDateId = null;
+
+        onSnapshot(query(datesCol, orderBy('date', 'asc')), (snapshot) => {
+            importantDates = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderDates();
+        }, (error) => {
+            document.getElementById('datesTableBody').innerHTML = `<tr><td colspan="3" class="inv-empty">Cannot load dates: ${error.message}</td></tr>`;
+        });
+
+        function renderDates() {
+            const tbody = document.getElementById('datesTableBody');
+            if (importantDates.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" class="inv-empty">No important dates yet. ${editingEnabled ? 'Click "+ Add Date" to get started.' : ''}</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = importantDates.map(d => {
+                const dateStr = d.date ? new Date(d.date + 'T00:00:00').toLocaleDateString() : '—';
+                return `<tr>
+                    <td>${dateStr}</td>
+                    <td style="text-align:left;">${escapeHtml(d.description || '')}</td>
+                    <td>
+                        <div class="inv-actions">
+                            <button class="inv-edit-btn ${editingEnabled ? 'visible' : ''}"   onclick="editImportantDate('${escapeHtml(d.id)}')">Edit</button>
+                            <button class="inv-delete-btn ${editingEnabled ? 'visible' : ''}" onclick="deleteImportantDate('${escapeHtml(d.id)}')">Delete</button>
+                        </div>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        window.showDateForm = function() {
+            editingDateId = null;
+            document.getElementById('dateModalTitle').textContent = 'Add Important Date';
+            document.getElementById('dtDate').value = '';
+            document.getElementById('dtDescription').value = '';
+            document.getElementById('dateModal').style.display = 'flex';
+        };
+
+        window.editImportantDate = function(id) {
+            const d = importantDates.find(x => x.id === id); if (!d) return;
+            editingDateId = id;
+            document.getElementById('dateModalTitle').textContent = 'Edit Important Date';
+            document.getElementById('dtDate').value = d.date || '';
+            document.getElementById('dtDescription').value = d.description || '';
+            document.getElementById('dateModal').style.display = 'flex';
+        };
+
+        window.closeDateModal = function() { document.getElementById('dateModal').style.display = 'none'; };
+
+        window.saveImportantDate = async function() {
+            const dateVal = document.getElementById('dtDate').value;
+            if (!dateVal) { alert("Please choose a date."); return; }
+            const saveBtn = document.querySelector('#dateModal .save-btn');
+            saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
+            try {
+                const data = { date: dateVal, description: document.getElementById('dtDescription').value.trim() };
+                if (editingDateId) { await updateDoc(doc(db, 'importantDates', editingDateId), data); }
+                else { data.createdAt = serverTimestamp(); await addDoc(datesCol, data); }
+                window.closeDateModal();
+            } catch(e) { alert("Save failed: " + e.message); }
+            finally { saveBtn.disabled = false; saveBtn.textContent = 'Save'; }
+        };
+
+        window.deleteImportantDate = async function(id) {
+            if (!confirm("Delete this date for EVERYONE? This cannot be undone.")) return;
+            try { await deleteDoc(doc(db, 'importantDates', id)); }
+            catch(e) { alert("Delete failed: " + e.message); }
+        };
+
+        // ══════════════════════════════════════════════════════════════
+        // MEETING MINUTES
+        // ══════════════════════════════════════════════════════════════
+        const minutesCol = collection(db, 'meetingMinutes');
+        let meetingMinutes = [];
+        let editingMinutesId = null;
+
+        onSnapshot(query(minutesCol, orderBy('date', 'desc')), (snapshot) => {
+            meetingMinutes = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderMinutes();
+        }, (error) => {
+            document.getElementById('minutesList').innerHTML = `<p class="mm-empty">Cannot load meeting minutes: ${error.message}</p>`;
+        });
+
+        function renderMinutes() {
+            const wrap = document.getElementById('minutesList');
+            if (meetingMinutes.length === 0) {
+                wrap.innerHTML = `<p class="mm-empty">No meeting minutes yet. ${editingEnabled ? 'Click "+ Add Meeting" to get started.' : ''}</p>`;
+                return;
+            }
+            wrap.innerHTML = meetingMinutes.map(m => {
+                const dateStr = m.date ? new Date(m.date + 'T00:00:00').toLocaleDateString() : '—';
+                const items = (m.items || '').split('\n').map(s => s.trim()).filter(Boolean);
+                const listHtml = items.length
+                    ? `<ul>${items.map(i => `<li>${escapeHtml(i)}</li>`).join('')}</ul>`
+                    : '<p style="color:#888;">No items entered.</p>';
+                return `<div class="mm-card">
+                    <div class="mm-card-header">
+                        <span class="mm-date">📅 ${dateStr}</span>
+                        <div class="inv-actions">
+                            <button class="inv-edit-btn ${editingEnabled ? 'visible' : ''}"   onclick="editMinutes('${escapeHtml(m.id)}')">Edit</button>
+                            <button class="inv-delete-btn ${editingEnabled ? 'visible' : ''}" onclick="deleteMinutes('${escapeHtml(m.id)}')">Delete</button>
+                        </div>
+                    </div>
+                    ${listHtml}
+                </div>`;
+            }).join('');
+        }
+
+        window.showMinutesForm = function() {
+            editingMinutesId = null;
+            document.getElementById('minutesModalTitle').textContent = 'Add Meeting Minutes';
+            document.getElementById('mmDate').value = '';
+            document.getElementById('mmItems').value = '';
+            document.getElementById('minutesModal').style.display = 'flex';
+        };
+
+        window.editMinutes = function(id) {
+            const m = meetingMinutes.find(x => x.id === id); if (!m) return;
+            editingMinutesId = id;
+            document.getElementById('minutesModalTitle').textContent = 'Edit Meeting Minutes';
+            document.getElementById('mmDate').value = m.date || '';
+            document.getElementById('mmItems').value = m.items || '';
+            document.getElementById('minutesModal').style.display = 'flex';
+        };
+
+        window.closeMinutesModal = function() { document.getElementById('minutesModal').style.display = 'none'; };
+
+        window.saveMinutes = async function() {
+            const dateVal = document.getElementById('mmDate').value;
+            if (!dateVal) { alert("Please choose a date."); return; }
+            const saveBtn = document.querySelector('#minutesModal .save-btn');
+            saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
+            try {
+                const data = { date: dateVal, items: document.getElementById('mmItems').value.trim() };
+                if (editingMinutesId) { await updateDoc(doc(db, 'meetingMinutes', editingMinutesId), data); }
+                else { data.createdAt = serverTimestamp(); await addDoc(minutesCol, data); }
+                window.closeMinutesModal();
+            } catch(e) { alert("Save failed: " + e.message); }
+            finally { saveBtn.disabled = false; saveBtn.textContent = 'Save'; }
+        };
+
+        window.deleteMinutes = async function(id) {
+            if (!confirm("Delete these meeting minutes for EVERYONE? This cannot be undone.")) return;
+            try { await deleteDoc(doc(db, 'meetingMinutes', id)); }
+            catch(e) { alert("Delete failed: " + e.message); }
+        };
 
         // Expose to global scope for onclick attributes
         window.showAddForm       = showAddForm;
