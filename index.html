@@ -178,15 +178,14 @@
         /* ── Seed Saver Game page: two side-by-side groups ── */
         .game-groups {
             display: flex;
-            gap: 24px;
+            gap: 20px;
             flex-wrap: wrap;
             align-items: flex-start;
             justify-content: center;
         }
         .game-col {
-            flex: 1;
-            min-width: 280px;
-            max-width: 340px;
+            flex: 0 0 310px;
+            width: 310px;
         }
         .game-table td.seed-name {
             max-width: 150px;
@@ -195,12 +194,13 @@
             white-space: nowrap;
         }
         .game-table {
+            width: 310px !important;
             min-width: 0 !important;
-            width: auto !important;
+            table-layout: fixed;
         }
         .game-col .inv-table-wrap {
-            overflow-x: visible;
-            display: inline-block;
+            overflow: hidden;
+            width: 310px;
         }
         .game-table th,
         .game-table td {
