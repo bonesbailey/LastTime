@@ -931,7 +931,7 @@
                             <tr>
                                 <th>Seed Name</th>
                                 <th>Number</th>
-                                <th id="game2ActionsHeader" style="display:none;">Actions</th>
+                                <th id="game2ActionsHeader" style="color:transparent;">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="game2TableBody">
@@ -957,7 +957,7 @@
                             <tr>
                                 <th>Seed Name</th>
                                 <th>Number</th>
-                                <th id="game1ActionsHeader" style="display:none;">Actions</th>
+                                <th id="game1ActionsHeader" style="color:transparent;">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="game1TableBody">
@@ -1281,8 +1281,8 @@
             document.getElementById('dateActionsHeader').style.display = '';
             document.getElementById('game1AddBtn').style.display    = 'block';
             document.getElementById('game2AddBtn').style.display    = 'block';
-            document.getElementById('game1ActionsHeader').style.display = '';
-            document.getElementById('game2ActionsHeader').style.display = '';
+            document.getElementById('game1ActionsHeader').style.color = '';
+            document.getElementById('game2ActionsHeader').style.color = '';
             document.querySelectorAll('.action-buttons').forEach(el => el.classList.add('visible'));
             document.querySelectorAll('.inv-edit-btn, .inv-delete-btn').forEach(el => el.classList.add('visible'));
             document.querySelectorAll('.gb-actions').forEach(el => el.classList.add('visible'));
