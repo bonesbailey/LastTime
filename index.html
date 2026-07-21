@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>🌱   My Plants</title>
+    <title>🌱   Seed Savers Group</title>
     <style>
         body {
             font-family: system-ui, sans-serif;
@@ -99,7 +99,7 @@
             margin: 0 auto 24px;
             max-width: 900px;
             border-radius: 12px;
-            overflow: hidden;
+            overflow: visible;
             box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         }
 
@@ -120,6 +120,60 @@
         .page-tab:not(:last-child) { border-right: 2px solid #e8f5e9; }
         .page-tab.active { background: #2e7d32; color: white; }
         .page-tab:hover:not(.active) { background: #81c784; }
+
+        /* ── Seed Saver Game dropdown (on Seed Inventory tab) ── */
+        .page-tab-dropdown {
+            position: relative;
+            flex: 1;
+            min-width: 150px;
+            display: flex;
+        }
+        .page-tab-dropdown .page-tab {
+            flex: 1;
+            min-width: 0;
+            border-right: none;
+        }
+        .dropdown-caret {
+            width: 34px;
+            border: none;
+            border-right: 2px solid #e8f5e9;
+            background: #a5d6a7;
+            color: #1b5e20;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s;
+        }
+        .dropdown-caret:hover { background: #81c784; }
+        .dropdown-caret.active { background: #2e7d32; color: white; }
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.2);
+            border-radius: 0 0 10px 10px;
+            overflow: hidden;
+            z-index: 50;
+        }
+        .dropdown-menu.show { display: block; }
+        .dropdown-menu button {
+            display: block;
+            width: 100%;
+            padding: 12px 14px;
+            background: white;
+            color: #1b5e20;
+            border: none;
+            border-bottom: 1px solid #e8f5e9;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+        .dropdown-menu button:last-child { border-bottom: none; }
+        .dropdown-menu button:hover { background: #e8f5e9; }
+        .dropdown-menu button.active { background: #2e7d32; color: white; }
 
         /* ── Seed Inventory page ── */
         #seedPage { display: none; max-width: 1320px; margin: 0 auto; }
@@ -168,7 +222,7 @@
 
         .inv-table {
             width: 100%;
-            min-width: 1270px;
+            min-width: 1380px;
             border-collapse: collapse;
             background: white;
             font-size: 0.95rem;
@@ -731,14 +785,20 @@
 <body>
     <div style="display:flex; align-items:center; justify-content:center; gap:18px; margin-bottom:20px;">
         <img src="SeedSaverLogo.jpg" alt="Seed Savers Committee" style="height:90px; width:auto; border-radius:8px;">
-        <h1 style="margin:0;">🌱 My Plant Catalog</h1>
+        <h1 style="margin:0;">🌱 Seed Savers Group</h1>
         <img src="SeedSaverLogo.jpg" alt="Seed Savers Committee" style="height:90px; width:auto; border-radius:8px;">
     </div>
 
     <!-- Page Navigation Tabs -->
     <div class="page-nav">
         <button class="page-tab active" id="tabPhotos"     onclick="showPage('photos')">🌿 Plant Photos</button>
-        <button class="page-tab"        id="tabSeeds"      onclick="showPage('seeds')">🌰 Seed Inventory</button>
+        <div class="page-tab-dropdown" id="seedsDropdownWrap">
+            <button class="page-tab" id="tabSeeds" onclick="showPage('seeds')">🌰 Seed Inventory</button>
+            <button class="dropdown-caret" id="seedsCaret" onclick="toggleGameDropdown(event)">▾</button>
+            <div class="dropdown-menu" id="gameDropdownMenu">
+                <button id="gameMenuItem" onclick="showPage('seedGame')">🎮 Seed Saver Game</button>
+            </div>
+        </div>
         <button class="page-tab"        id="tabGardenBeds" onclick="showPage('gardenBeds')">🪴 Garden Beds</button>
         <button class="page-tab"        id="tabDates"      onclick="showPage('dates')">📅 Important Dates</button>
         <button class="page-tab"        id="tabMinutes"    onclick="showPage('minutes')">📝 Meeting Minutes</button>
@@ -787,6 +847,7 @@
                     <col style="width:100px;">
                     <col style="width:120px;">
                     <col style="width:150px;">
+                    <col style="width:110px;">
                     <col style="width:260px;">
                     <col style="width:95px;">
                     <col style="width:140px;">
@@ -799,13 +860,65 @@
                         <th>Cleaned</th>
                         <th>Seed Pkts<br>Printed</th>
                         <th>Seed Pkts<br>Processed</th>
+                        <th>Germination %</th>
                         <th>Notes</th>
                         <th># Packets</th>
                         <th id="actionsHeader" style="display:none;">Actions</th>
                     </tr>
                 </thead>
                 <tbody id="seedTableBody">
-                    <tr><td colspan="9" class="inv-empty">Loading seed inventory…</td></tr>
+                    <tr><td colspan="10" class="inv-empty">Loading seed inventory…</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ══ SEED SAVER GAME PAGE ══ -->
+    <div id="seedGamePage">
+        <div class="seed-page-header">
+            <h2>🔍 Seed Detect Game</h2>
+            <button class="seed-add-btn" id="game2AddBtn" onclick="showGame2Form()" style="display:none;">+ Add Row</button>
+        </div>
+        <div class="inv-table-wrap">
+            <table class="inv-table" style="min-width:0;">
+                <colgroup>
+                    <col>
+                    <col style="width:160px;">
+                    <col style="width:140px;">
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th>Seed Name</th>
+                        <th>Number</th>
+                        <th id="game2ActionsHeader" style="display:none;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="game2TableBody">
+                    <tr><td colspan="3" class="inv-empty">Loading…</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="seed-page-header" style="margin-top:28px;">
+            <h2>🎮 Seed Savers Game</h2>
+            <button class="seed-add-btn" id="game1AddBtn" onclick="showGame1Form()" style="display:none;">+ Add Row</button>
+        </div>
+        <div class="inv-table-wrap">
+            <table class="inv-table" style="min-width:0;">
+                <colgroup>
+                    <col>
+                    <col style="width:160px;">
+                    <col style="width:140px;">
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th>Seed Name</th>
+                        <th>Number</th>
+                        <th id="game1ActionsHeader" style="display:none;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="game1TableBody">
+                    <tr><td colspan="3" class="inv-empty">Loading…</td></tr>
                 </tbody>
             </table>
         </div>
@@ -955,6 +1068,8 @@
                 <option value="Glued">Glued</option>
                 <option value="Filled">Filled</option>
             </select>
+            <label>Germination %</label>
+            <input type="number" id="sGermination" min="0" max="100" placeholder="e.g. 85">
             <label>Notes</label>
             <input type="text" id="sNotes" placeholder="Notes">
             <label># Packets</label>
@@ -962,6 +1077,36 @@
             <div class="modal-actions">
                 <button class="save-btn"   onclick="saveSeedRecord()">Save Record</button>
                 <button class="cancel-btn" onclick="closeSeedModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ SEED SAVERS GAME Add/Edit Modal ══ -->
+    <div id="game1Modal" style="display:none; position:fixed; top:0;left:0;right:0;bottom:0; background:rgba(0,0,0,0.7); align-items:center; justify-content:center; z-index:1000;">
+        <div class="modal-content">
+            <h2 id="game1ModalTitle">Add Row</h2>
+            <label>Seed Name</label>
+            <input type="text" id="g1SeedName" placeholder="e.g. Desert Marigold">
+            <label>Number</label>
+            <input type="number" id="g1Number" placeholder="0">
+            <div class="modal-actions">
+                <button class="save-btn"   onclick="saveGame1Record()">Save</button>
+                <button class="cancel-btn" onclick="closeGame1Modal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ SEED DETECT GAME Add/Edit Modal ══ -->
+    <div id="game2Modal" style="display:none; position:fixed; top:0;left:0;right:0;bottom:0; background:rgba(0,0,0,0.7); align-items:center; justify-content:center; z-index:1000;">
+        <div class="modal-content">
+            <h2 id="game2ModalTitle">Add Row</h2>
+            <label>Seed Name</label>
+            <input type="text" id="g2SeedName" placeholder="e.g. Desert Marigold">
+            <label>Number</label>
+            <input type="number" id="g2Number" placeholder="0">
+            <div class="modal-actions">
+                <button class="save-btn"   onclick="saveGame2Record()">Save</button>
+                <button class="cancel-btn" onclick="closeGame2Modal()">Cancel</button>
             </div>
         </div>
     </div>
@@ -1089,6 +1234,10 @@
             document.getElementById('dateAddBtn').style.display     = 'block';
             document.getElementById('minutesAddBtn').style.display  = 'block';
             document.getElementById('dateActionsHeader').style.display = '';
+            document.getElementById('game1AddBtn').style.display    = 'block';
+            document.getElementById('game2AddBtn').style.display    = 'block';
+            document.getElementById('game1ActionsHeader').style.display = '';
+            document.getElementById('game2ActionsHeader').style.display = '';
             document.querySelectorAll('.action-buttons').forEach(el => el.classList.add('visible'));
             document.querySelectorAll('.inv-edit-btn, .inv-delete-btn').forEach(el => el.classList.add('visible'));
             document.querySelectorAll('.gb-actions').forEach(el => el.classList.add('visible'));
@@ -1099,6 +1248,7 @@
         window.showPage = function(page) {
             document.getElementById('photosPage').style.display     = page === 'photos'     ? 'block' : 'none';
             document.getElementById('seedPage').style.display       = page === 'seeds'       ? 'block' : 'none';
+            document.getElementById('seedGamePage').style.display   = page === 'seedGame'    ? 'block' : 'none';
             document.getElementById('gardenBedsPage').style.display = page === 'gardenBeds'  ? 'block' : 'none';
             document.getElementById('datesPage').style.display      = page === 'dates'       ? 'block' : 'none';
             document.getElementById('minutesPage').style.display    = page === 'minutes'     ? 'block' : 'none';
@@ -1107,7 +1257,19 @@
             document.getElementById('tabGardenBeds').classList.toggle('active', page === 'gardenBeds');
             document.getElementById('tabDates').classList.toggle('active',      page === 'dates');
             document.getElementById('tabMinutes').classList.toggle('active',    page === 'minutes');
+            document.getElementById('seedsCaret').classList.toggle('active',    page === 'seedGame');
+            document.getElementById('gameMenuItem').classList.toggle('active',  page === 'seedGame');
+            document.getElementById('gameDropdownMenu').classList.remove('show');
         };
+
+        window.toggleGameDropdown = function(e) {
+            e.stopPropagation();
+            document.getElementById('gameDropdownMenu').classList.toggle('show');
+        };
+        document.addEventListener('click', (e) => {
+            const wrap = document.getElementById('seedsDropdownWrap');
+            if (wrap && !wrap.contains(e.target)) document.getElementById('gameDropdownMenu').classList.remove('show');
+        });
 
         // ══════════════════════════════════════════════════════════════
         // PLANT PHOTOS — existing logic (unchanged)
@@ -1586,7 +1748,7 @@
             renderSeeds();
         }, (err) => {
             document.getElementById('seedTableBody').innerHTML =
-                `<tr><td colspan="9" class="inv-empty" style="color:#d32f2f;">Cannot load inventory: ${err.message}</td></tr>`;
+                `<tr><td colspan="10" class="inv-empty" style="color:#d32f2f;">Cannot load inventory: ${err.message}</td></tr>`;
         });
 
         function pillClass(val) {
@@ -1600,7 +1762,7 @@
             document.getElementById('totalPackets').textContent = total;
 
             if (seeds.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="9" class="inv-empty">No seed records yet. ${editingEnabled ? 'Click "+ Add Seed Record" to get started.' : ''}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="10" class="inv-empty">No seed records yet. ${editingEnabled ? 'Click "+ Add Seed Record" to get started.' : ''}</td></tr>`;
                 return;
             }
 
@@ -1622,6 +1784,7 @@
                     <td>${cleaned}</td>
                     <td>${s.pktsPrinted ?? '—'}</td>
                     <td>${packets}</td>
+                    <td>${(s.germination !== undefined && s.germination !== null && s.germination !== '') ? s.germination + '%' : '—'}</td>
                     <td>${escapeHtml(s.notes || '')}</td>
                     <td>${s.numPackets ?? '—'}</td>
                     <td>
@@ -1643,6 +1806,7 @@
             document.getElementById('sCleaned').value     = '';
             document.getElementById('sPktsPrinted').value = '';
             document.getElementById('sSeedPackets').value = '';
+            document.getElementById('sGermination').value = '';
             document.getElementById('sNotes').value       = '';
             document.getElementById('sNumPackets').value  = '';
             document.getElementById('seedModal').style.display = 'flex';
@@ -1658,6 +1822,7 @@
             document.getElementById('sCleaned').value     = s.cleaned     || '';
             document.getElementById('sPktsPrinted').value = s.pktsPrinted ?? '';
             document.getElementById('sSeedPackets').value = s.seedPackets || '';
+            document.getElementById('sGermination').value = s.germination ?? '';
             document.getElementById('sNotes').value       = s.notes       || '';
             document.getElementById('sNumPackets').value  = s.numPackets  ?? '';
             document.getElementById('seedModal').style.display = 'flex';
@@ -1676,6 +1841,7 @@
                     cleaned:     document.getElementById('sCleaned').value,
                     pktsPrinted: parseInt(document.getElementById('sPktsPrinted').value) || 0,
                     seedPackets: document.getElementById('sSeedPackets').value,
+                    germination: document.getElementById('sGermination').value === '' ? null : parseInt(document.getElementById('sGermination').value),
                     notes:       document.getElementById('sNotes').value.trim(),
                     numPackets:  parseInt(document.getElementById('sNumPackets').value) || 0
                 };
@@ -2032,6 +2198,148 @@
         window.deleteMinutes = async function(id) {
             if (!confirm("Delete these meeting minutes for EVERYONE? This cannot be undone.")) return;
             try { await deleteDoc(doc(db, 'meetingMinutes', id)); }
+            catch(e) { alert("Delete failed: " + e.message); }
+        };
+
+        // ══════════════════════════════════════════════════════════════
+        // SEED SAVERS GAME
+        // ══════════════════════════════════════════════════════════════
+        const game1Col = collection(db, 'seedSaversGame');
+        let game1Rows = [];
+        let editingGame1Id = null;
+
+        onSnapshot(query(game1Col, orderBy('createdAt', 'desc')), (snapshot) => {
+            game1Rows = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderGame1();
+        }, (error) => {
+            document.getElementById('game1TableBody').innerHTML = `<tr><td colspan="3" class="inv-empty">Cannot load: ${error.message}</td></tr>`;
+        });
+
+        function renderGame1() {
+            const tbody = document.getElementById('game1TableBody');
+            if (game1Rows.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" class="inv-empty">No rows yet. ${editingEnabled ? 'Click "+ Add Row" to get started.' : ''}</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = game1Rows.map(r => `<tr>
+                    <td class="seed-name" style="cursor:default;">${escapeHtml(r.seedName || '')}</td>
+                    <td>${r.number ?? '—'}</td>
+                    <td>
+                        <div class="inv-actions">
+                            <button class="inv-edit-btn ${editingEnabled ? 'visible' : ''}"   onclick="editGame1Record('${escapeHtml(r.id)}')">Edit</button>
+                            <button class="inv-delete-btn ${editingEnabled ? 'visible' : ''}" onclick="deleteGame1Record('${escapeHtml(r.id)}')">Delete</button>
+                        </div>
+                    </td>
+                </tr>`).join('');
+        }
+
+        window.showGame1Form = function() {
+            editingGame1Id = null;
+            document.getElementById('game1ModalTitle').textContent = 'Add Row';
+            document.getElementById('g1SeedName').value = '';
+            document.getElementById('g1Number').value = '';
+            document.getElementById('game1Modal').style.display = 'flex';
+        };
+
+        window.editGame1Record = function(id) {
+            const r = game1Rows.find(x => x.id === id); if (!r) return;
+            editingGame1Id = id;
+            document.getElementById('game1ModalTitle').textContent = 'Edit Row';
+            document.getElementById('g1SeedName').value = r.seedName || '';
+            document.getElementById('g1Number').value = r.number ?? '';
+            document.getElementById('game1Modal').style.display = 'flex';
+        };
+
+        window.closeGame1Modal = function() { document.getElementById('game1Modal').style.display = 'none'; };
+
+        window.saveGame1Record = async function() {
+            const seedName = document.getElementById('g1SeedName').value.trim();
+            if (!seedName) { alert("Please enter a seed name."); return; }
+            const saveBtn = document.querySelector('#game1Modal .save-btn');
+            saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
+            try {
+                const data = { seedName, number: parseInt(document.getElementById('g1Number').value) || 0 };
+                if (editingGame1Id) { await updateDoc(doc(db, 'seedSaversGame', editingGame1Id), data); }
+                else { data.createdAt = serverTimestamp(); await addDoc(game1Col, data); }
+                window.closeGame1Modal();
+            } catch(e) { alert("Save failed: " + e.message); }
+            finally { saveBtn.disabled = false; saveBtn.textContent = 'Save'; }
+        };
+
+        window.deleteGame1Record = async function(id) {
+            if (!confirm("Delete this row for EVERYONE? This cannot be undone.")) return;
+            try { await deleteDoc(doc(db, 'seedSaversGame', id)); }
+            catch(e) { alert("Delete failed: " + e.message); }
+        };
+
+        // ══════════════════════════════════════════════════════════════
+        // SEED DETECT GAME
+        // ══════════════════════════════════════════════════════════════
+        const game2Col = collection(db, 'seedDetectGame');
+        let game2Rows = [];
+        let editingGame2Id = null;
+
+        onSnapshot(query(game2Col, orderBy('createdAt', 'desc')), (snapshot) => {
+            game2Rows = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderGame2();
+        }, (error) => {
+            document.getElementById('game2TableBody').innerHTML = `<tr><td colspan="3" class="inv-empty">Cannot load: ${error.message}</td></tr>`;
+        });
+
+        function renderGame2() {
+            const tbody = document.getElementById('game2TableBody');
+            if (game2Rows.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" class="inv-empty">No rows yet. ${editingEnabled ? 'Click "+ Add Row" to get started.' : ''}</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = game2Rows.map(r => `<tr>
+                    <td class="seed-name" style="cursor:default;">${escapeHtml(r.seedName || '')}</td>
+                    <td>${r.number ?? '—'}</td>
+                    <td>
+                        <div class="inv-actions">
+                            <button class="inv-edit-btn ${editingEnabled ? 'visible' : ''}"   onclick="editGame2Record('${escapeHtml(r.id)}')">Edit</button>
+                            <button class="inv-delete-btn ${editingEnabled ? 'visible' : ''}" onclick="deleteGame2Record('${escapeHtml(r.id)}')">Delete</button>
+                        </div>
+                    </td>
+                </tr>`).join('');
+        }
+
+        window.showGame2Form = function() {
+            editingGame2Id = null;
+            document.getElementById('game2ModalTitle').textContent = 'Add Row';
+            document.getElementById('g2SeedName').value = '';
+            document.getElementById('g2Number').value = '';
+            document.getElementById('game2Modal').style.display = 'flex';
+        };
+
+        window.editGame2Record = function(id) {
+            const r = game2Rows.find(x => x.id === id); if (!r) return;
+            editingGame2Id = id;
+            document.getElementById('game2ModalTitle').textContent = 'Edit Row';
+            document.getElementById('g2SeedName').value = r.seedName || '';
+            document.getElementById('g2Number').value = r.number ?? '';
+            document.getElementById('game2Modal').style.display = 'flex';
+        };
+
+        window.closeGame2Modal = function() { document.getElementById('game2Modal').style.display = 'none'; };
+
+        window.saveGame2Record = async function() {
+            const seedName = document.getElementById('g2SeedName').value.trim();
+            if (!seedName) { alert("Please enter a seed name."); return; }
+            const saveBtn = document.querySelector('#game2Modal .save-btn');
+            saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
+            try {
+                const data = { seedName, number: parseInt(document.getElementById('g2Number').value) || 0 };
+                if (editingGame2Id) { await updateDoc(doc(db, 'seedDetectGame', editingGame2Id), data); }
+                else { data.createdAt = serverTimestamp(); await addDoc(game2Col, data); }
+                window.closeGame2Modal();
+            } catch(e) { alert("Save failed: " + e.message); }
+            finally { saveBtn.disabled = false; saveBtn.textContent = 'Save'; }
+        };
+
+        window.deleteGame2Record = async function(id) {
+            if (!confirm("Delete this row for EVERYONE? This cannot be undone.")) return;
+            try { await deleteDoc(doc(db, 'seedDetectGame', id)); }
             catch(e) { alert("Delete failed: " + e.message); }
         };
 
