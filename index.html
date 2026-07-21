@@ -175,6 +175,26 @@
         .dropdown-menu button:hover { background: #e8f5e9; }
         .dropdown-menu button.active { background: #2e7d32; color: white; }
 
+        /* ── Seed Saver Game page: two side-by-side groups ── */
+        .game-groups {
+            display: flex;
+            gap: 24px;
+            flex-wrap: wrap;
+            align-items: flex-start;
+            justify-content: center;
+        }
+        .game-col {
+            flex: 1;
+            min-width: 280px;
+            max-width: 340px;
+        }
+        .game-table td.seed-name {
+            max-width: 150px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
         /* ── Seed Inventory page ── */
         #seedPage { display: none; max-width: 1320px; margin: 0 auto; }
 
@@ -875,52 +895,58 @@
 
     <!-- ══ SEED SAVER GAME PAGE ══ -->
     <div id="seedGamePage">
-        <div class="seed-page-header">
-            <h2>🔍 Seed Detect Game</h2>
-            <button class="seed-add-btn" id="game2AddBtn" onclick="showGame2Form()" style="display:none;">+ Add Row</button>
-        </div>
-        <div class="inv-table-wrap">
-            <table class="inv-table" style="min-width:0;">
-                <colgroup>
-                    <col>
-                    <col style="width:160px;">
-                    <col style="width:140px;">
-                </colgroup>
-                <thead>
-                    <tr>
-                        <th>Seed Name</th>
-                        <th>Number</th>
-                        <th id="game2ActionsHeader" style="display:none;">Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="game2TableBody">
-                    <tr><td colspan="3" class="inv-empty">Loading…</td></tr>
-                </tbody>
-            </table>
-        </div>
+        <div class="game-groups">
+            <div class="game-col">
+                <div class="seed-page-header">
+                    <h2>🔍 Seed Detect Game</h2>
+                    <button class="seed-add-btn" id="game2AddBtn" onclick="showGame2Form()" style="display:none;">+ Add Row</button>
+                </div>
+                <div class="inv-table-wrap">
+                    <table class="inv-table game-table">
+                        <colgroup>
+                            <col style="width:150px;">
+                            <col style="width:60px;">
+                            <col style="width:100px;">
+                        </colgroup>
+                        <thead>
+                            <tr>
+                                <th>Seed Name</th>
+                                <th>Number</th>
+                                <th id="game2ActionsHeader" style="display:none;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="game2TableBody">
+                            <tr><td colspan="3" class="inv-empty">Loading…</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
-        <div class="seed-page-header" style="margin-top:28px;">
-            <h2>🎮 Seed Savers Game</h2>
-            <button class="seed-add-btn" id="game1AddBtn" onclick="showGame1Form()" style="display:none;">+ Add Row</button>
-        </div>
-        <div class="inv-table-wrap">
-            <table class="inv-table" style="min-width:0;">
-                <colgroup>
-                    <col>
-                    <col style="width:160px;">
-                    <col style="width:140px;">
-                </colgroup>
-                <thead>
-                    <tr>
-                        <th>Seed Name</th>
-                        <th>Number</th>
-                        <th id="game1ActionsHeader" style="display:none;">Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="game1TableBody">
-                    <tr><td colspan="3" class="inv-empty">Loading…</td></tr>
-                </tbody>
-            </table>
+            <div class="game-col">
+                <div class="seed-page-header">
+                    <h2>🎮 Seed Savers Game</h2>
+                    <button class="seed-add-btn" id="game1AddBtn" onclick="showGame1Form()" style="display:none;">+ Add Row</button>
+                </div>
+                <div class="inv-table-wrap">
+                    <table class="inv-table game-table">
+                        <colgroup>
+                            <col style="width:150px;">
+                            <col style="width:60px;">
+                            <col style="width:100px;">
+                        </colgroup>
+                        <thead>
+                            <tr>
+                                <th>Seed Name</th>
+                                <th>Number</th>
+                                <th id="game1ActionsHeader" style="display:none;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="game1TableBody">
+                            <tr><td colspan="3" class="inv-empty">Loading…</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -1086,9 +1112,9 @@
         <div class="modal-content">
             <h2 id="game1ModalTitle">Add Row</h2>
             <label>Seed Name</label>
-            <input type="text" id="g1SeedName" placeholder="e.g. Desert Marigold">
+            <input type="text" id="g1SeedName" maxlength="18" placeholder="e.g. Desert Marigold">
             <label>Number</label>
-            <input type="number" id="g1Number" placeholder="0">
+            <input type="number" id="g1Number" min="0" max="999" placeholder="0">
             <div class="modal-actions">
                 <button class="save-btn"   onclick="saveGame1Record()">Save</button>
                 <button class="cancel-btn" onclick="closeGame1Modal()">Cancel</button>
@@ -1101,9 +1127,9 @@
         <div class="modal-content">
             <h2 id="game2ModalTitle">Add Row</h2>
             <label>Seed Name</label>
-            <input type="text" id="g2SeedName" placeholder="e.g. Desert Marigold">
+            <input type="text" id="g2SeedName" maxlength="18" placeholder="e.g. Desert Marigold">
             <label>Number</label>
-            <input type="number" id="g2Number" placeholder="0">
+            <input type="number" id="g2Number" min="0" max="999" placeholder="0">
             <div class="modal-actions">
                 <button class="save-btn"   onclick="saveGame2Record()">Save</button>
                 <button class="cancel-btn" onclick="closeGame2Modal()">Cancel</button>
@@ -2258,7 +2284,7 @@
             const saveBtn = document.querySelector('#game1Modal .save-btn');
             saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
             try {
-                const data = { seedName, number: parseInt(document.getElementById('g1Number').value) || 0 };
+                const data = { seedName, number: Math.min(999, parseInt(document.getElementById('g1Number').value) || 0) };
                 if (editingGame1Id) { await updateDoc(doc(db, 'seedSaversGame', editingGame1Id), data); }
                 else { data.createdAt = serverTimestamp(); await addDoc(game1Col, data); }
                 window.closeGame1Modal();
@@ -2329,7 +2355,7 @@
             const saveBtn = document.querySelector('#game2Modal .save-btn');
             saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
             try {
-                const data = { seedName, number: parseInt(document.getElementById('g2Number').value) || 0 };
+                const data = { seedName, number: Math.min(999, parseInt(document.getElementById('g2Number').value) || 0) };
                 if (editingGame2Id) { await updateDoc(doc(db, 'seedDetectGame', editingGame2Id), data); }
                 else { data.createdAt = serverTimestamp(); await addDoc(game2Col, data); }
                 window.closeGame2Modal();
