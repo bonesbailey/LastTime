@@ -184,8 +184,8 @@
             justify-content: center;
         }
         .game-col {
-            flex: 0 0 310px;
-            width: 310px;
+            flex: 0 0 330px;
+            width: 330px;
         }
         .game-table td.seed-name {
             max-width: 150px;
@@ -194,18 +194,25 @@
             white-space: nowrap;
         }
         .game-table {
-            width: 310px !important;
+            width: 330px !important;
             min-width: 0 !important;
             table-layout: fixed;
         }
         .game-col .inv-table-wrap {
             overflow: hidden;
-            width: 310px;
+            width: 330px;
         }
         .game-table th,
         .game-table td {
-            padding: 10px 10px;
+            padding: 10px 8px;
+            box-sizing: border-box;
         }
+        .game-table .inv-edit-btn,
+        .game-table .inv-delete-btn {
+            padding: 5px 8px;
+            font-size: 0.78rem;
+        }
+        .game-table td:last-child { background: #c8e6c9 !important; }
 
         /* ── Seed Inventory page ── */
         #seedPage { display: none; max-width: 1320px; margin: 0 auto; }
@@ -917,7 +924,7 @@
                     <table class="inv-table game-table">
                         <colgroup>
                             <col style="width:150px;">
-                            <col style="width:60px;">
+                            <col style="width:80px;">
                             <col style="width:100px;">
                         </colgroup>
                         <thead>
@@ -943,7 +950,7 @@
                     <table class="inv-table game-table">
                         <colgroup>
                             <col style="width:150px;">
-                            <col style="width:60px;">
+                            <col style="width:80px;">
                             <col style="width:100px;">
                         </colgroup>
                         <thead>
