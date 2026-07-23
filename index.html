@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>🌱   Seed Savers  Group</title>
+    <title>🌱   Seed Savers Group</title>
     <style>
         body {
             font-family: system-ui, sans-serif;
@@ -792,6 +792,68 @@
 
         .gb-empty { grid-column: 1/-1; text-align: center; padding: 3rem; color: #888; font-size: 1rem; }
 
+        /* ── Events page ── */
+        #eventsPage { display: none; max-width: 1400px; margin: 0 auto; }
+
+        .ev-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        @media (max-width: 700px) {
+            .ev-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 460px) {
+            .ev-grid { grid-template-columns: 1fr; }
+        }
+
+        .ev-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        .ev-card img.ev-image {
+            width: 500px;
+            max-width: 100%;
+            height: 220px;
+            object-fit: cover;
+            cursor: pointer;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .ev-no-photo {
+            width: 500px;
+            max-width: 100%;
+            height: 220px;
+            margin: 0 auto;
+            background: #e8f5e9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #2e7d32;
+            font-size: 1rem;
+        }
+
+        .ev-info { padding: 12px; text-align: center; }
+        .ev-title { font-weight: 700; color: #1b5e20; margin: 0; font-size: 1.05rem; }
+        .ev-date { color: #555; margin: 4px 0 0 0; font-size: 0.9rem; }
+
+        .ev-actions {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: none;
+            gap: 6px;
+        }
+        .ev-actions.visible { display: flex; }
+
+        .ev-empty { grid-column: 1/-1; text-align: center; padding: 3rem; color: #888; font-size: 1rem; }
+
         /* ── Important Dates page ── */
         #datesPage { display: none; max-width: 1000px; margin: 0 auto; }
 
@@ -839,6 +901,7 @@
             </div>
         </div>
         <button class="page-tab"        id="tabGardenBeds" onclick="showPage('gardenBeds')">🪴 Garden Beds</button>
+        <button class="page-tab"        id="tabEvents"     onclick="showPage('events')">🎉 Events</button>
         <button class="page-tab"        id="tabDates"      onclick="showPage('dates')">📅 Important Dates</button>
         <button class="page-tab"        id="tabMinutes"    onclick="showPage('minutes')">📝 Meeting Minutes</button>
     </div>
@@ -980,6 +1043,17 @@
         </div>
     </div>
 
+    <!-- ══ EVENTS PAGE ══ -->
+    <div id="eventsPage">
+        <div class="seed-page-header">
+            <h2>🎉 Events</h2>
+            <button class="seed-add-btn" id="eventAddBtn" onclick="showEventForm()">+ Add Event</button>
+        </div>
+        <div class="ev-grid" id="evGrid">
+            <p class="ev-empty">Loading events…</p>
+        </div>
+    </div>
+
     <!-- ══ IMPORTANT DATES PAGE ══ -->
     <div id="datesPage">
         <div class="seed-page-header">
@@ -1026,11 +1100,11 @@
             <input type="text" id="scientific" placeholder="Scientific Name">
 
             <label>Plant Photo:</label>
-            <input type="file" id="imageUpload" accept="image/*" style="display:none;">
+            <input type="file" id="imageUpload" accept="image/*,.heic,.heif" style="display:none;">
             <div class="drop-zone" id="plantDropZone">📂 <strong>Click to browse</strong></div>
             <div id="imagePreview" class="image-preview"></div>
 
-            <label>Photo Taken By:</label>
+            <label>Photo Taken By: <span style="font-weight:400; font-size:0.85em; color:#555;">Please ask photographer for permission to copy photo for other purposes.</span></label>
             <input type="text" id="photoCredit" placeholder="e.g. Dorothy">
             <label>Photo Date:</label>
             <input type="date" id="photoDate">
@@ -1198,6 +1272,27 @@
         </div>
     </div>
 
+    <!-- ══ EVENT Add/Edit Modal ══ -->
+    <div class="modal" id="eventModal">
+        <div class="modal-content">
+            <h2 id="eventModalTitle">Add Event</h2>
+            <label>Date</label>
+            <input type="date" id="evDate">
+            <label>Event Title</label>
+            <input type="text" id="evTitle" placeholder="e.g. Spring Seed Swap">
+
+            <label>Photo:</label>
+            <input type="file" id="evImageUpload" accept="image/*" style="display:none;">
+            <div class="drop-zone" id="evDropZone">📂 <strong>Click to browse</strong></div>
+            <div id="evImagePreview" class="image-preview"></div>
+
+            <div class="modal-actions">
+                <button class="save-btn"   onclick="saveEvent()">Save</button>
+                <button class="cancel-btn" onclick="closeEventModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <!-- ══ IMPORTANT DATE Add/Edit Modal ══ -->
     <div class="modal" id="dateModal">
         <div class="modal-content">
@@ -1276,6 +1371,7 @@
             document.getElementById('seedAddBtn').style.display    = 'block';
             document.getElementById('actionsHeader').style.display = '';
             document.getElementById('gbAddBtn').style.display       = 'block';
+            document.getElementById('eventAddBtn').style.display    = 'block';
             document.getElementById('dateAddBtn').style.display     = 'block';
             document.getElementById('minutesAddBtn').style.display  = 'block';
             document.getElementById('dateActionsHeader').style.display = '';
@@ -1286,6 +1382,7 @@
             document.querySelectorAll('.action-buttons').forEach(el => el.classList.add('visible'));
             document.querySelectorAll('.inv-edit-btn, .inv-delete-btn').forEach(el => el.classList.add('visible'));
             document.querySelectorAll('.gb-actions').forEach(el => el.classList.add('visible'));
+            document.querySelectorAll('.ev-actions').forEach(el => el.classList.add('visible'));
             document.querySelectorAll('.mm-edit-btn, .mm-delete-btn').forEach(el => el.classList.add('visible'));
         }
 
@@ -1295,11 +1392,13 @@
             document.getElementById('seedPage').style.display       = page === 'seeds'       ? 'block' : 'none';
             document.getElementById('seedGamePage').style.display   = page === 'seedGame'    ? 'block' : 'none';
             document.getElementById('gardenBedsPage').style.display = page === 'gardenBeds'  ? 'block' : 'none';
+            document.getElementById('eventsPage').style.display     = page === 'events'      ? 'block' : 'none';
             document.getElementById('datesPage').style.display      = page === 'dates'       ? 'block' : 'none';
             document.getElementById('minutesPage').style.display    = page === 'minutes'     ? 'block' : 'none';
             document.getElementById('tabPhotos').classList.toggle('active',     page === 'photos');
             document.getElementById('tabSeeds').classList.toggle('active',      page === 'seeds');
             document.getElementById('tabGardenBeds').classList.toggle('active', page === 'gardenBeds');
+            document.getElementById('tabEvents').classList.toggle('active',     page === 'events');
             document.getElementById('tabDates').classList.toggle('active',      page === 'dates');
             document.getElementById('tabMinutes').classList.toggle('active',    page === 'minutes');
             document.getElementById('seedsCaret').classList.toggle('active',    page === 'seedGame');
@@ -1544,16 +1643,33 @@
         }
 
         // ── Drop-zone / browse / paste ─────────────────────────────────
+        function isHeicFile(file) {
+            const name = (file.name || '').toLowerCase();
+            return name.endsWith('.heic') || name.endsWith('.heif') ||
+                   file.type === 'image/heic' || file.type === 'image/heif';
+        }
+
         function loadImageFile(file, previewId, isSeed) {
-            if (!file || !file.type.startsWith('image/')) { alert("Please choose an image file."); return; }
+            // Some browsers report a blank/generic type for HEIC/HEIF files, so we also
+            // recognize them by extension rather than relying on file.type alone.
+            if (!file || !(file.type.startsWith('image/') || isHeicFile(file))) { alert("Please choose an image file."); return; }
             if (file.size > 10 * 1024 * 1024) { alert("Image too large (max 10MB)."); return; }
-            const reader = new FileReader();
-            reader.onload = ev => {
-                document.getElementById(previewId).style.backgroundImage = `url('${ev.target.result}')`;
-            };
-            reader.readAsDataURL(file);
+            const preview = document.getElementById(previewId);
             if (isSeed) currentSeedImageFile = file;
             else        currentImageFile      = file;
+            if (isHeicFile(file)) {
+                // Most browsers (other than Safari) can't render a HEIC/HEIF preview inline —
+                // the photo still uploads and stores fine, it just won't show a thumbnail here.
+                preview.style.backgroundImage = '';
+                preview.textContent = `📷 ${file.name} (HEIC photo selected — preview not available, will upload)`;
+                return;
+            }
+            preview.textContent = '';
+            const reader = new FileReader();
+            reader.onload = ev => {
+                preview.style.backgroundImage = `url('${ev.target.result}')`;
+            };
+            reader.readAsDataURL(file);
         }
 
         function setupDropZone(zoneId, inputId, previewId, isSeed) {
@@ -1680,7 +1796,8 @@
                     const safeName = currentImageFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
                     const newPath  = `plants/${Date.now()}-${safeName}`;
                     const fileRef  = storageRef(storage, newPath);
-                    await uploadBytes(fileRef, currentImageFile);
+                    const uploadMeta = isHeicFile(currentImageFile) ? { contentType: 'image/heic' } : undefined;
+                    await uploadBytes(fileRef, currentImageFile, uploadMeta);
                     imageUrl = await getDownloadURL(fileRef);
                     if (editingPlantId && imagePath && imagePath !== newPath) oldImagePathToDelete = imagePath;
                     imagePath = newPath;
@@ -1692,7 +1809,8 @@
                     const safeSeedName = currentSeedImageFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
                     const newSeedPath  = `plants/seeds/${Date.now()}-${safeSeedName}`;
                     const seedFileRef  = storageRef(storage, newSeedPath);
-                    await uploadBytes(seedFileRef, currentSeedImageFile);
+                    const seedUploadMeta = isHeicFile(currentSeedImageFile) ? { contentType: 'image/heic' } : undefined;
+                    await uploadBytes(seedFileRef, currentSeedImageFile, seedUploadMeta);
                     seedImageUrl = await getDownloadURL(seedFileRef);
                     if (editingPlantId && seedImagePath && seedImagePath !== newSeedPath) oldSeedImagePathToDelete = seedImagePath;
                     seedImagePath = newSeedPath;
@@ -2091,6 +2209,118 @@
         document.getElementById('gbImageUpload').addEventListener('change', e => {
             const file = e.target.files[0];
             if (file) loadGbImageFile(file);
+            e.target.value = '';
+        });
+
+        // ══════════════════════════════════════════════════════════════
+        // EVENTS
+        // ══════════════════════════════════════════════════════════════
+        const eventsCol = collection(db, 'events');
+        let events = [];
+        let editingEventId = null;
+        let currentEventImageFile = null, currentEventImageUrl = null, currentEventImagePath = null;
+
+        onSnapshot(query(eventsCol, orderBy('date', 'desc')), (snapshot) => {
+            events = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderEvents();
+        }, (error) => {
+            document.getElementById('evGrid').innerHTML = `<p class="ev-empty">Cannot load events: ${error.message}</p>`;
+        });
+
+        function renderEvents() {
+            const wrap = document.getElementById('evGrid');
+            if (events.length === 0) {
+                wrap.innerHTML = `<p class="ev-empty">No events yet. ${editingEnabled ? 'Click "+ Add Event" to get started.' : ''}</p>`;
+                return;
+            }
+            wrap.innerHTML = events.map(ev => {
+                const id = escapeHtml(ev.id);
+                const dateStr = ev.date ? new Date(ev.date + 'T00:00:00').toLocaleDateString() : '—';
+                return `<div class="ev-card">
+                    <div class="ev-actions ${editingEnabled ? 'visible' : ''}">
+                        <button class="edit-btn"   onclick="editEvent('${id}')">Edit</button>
+                        <button class="delete-btn" onclick="deleteEvent('${id}')">Delete</button>
+                    </div>
+                    ${ev.imageUrl
+                        ? `<img src="${escapeHtml(ev.imageUrl)}" class="ev-image" alt="${escapeHtml(ev.title || '')}" onclick="window.open('${escapeHtml(ev.imageUrl)}','_blank')">`
+                        : `<div class="ev-no-photo">🎉 No Photo</div>`}
+                    <div class="ev-info">
+                        <p class="ev-title">${escapeHtml(ev.title || '')}</p>
+                        <p class="ev-date">📅 ${dateStr}</p>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        window.showEventForm = function() {
+            editingEventId = null;
+            currentEventImageFile = null; currentEventImageUrl = null; currentEventImagePath = null;
+            document.getElementById('eventModalTitle').textContent = 'Add Event';
+            document.getElementById('evDate').value = '';
+            document.getElementById('evTitle').value = '';
+            document.getElementById('evImagePreview').style.backgroundImage = '';
+            document.getElementById('eventModal').style.display = 'flex';
+        };
+
+        window.editEvent = function(id) {
+            const ev = events.find(x => x.id === id); if (!ev) return;
+            editingEventId = id;
+            currentEventImageFile = null; currentEventImageUrl = ev.imageUrl || null; currentEventImagePath = ev.imagePath || null;
+            document.getElementById('eventModalTitle').textContent = 'Edit Event';
+            document.getElementById('evDate').value = ev.date || '';
+            document.getElementById('evTitle').value = ev.title || '';
+            document.getElementById('evImagePreview').style.backgroundImage = ev.imageUrl ? `url('${ev.imageUrl}')` : '';
+            document.getElementById('eventModal').style.display = 'flex';
+        };
+
+        window.closeEventModal = function() { document.getElementById('eventModal').style.display = 'none'; };
+
+        window.saveEvent = async function() {
+            const dateVal = document.getElementById('evDate').value;
+            const title   = document.getElementById('evTitle').value.trim();
+            if (!dateVal) { alert("Please choose a date."); return; }
+            if (!title)   { alert("Please enter an event title."); return; }
+            const saveBtn = document.querySelector('#eventModal .save-btn');
+            saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
+            try {
+                const data = { date: dateVal, title };
+                if (currentEventImageFile) {
+                    const safeName = currentEventImageFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+                    const newPath  = `plants/events/${Date.now()}-${safeName}`;
+                    const fileRef  = storageRef(storage, newPath);
+                    await uploadBytes(fileRef, currentEventImageFile);
+                    data.imageUrl  = await getDownloadURL(fileRef);
+                    data.imagePath = newPath;
+                    if (editingEventId && currentEventImagePath && currentEventImagePath !== newPath) {
+                        try { await deleteObject(storageRef(storage, currentEventImagePath)); } catch(e){}
+                    }
+                }
+                if (editingEventId) { await updateDoc(doc(db, 'events', editingEventId), data); }
+                else { data.createdAt = serverTimestamp(); await addDoc(eventsCol, data); }
+                window.closeEventModal();
+            } catch(e) { alert("Save failed: " + e.message); }
+            finally { saveBtn.disabled = false; saveBtn.textContent = 'Save'; }
+        };
+
+        window.deleteEvent = async function(id) {
+            if (!confirm("Delete this event for EVERYONE? This cannot be undone.")) return;
+            try { await deleteDoc(doc(db, 'events', id)); }
+            catch(e) { alert("Delete failed: " + e.message); }
+        };
+
+        function loadEventImageFile(file) {
+            if (!file || !file.type.startsWith('image/')) { alert("Please choose an image file."); return; }
+            if (file.size > 10 * 1024 * 1024) { alert("Image too large (max 10MB)."); return; }
+            const reader = new FileReader();
+            reader.onload = ev => { document.getElementById('evImagePreview').style.backgroundImage = `url('${ev.target.result}')`; };
+            reader.readAsDataURL(file);
+            currentEventImageFile = file;
+        }
+
+        document.getElementById('evDropZone').addEventListener('click', () => document.getElementById('evImageUpload').click());
+        document.getElementById('evImageUpload').addEventListener('change', e => {
+            const file = e.target.files[0];
+            if (file) loadEventImageFile(file);
             e.target.value = '';
         });
 
