@@ -596,6 +596,13 @@
             min-height: 36px;
         }
         .photo-credit span { white-space: nowrap; }
+        .photo-credit .photo-permission-notice {
+            font-style: italic;
+            font-weight: 500;
+            font-size: 0.82rem;
+            color: #b45309;
+            white-space: normal;
+        }
         .photo-credit .no-photo-notice {
             font-style: italic;
             font-weight: 400;
@@ -1102,7 +1109,6 @@
             <div id="imagePreview" class="image-preview"></div>
 
             <label>Photo Taken By:</label>
-            <div style="font-size:0.85em; color:#b45309; font-weight:600; margin:-4px 0 6px;">⚠️ Please ask photographer for permission to copy photo for other purposes.</div>
             <input type="text" id="photoCredit" placeholder="e.g. Dorothy">
             <label>Photo Date:</label>
             <input type="date" id="photoDate">
@@ -1488,7 +1494,7 @@
                     </div>
                     <div class="photo-credit">
                         ${hasCreditBar
-                            ? `${plant.photoCredit ? `<span>📷 Photo taken by ${escapeHtml(plant.photoCredit)}</span>` : ''}
+                            ? `${plant.photoCredit ? `<span>📷 Photo taken by ${escapeHtml(plant.photoCredit)}</span><span class="photo-permission-notice">⚠️ Please ask photographer for permission to copy photo for other purposes.</span>` : ''}
                                ${plant.photoDate   ? `<span>📅 ${new Date(plant.photoDate + 'T00:00:00').toLocaleDateString()}</span>` : ''}`
                             : `<span class="no-photo-notice">🖼️ Illustration — no official photo available</span>`
                         }
