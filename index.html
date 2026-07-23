@@ -1104,7 +1104,8 @@
             <div class="drop-zone" id="plantDropZone">📂 <strong>Click to browse</strong></div>
             <div id="imagePreview" class="image-preview"></div>
 
-            <label>Photo Taken By: <span style="font-weight:400; font-size:0.85em; color:#555;">Please ask photographer for permission to copy photo for other purposes.</span></label>
+            <label>Photo Taken By:</label>
+            <div style="font-size:0.85em; color:#555; margin:-4px 0 6px;">Please ask photographer for permission to copy photo for other purposes.</div>
             <input type="text" id="photoCredit" placeholder="e.g. Dorothy">
             <label>Photo Date:</label>
             <input type="date" id="photoDate">
@@ -2241,13 +2242,13 @@
                         <button class="edit-btn"   onclick="editEvent('${id}')">Edit</button>
                         <button class="delete-btn" onclick="deleteEvent('${id}')">Delete</button>
                     </div>
-                    ${ev.imageUrl
-                        ? `<img src="${escapeHtml(ev.imageUrl)}" class="ev-image" alt="${escapeHtml(ev.title || '')}" onclick="window.open('${escapeHtml(ev.imageUrl)}','_blank')">`
-                        : `<div class="ev-no-photo">🎉 No Photo</div>`}
                     <div class="ev-info">
                         <p class="ev-title">${escapeHtml(ev.title || '')}</p>
                         <p class="ev-date">📅 ${dateStr}</p>
                     </div>
+                    ${ev.imageUrl
+                        ? `<img src="${escapeHtml(ev.imageUrl)}" class="ev-image" alt="${escapeHtml(ev.title || '')}" onclick="window.open('${escapeHtml(ev.imageUrl)}','_blank')">`
+                        : `<div class="ev-no-photo">🎉 No Photo</div>`}
                 </div>`;
             }).join('');
         }
