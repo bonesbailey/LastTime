@@ -858,6 +858,32 @@
 
         .ev-empty { width: 100%; text-align: center; padding: 3rem; color: #888; font-size: 1rem; }
 
+        /* ── Interesting Plant Research page ── */
+        #researchPage { display: none; max-width: 1000px; margin: 0 auto; }
+
+        .rs-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            padding: 16px 20px;
+            margin-bottom: 16px;
+            position: relative;
+        }
+
+        .rs-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .rs-resources { font-weight: 700; color: #1b5e20; font-size: 1.1rem; }
+        .rs-by { color: #555; font-size: 0.9rem; margin: 2px 0 8px 0; }
+        .rs-text { white-space: pre-wrap; margin: 0; }
+        .rs-empty { text-align: center; padding: 3rem; color: #888; font-size: 1rem; }
+
         /* ── Important Dates page ── */
         #datesPage { display: none; max-width: 1000px; margin: 0 auto; }
 
@@ -906,6 +932,7 @@
         </div>
         <button class="page-tab"        id="tabGardenBeds" onclick="showPage('gardenBeds')">🪴 Garden Beds</button>
         <button class="page-tab"        id="tabEvents"     onclick="showPage('events')">🎉 Events</button>
+        <button class="page-tab"        id="tabResearch"   onclick="showPage('research')">🔬 Interesting Plant Research</button>
         <button class="page-tab"        id="tabDates"      onclick="showPage('dates')">📅 Important Dates</button>
         <button class="page-tab"        id="tabMinutes"    onclick="showPage('minutes')">📝 Meeting Minutes</button>
     </div>
@@ -1055,6 +1082,17 @@
         </div>
         <div class="ev-grid" id="evGrid">
             <p class="ev-empty">Loading events…</p>
+        </div>
+    </div>
+
+    <!-- ══ INTERESTING PLANT RESEARCH PAGE ══ -->
+    <div id="researchPage">
+        <div class="seed-page-header">
+            <h2>🔬 Interesting Plant Research</h2>
+            <button class="seed-add-btn" id="researchAddBtn" onclick="showResearchForm()">+ Add Research</button>
+        </div>
+        <div id="researchList">
+            <p class="rs-empty">Loading research…</p>
         </div>
     </div>
 
@@ -1297,6 +1335,24 @@
         </div>
     </div>
 
+    <!-- ══ INTERESTING PLANT RESEARCH Add/Edit Modal ══ -->
+    <div class="modal" id="researchModal">
+        <div class="modal-content">
+            <h2 id="researchModalTitle">Add Interesting Plant Research</h2>
+            <label>Resources</label>
+            <input type="text" id="rsResources" placeholder="e.g. link, book title, article name…">
+            <label>Research by:</label>
+            <input type="text" id="rsBy" placeholder="e.g. Dorothy">
+            <label>Research</label>
+            <textarea id="rsText" placeholder="Enter research information here…" style="min-height:200px;"></textarea>
+
+            <div class="modal-actions">
+                <button class="save-btn"   onclick="saveResearch()">Save</button>
+                <button class="cancel-btn" onclick="closeResearchModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <!-- ══ IMPORTANT DATE Add/Edit Modal ══ -->
     <div class="modal" id="dateModal">
         <div class="modal-content">
@@ -1376,6 +1432,7 @@
             document.getElementById('actionsHeader').style.display = '';
             document.getElementById('gbAddBtn').style.display       = 'block';
             document.getElementById('eventAddBtn').style.display    = 'block';
+            document.getElementById('researchAddBtn').style.display = 'block';
             document.getElementById('dateAddBtn').style.display     = 'block';
             document.getElementById('minutesAddBtn').style.display  = 'block';
             document.getElementById('dateActionsHeader').style.display = '';
@@ -1397,12 +1454,14 @@
             document.getElementById('seedGamePage').style.display   = page === 'seedGame'    ? 'block' : 'none';
             document.getElementById('gardenBedsPage').style.display = page === 'gardenBeds'  ? 'block' : 'none';
             document.getElementById('eventsPage').style.display     = page === 'events'      ? 'block' : 'none';
+            document.getElementById('researchPage').style.display   = page === 'research'    ? 'block' : 'none';
             document.getElementById('datesPage').style.display      = page === 'dates'       ? 'block' : 'none';
             document.getElementById('minutesPage').style.display    = page === 'minutes'     ? 'block' : 'none';
             document.getElementById('tabPhotos').classList.toggle('active',     page === 'photos');
             document.getElementById('tabSeeds').classList.toggle('active',      page === 'seeds');
             document.getElementById('tabGardenBeds').classList.toggle('active', page === 'gardenBeds');
             document.getElementById('tabEvents').classList.toggle('active',     page === 'events');
+            document.getElementById('tabResearch').classList.toggle('active',   page === 'research');
             document.getElementById('tabDates').classList.toggle('active',      page === 'dates');
             document.getElementById('tabMinutes').classList.toggle('active',    page === 'minutes');
             document.getElementById('seedsCaret').classList.toggle('active',    page === 'seedGame');
@@ -2327,6 +2386,85 @@
             if (file) loadEventImageFile(file);
             e.target.value = '';
         });
+
+        // ══════════════════════════════════════════════════════════════
+        // INTERESTING PLANT RESEARCH
+        // ══════════════════════════════════════════════════════════════
+        const researchCol = collection(db, 'plantResearch');
+        let plantResearch = [];
+        let editingResearchId = null;
+
+        onSnapshot(query(researchCol, orderBy('createdAt', 'desc')), (snapshot) => {
+            plantResearch = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderResearch();
+        }, (error) => {
+            document.getElementById('researchList').innerHTML = `<p class="rs-empty">Cannot load research: ${error.message}</p>`;
+        });
+
+        function renderResearch() {
+            const wrap = document.getElementById('researchList');
+            if (plantResearch.length === 0) {
+                wrap.innerHTML = `<p class="rs-empty">No research entries yet. ${editingEnabled ? 'Click "+ Add Research" to get started.' : ''}</p>`;
+                return;
+            }
+            wrap.innerHTML = plantResearch.map(r => {
+                const id = escapeHtml(r.id);
+                return `<div class="rs-card">
+                    <div class="rs-card-header">
+                        <span class="rs-resources">${escapeHtml(r.resources || '')}</span>
+                        <div class="inv-actions">
+                            <button class="inv-edit-btn ${editingEnabled ? 'visible' : ''}"   onclick="editResearch('${id}')">Edit</button>
+                            <button class="inv-delete-btn ${editingEnabled ? 'visible' : ''}" onclick="deleteResearch('${id}')">Delete</button>
+                        </div>
+                    </div>
+                    <p class="rs-by">Research by: ${escapeHtml(r.researchBy || '')}</p>
+                    <p class="rs-text">${escapeHtml(r.text || '')}</p>
+                </div>`;
+            }).join('');
+        }
+
+        window.showResearchForm = function() {
+            editingResearchId = null;
+            document.getElementById('researchModalTitle').textContent = 'Add Interesting Plant Research';
+            document.getElementById('rsResources').value = '';
+            document.getElementById('rsBy').value = '';
+            document.getElementById('rsText').value = '';
+            document.getElementById('researchModal').style.display = 'flex';
+        };
+
+        window.editResearch = function(id) {
+            const r = plantResearch.find(x => x.id === id); if (!r) return;
+            editingResearchId = id;
+            document.getElementById('researchModalTitle').textContent = 'Edit Interesting Plant Research';
+            document.getElementById('rsResources').value = r.resources || '';
+            document.getElementById('rsBy').value = r.researchBy || '';
+            document.getElementById('rsText').value = r.text || '';
+            document.getElementById('researchModal').style.display = 'flex';
+        };
+
+        window.closeResearchModal = function() { document.getElementById('researchModal').style.display = 'none'; };
+
+        window.saveResearch = async function() {
+            const resources = document.getElementById('rsResources').value.trim();
+            const researchBy = document.getElementById('rsBy').value.trim();
+            const text = document.getElementById('rsText').value.trim();
+            if (!resources && !text) { alert("Please enter at least Resources or Research information."); return; }
+            const saveBtn = document.querySelector('#researchModal .save-btn');
+            saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
+            try {
+                const data = { resources, researchBy, text };
+                if (editingResearchId) { await updateDoc(doc(db, 'plantResearch', editingResearchId), data); }
+                else { data.createdAt = serverTimestamp(); await addDoc(researchCol, data); }
+                window.closeResearchModal();
+            } catch(e) { alert("Save failed: " + e.message); }
+            finally { saveBtn.disabled = false; saveBtn.textContent = 'Save'; }
+        };
+
+        window.deleteResearch = async function(id) {
+            if (!confirm("Delete this research entry for EVERYONE? This cannot be undone.")) return;
+            try { await deleteDoc(doc(db, 'plantResearch', id)); }
+            catch(e) { alert("Delete failed: " + e.message); }
+        };
 
         // ══════════════════════════════════════════════════════════════
         // IMPORTANT DATES
