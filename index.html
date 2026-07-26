@@ -218,6 +218,7 @@
 
         /* ── Seed Inventory page ── */
         #seedPage { display: none; max-width: 1320px; margin: 0 auto; }
+        #seedGamePage { display: none; max-width: 1400px; margin: 0 auto; }
 
         .seed-page-header {
             display: flex;
@@ -394,27 +395,38 @@
             margin: 0 auto 10px;
         }
 
-        #searchInput {
+        .search-input-wrap {
+            position: relative;
             flex: 1;
             min-width: 200px;
             max-width: 420px;
-            padding: 12px 18px;
+        }
+
+        #searchInput {
+            width: 100%;
+            padding: 12px 40px 12px 18px;
             border: 1px solid #ccc;
             border-radius: 8px;
             font-size: 1rem;
             box-sizing: border-box;
         }
 
-        #clearBtn {
-            padding: 12px 20px;
-            background: #2e7d32;
-            color: white;
+        .search-reset-btn {
+            position: absolute;
+            right: 6px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
             border: none;
-            border-radius: 8px;
+            color: #2e7d32;
+            font-size: 1.1rem;
+            line-height: 1;
             cursor: pointer;
-            font-weight: 600;
+            padding: 6px 8px;
             display: none;
         }
+
+        .search-reset-btn:hover { color: #1b5e20; }
 
         .select-wrap {
             position: relative;
@@ -999,7 +1011,10 @@
 
         <div class="top-bar">
             <div class="search-container">
-                <input type="text" id="searchInput" list="plantTypeOptions" placeholder="🔍 Search by plant name, seed pkt number, or plant type...">
+                <div class="search-input-wrap">
+                    <input type="text" id="searchInput" list="plantTypeOptions" placeholder="🔍 Search by plant name, seed pkt number, or plant type...">
+                    <button type="button" class="search-reset-btn" id="searchResetBtn" onclick="clearSearch()" title="Reset search">▾</button>
+                </div>
                 <datalist id="plantTypeOptions">
                     <optgroup label="Plant Type">
                         <option value="Tree">Tree</option>
@@ -1018,7 +1033,6 @@
                         <option value="za">Sort: Name Z → A</option>
                     </select>
                 </div>
-                <button id="clearBtn" onclick="clearSearch()">← Back to All</button>
             </div>
         </div>
 
@@ -2003,13 +2017,13 @@
 
         function clearSearch() {
             document.getElementById('searchInput').value = '';
-            document.getElementById('clearBtn').style.display = 'none';
+            document.getElementById('searchResetBtn').style.display = 'none';
             applyCurrentFilter();
         }
 
         document.getElementById('searchInput').addEventListener('input', function() {
             const term = this.value.toLowerCase().trim();
-            document.getElementById('clearBtn').style.display = term ? 'block' : 'none';
+            document.getElementById('searchResetBtn').style.display = term ? 'block' : 'none';
             applyCurrentFilter();
         });
 
