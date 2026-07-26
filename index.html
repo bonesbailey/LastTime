@@ -408,6 +408,8 @@
             border: 1px solid #ccc;
             border-radius: 8px;
             font-size: 1rem;
+            font-weight: 600;
+            color: #1b5e20;
             box-sizing: border-box;
         }
 
@@ -489,7 +491,7 @@
 
         .grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
             gap: 20px;
             max-width: 1400px;
             margin: 0 auto;
@@ -1028,7 +1030,7 @@
         <div class="top-bar">
             <div class="search-container">
                 <div class="search-input-wrap">
-                    <input type="text" id="searchInput" list="plantTypeOptions" placeholder="🔍 Search by plant name, pkt #, or type">
+                    <input type="text" id="searchInput" list="plantTypeOptions" autocomplete="off" placeholder="🔍 Search by plant name, pkt #, or type">
                     <button type="button" class="search-reset-btn" id="searchResetBtn" onclick="clearSearch()" title="Reset search">
                         <span class="reset-label">reset</span>
                         <span class="reset-arrow">▾</span>
