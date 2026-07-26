@@ -446,6 +446,22 @@
 
         .search-reset-btn:hover { color: #1b5e20; }
 
+        .type-quicklist {
+            width: 100%;
+            text-align: center;
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 2px;
+        }
+
+        .type-chip {
+            color: #2e7d32;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .type-chip:hover { color: #1b5e20; text-decoration: underline; }
+
         .select-wrap {
             position: relative;
             display: inline-block;
@@ -1030,23 +1046,12 @@
         <div class="top-bar">
             <div class="search-container">
                 <div class="search-input-wrap">
-                    <input type="text" id="searchInput" list="plantTypeOptions" autocomplete="off" placeholder="🔍 Search by plant name, pkt #, or type">
+                    <input type="text" id="searchInput" autocomplete="off" placeholder="🔍 Search by plant name, pkt #, or type">
                     <button type="button" class="search-reset-btn" id="searchResetBtn" onclick="clearSearch()" title="Reset search">
                         <span class="reset-label">reset</span>
                         <span class="reset-arrow">▾</span>
                     </button>
                 </div>
-                <datalist id="plantTypeOptions">
-                    <optgroup label="Plant Type">
-                        <option value="Tree">Tree</option>
-                        <option value="Shrub">Shrub</option>
-                        <option value="Flower">Flower</option>
-                        <option value="Wildflower">Wildflower</option>
-                        <option value="Herb">Herb</option>
-                        <option value="Vine">Vine</option>
-                        <option value="Cactus">Cactus</option>
-                    </optgroup>
-                </datalist>
                 <div class="select-wrap">
                     <select id="sortSelect" title="Sort plants">
                         <option value="newest">Sort: Newest First</option>
@@ -1054,6 +1059,9 @@
                         <option value="za">Sort: Name Z → A</option>
                     </select>
                 </div>
+            </div>
+            <div class="type-quicklist" id="typeQuicklist">
+                Type: <span class="type-chip" data-type="Tree">Tree</span>, <span class="type-chip" data-type="Shrub">Shrub</span>, <span class="type-chip" data-type="Flower">Flower</span>, <span class="type-chip" data-type="Wildflower">Wildflower</span>, <span class="type-chip" data-type="Herb">Herb</span>, <span class="type-chip" data-type="Vine">Vine</span>, <span class="type-chip" data-type="Cactus">Cactus</span>
             </div>
         </div>
 
@@ -2049,6 +2057,15 @@
         });
 
         document.getElementById('sortSelect').addEventListener('change', changeSort);
+
+        document.querySelectorAll('.type-chip').forEach(chip => {
+            chip.addEventListener('click', function() {
+                const input = document.getElementById('searchInput');
+                input.value = this.dataset.type;
+                document.getElementById('searchResetBtn').style.display = 'flex';
+                applyCurrentFilter();
+            });
+        });
 
         function downloadBackup() {
             const exportable = plants.map(({ id, createdAt, ...rest }) => rest);
