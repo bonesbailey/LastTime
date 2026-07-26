@@ -404,7 +404,7 @@
 
         #searchInput {
             width: 100%;
-            padding: 12px 40px 12px 18px;
+            padding: 12px 46px 12px 18px;
             border: 1px solid #ccc;
             border-radius: 8px;
             font-size: 1rem;
@@ -413,17 +413,33 @@
 
         .search-reset-btn {
             position: absolute;
-            right: 6px;
+            right: 4px;
             top: 50%;
             transform: translateY(-50%);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
             background: none;
             border: none;
             color: #2e7d32;
-            font-size: 1.1rem;
             line-height: 1;
             cursor: pointer;
-            padding: 6px 8px;
-            display: none;
+            padding: 2px 6px;
+        }
+
+        .search-reset-btn .reset-label {
+            font-size: 0.48rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .search-reset-btn .reset-arrow {
+            font-size: 0.95rem;
+            margin-top: 1px;
         }
 
         .search-reset-btn:hover { color: #1b5e20; }
@@ -1012,8 +1028,11 @@
         <div class="top-bar">
             <div class="search-container">
                 <div class="search-input-wrap">
-                    <input type="text" id="searchInput" list="plantTypeOptions" placeholder="🔍 Search by plant name, seed pkt number, or plant type...">
-                    <button type="button" class="search-reset-btn" id="searchResetBtn" onclick="clearSearch()" title="Reset search">▾</button>
+                    <input type="text" id="searchInput" list="plantTypeOptions" placeholder="🔍 Search by plant name, pkt #, or type">
+                    <button type="button" class="search-reset-btn" id="searchResetBtn" onclick="clearSearch()" title="Reset search">
+                        <span class="reset-label">reset</span>
+                        <span class="reset-arrow">▾</span>
+                    </button>
                 </div>
                 <datalist id="plantTypeOptions">
                     <optgroup label="Plant Type">
@@ -2023,7 +2042,7 @@
 
         document.getElementById('searchInput').addEventListener('input', function() {
             const term = this.value.toLowerCase().trim();
-            document.getElementById('searchResetBtn').style.display = term ? 'block' : 'none';
+            document.getElementById('searchResetBtn').style.display = term ? 'flex' : 'none';
             applyCurrentFilter();
         });
 
