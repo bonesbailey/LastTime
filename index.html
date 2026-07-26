@@ -416,6 +416,49 @@
             display: none;
         }
 
+        .select-wrap {
+            position: relative;
+            display: inline-block;
+        }
+
+        .select-wrap::after {
+            content: '▾';
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #2e7d32;
+            font-size: 0.9rem;
+            pointer-events: none;
+        }
+
+        .select-wrap select {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            padding: 12px 34px 12px 16px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #1b5e20;
+            background: #fff;
+            cursor: pointer;
+            min-width: 170px;
+            box-sizing: border-box;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .select-wrap select:hover {
+            border-color: #2e7d32;
+        }
+
+        .select-wrap select:focus {
+            outline: none;
+            border-color: #2e7d32;
+            box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.15);
+        }
+
         .grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -947,7 +990,6 @@
 
         <div class="toolbar">
             <button onclick="downloadBackup()" title="Download a JSON backup of all plants">💾 Download Backup</button>
-            <button id="sortBtn" onclick="cycleSort()" title="Sort plants">🔤 Sort: Newest First</button>
             <span class="storage-usage" id="storageUsage" title="Estimated Firebase Storage usage (photos + documents)">
                 📦 <span id="storageUsageText">Storage: checking…</span>
                 <span class="bar-track"><span class="bar-fill" id="storageUsageBar" style="width:0%;"></span></span>
@@ -957,7 +999,26 @@
 
         <div class="top-bar">
             <div class="search-container">
-                <input type="text" id="searchInput" placeholder="🔍 Search by name, type, Arizona native...">
+                <input type="text" id="searchInput" placeholder="🔍 Search by plant name...">
+                <div class="select-wrap">
+                    <select id="typeFilter" title="Filter by plant type">
+                        <option value="">All Plant Types</option>
+                        <option value="Tree">Tree</option>
+                        <option value="Shrub">Shrub</option>
+                        <option value="Flower">Flower</option>
+                        <option value="Wildflower">Wildflower</option>
+                        <option value="Herb">Herb</option>
+                        <option value="Vine">Vine</option>
+                        <option value="Cactus">Cactus</option>
+                    </select>
+                </div>
+                <div class="select-wrap">
+                    <select id="sortSelect" title="Sort plants">
+                        <option value="newest">Sort: Newest First</option>
+                        <option value="az">Sort: Name A → Z</option>
+                        <option value="za">Sort: Name Z → A</option>
+                    </select>
+                </div>
                 <button id="clearBtn" onclick="clearSearch()">← Back to All</button>
             </div>
         </div>
@@ -1177,7 +1238,7 @@
                 <input type="checkbox" id="arizonaNative">
                 <label for="arizonaNative">Arizona Native?</label>
             </div>
-            <label for="seedPktCount" style="display:block;font-weight:600;font-size:0.95rem;color:#1b5e20;margin:10px 0 2px;">Seed Pkt Count (0 = none)</label>
+            <label for="seedPktCount" style="display:block;font-weight:600;font-size:0.95rem;color:#1b5e20;margin:10px 0 2px;">Seed Pkt Number</label>
             <input type="number" id="seedPktCount" min="0" placeholder="0" style="width:120px;">
             <textarea id="description" placeholder="Description / Notes"></textarea>
             <div class="modal-actions">
@@ -1495,12 +1556,9 @@
 
         // Sort state: 'newest' | 'az' | 'za'
         let sortMode = 'newest';
-        const sortLabels = { newest: '🔤 Sort: Newest First', az: '🔤 Sort: A → Z', za: '🔤 Sort: Z → A' };
-        const sortNext   = { newest: 'az', az: 'za', za: 'newest' };
 
-        function cycleSort() {
-            sortMode = sortNext[sortMode];
-            document.getElementById('sortBtn').textContent = sortLabels[sortMode];
+        function changeSort() {
+            sortMode = document.getElementById('sortSelect').value;
             applyCurrentFilter();
         }
 
@@ -1518,15 +1576,17 @@
         });
 
         function applyCurrentFilter() {
-            const term = document.getElementById('searchInput').value.toLowerCase().trim();
-            const base = term ? plants.filter(p => matchesSearch(p, term)) : plants;
+            const term       = document.getElementById('searchInput').value.toLowerCase().trim();
+            const typeFilter = document.getElementById('typeFilter').value;
+            const base       = plants.filter(p => matchesSearch(p, term, typeFilter));
             renderPlants(sortedPlants(base));
         }
 
-        function matchesSearch(plant, term) {
+        function matchesSearch(plant, term, typeFilter) {
+            if (typeFilter && plant.type !== typeFilter) return false;
+            if (!term) return true;
             if (plant.name       && plant.name.toLowerCase().includes(term))       return true;
             if (plant.scientific && plant.scientific.toLowerCase().includes(term)) return true;
-            if (plant.type       && plant.type.toLowerCase().includes(term))       return true;
             if (plant.arizonaNative && (term.includes('arizona') || term.includes('az') || term.includes('native') || term.includes('🌵'))) return true;
             return false;
         }
@@ -1941,17 +2001,27 @@
 
         function clearSearch() {
             document.getElementById('searchInput').value = '';
+            document.getElementById('typeFilter').value = '';
             document.getElementById('clearBtn').style.display = 'none';
-            renderPlants(plants);
+            applyCurrentFilter();
         }
 
         document.getElementById('searchInput').addEventListener('input', function() {
             const term = this.value.toLowerCase().trim();
+            const typeFilter = document.getElementById('typeFilter').value;
             const clearBtn = document.getElementById('clearBtn');
-            if (!term) { clearBtn.style.display = 'none'; renderPlants(plants); return; }
-            clearBtn.style.display = 'block';
-            renderPlants(plants.filter(p => matchesSearch(p, term)));
+            clearBtn.style.display = (term || typeFilter) ? 'block' : 'none';
+            applyCurrentFilter();
         });
+
+        document.getElementById('typeFilter').addEventListener('change', function() {
+            const term = document.getElementById('searchInput').value.toLowerCase().trim();
+            const clearBtn = document.getElementById('clearBtn');
+            clearBtn.style.display = (term || this.value) ? 'block' : 'none';
+            applyCurrentFilter();
+        });
+
+        document.getElementById('sortSelect').addEventListener('change', changeSort);
 
         function downloadBackup() {
             const exportable = plants.map(({ id, createdAt, ...rest }) => rest);
@@ -2768,7 +2838,7 @@
         window.closeModal        = closeModal;
         window.clearSearch       = clearSearch;
         window.downloadBackup    = downloadBackup;
-        window.cycleSort         = cycleSort;
+        window.changeSort        = changeSort;
         window.unlockEditing     = unlockEditing;
         window.showSeedForm      = showSeedForm;
         window.saveSeedRecord    = saveSeedRecord;
