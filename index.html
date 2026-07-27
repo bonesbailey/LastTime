@@ -295,6 +295,10 @@
         .inv-table td.seed-name:hover { text-decoration: underline; }
         .seed-info-badge { font-size: 0.85rem; }
 
+        .germ-table { min-width: 760px; }
+        .germ-table th { white-space: normal; line-height: 1.2; }
+        .germ-table td.germ-comments { white-space: pre-wrap; word-break: break-word; }
+
         .status-pill {
             display: inline-block;
             padding: 3px 12px;
@@ -1189,25 +1193,27 @@
             <button class="seed-add-btn" id="germAddBtn" onclick="showGermForm()" style="display:none;">+ Add Row</button>
         </div>
         <div class="inv-table-wrap">
-            <table class="inv-table">
+            <table class="inv-table germ-table">
                 <colgroup>
-                    <col style="width:140px;">
-                    <col style="width:150px;">
-                    <col style="width:120px;">
-                    <col>
+                    <col style="width:100px;">
+                    <col style="width:90px;">
+                    <col style="width:90px;">
+                    <col style="width:90px;">
+                    <col style="width:220px;">
                     <col style="width:100px;">
                 </colgroup>
                 <thead>
                     <tr>
-                        <th># Seeds Planted</th>
-                        <th># Seeds Germinated</th>
-                        <th>Germination %</th>
+                        <th>Seed</th>
+                        <th># Seeds<br>Planted</th>
+                        <th># Seeds<br>Germinated</th>
+                        <th>Germination<br>%</th>
                         <th>Comments</th>
                         <th id="germActionsHeader" style="color:transparent;">Actions</th>
                     </tr>
                 </thead>
                 <tbody id="germTableBody">
-                    <tr><td colspan="5" class="inv-empty">Loading…</td></tr>
+                    <tr><td colspan="6" class="inv-empty">Loading…</td></tr>
                 </tbody>
             </table>
         </div>
@@ -1426,6 +1432,8 @@
     <div id="germModal" style="display:none; position:fixed; top:0;left:0;right:0;bottom:0; background:rgba(0,0,0,0.7); align-items:center; justify-content:center; z-index:1000;">
         <div class="modal-content">
             <h2 id="germModalTitle">Add Row</h2>
+            <label>Seed</label>
+            <input type="text" id="germSeed" placeholder="e.g. Tomato - Brandywine">
             <label># Seeds Planted</label>
             <input type="number" id="germPlanted" min="0" placeholder="0">
             <label># Seeds Germinated</label>
@@ -2998,22 +3006,23 @@
             germRows = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
             renderGerm();
         }, (error) => {
-            document.getElementById('germTableBody').innerHTML = `<tr><td colspan="5" class="inv-empty">Cannot load: ${error.message}</td></tr>`;
+            document.getElementById('germTableBody').innerHTML = `<tr><td colspan="6" class="inv-empty">Cannot load: ${error.message}</td></tr>`;
         });
 
         function renderGerm() {
             const tbody = document.getElementById('germTableBody');
             if (germRows.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="inv-empty">No rows yet. ${editingEnabled ? 'Click "+ Add Row" to get started.' : ''}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6" class="inv-empty">No rows yet. ${editingEnabled ? 'Click "+ Add Row" to get started.' : ''}</td></tr>`;
                 return;
             }
             tbody.innerHTML = germRows.map(r => {
                 const pct = germPercent(r.planted, r.germinated);
                 return `<tr>
+                    <td>${escapeHtml(r.seed || '—')}</td>
                     <td>${r.planted ?? '—'}</td>
                     <td>${r.germinated ?? '—'}</td>
                     <td>${pct === null ? '—' : pct + '%'}</td>
-                    <td class="rs-text" style="white-space:pre-wrap;">${escapeHtml(r.comments || '')}</td>
+                    <td class="rs-text germ-comments">${escapeHtml(r.comments || '')}</td>
                     <td>
                         <div class="inv-actions">
                             <button class="inv-edit-btn ${editingEnabled ? 'visible' : ''}"   onclick="editGermRecord('${escapeHtml(r.id)}')">Edit</button>
@@ -3027,6 +3036,7 @@
         window.showGermForm = function() {
             editingGermId = null;
             document.getElementById('germModalTitle').textContent = 'Add Row';
+            document.getElementById('germSeed').value = '';
             document.getElementById('germPlanted').value = '';
             document.getElementById('germGerminated').value = '';
             document.getElementById('germComments').value = '';
@@ -3037,6 +3047,7 @@
             const r = germRows.find(x => x.id === id); if (!r) return;
             editingGermId = id;
             document.getElementById('germModalTitle').textContent = 'Edit Row';
+            document.getElementById('germSeed').value = r.seed || '';
             document.getElementById('germPlanted').value = r.planted ?? '';
             document.getElementById('germGerminated').value = r.germinated ?? '';
             document.getElementById('germComments').value = r.comments || '';
@@ -3046,13 +3057,14 @@
         window.closeGermModal = function() { document.getElementById('germModal').style.display = 'none'; };
 
         window.saveGermRecord = async function() {
+            const seed = document.getElementById('germSeed').value.trim();
             const planted = parseInt(document.getElementById('germPlanted').value) || 0;
             const germinated = parseInt(document.getElementById('germGerminated').value) || 0;
             const comments = document.getElementById('germComments').value.trim();
             const saveBtn = document.querySelector('#germModal .save-btn');
             saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
             try {
-                const data = { planted, germinated, comments };
+                const data = { seed, planted, germinated, comments };
                 if (editingGermId) { await updateDoc(doc(db, 'seedGermination', editingGermId), data); }
                 else { data.createdAt = serverTimestamp(); await addDoc(germCol, data); }
                 window.closeGermModal();
