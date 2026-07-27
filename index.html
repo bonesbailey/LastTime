@@ -983,6 +983,8 @@
         .rs-resources { font-weight: 700; color: #1b5e20; font-size: 1.1rem; }
         .rs-by { color: #555; font-size: 0.9rem; margin: 2px 0 8px 0; }
         .rs-text { white-space: pre-wrap; margin: 0; }
+        .rs-resources a, .rs-text a { color: #1b5e20; text-decoration: underline; }
+        .rs-resources a:hover, .rs-text a:hover { color: #2e7d32; }
         .rs-empty { text-align: center; padding: 3rem; color: #888; font-size: 1rem; }
 
         /* ── Important Dates page ── */
@@ -1648,6 +1650,20 @@
 
         function escapeHtml(s) {
             return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        }
+
+        // Escapes text, then turns any http(s)/www URLs into real clickable links
+        function linkifyText(s) {
+            const escaped = escapeHtml(s);
+            return escaped.replace(/((https?:\/\/|www\.)[^\s<]+)/gi, (match) => {
+                let url = match;
+                // strip trailing punctuation that's likely not part of the URL
+                const trailing = match.match(/[.,;:!?)]+$/);
+                let suffix = '';
+                if (trailing) { suffix = trailing[0]; url = match.slice(0, -suffix.length); }
+                const href = url.startsWith('www.') ? `https://${url}` : url;
+                return `<a href="${href}" target="_blank" rel="noopener noreferrer">${url}</a>${suffix}`;
+            });
         }
 
         function renderPlants(list) {
@@ -2561,14 +2577,14 @@
                 const id = escapeHtml(r.id);
                 return `<div class="rs-card">
                     <div class="rs-card-header">
-                        <span class="rs-resources">${escapeHtml(r.resources || '')}</span>
+                        <span class="rs-resources">${linkifyText(r.resources || '')}</span>
                         <div class="inv-actions">
                             <button class="inv-edit-btn ${editingEnabled ? 'visible' : ''}"   onclick="editResearch('${id}')">Edit</button>
                             <button class="inv-delete-btn ${editingEnabled ? 'visible' : ''}" onclick="deleteResearch('${id}')">Delete</button>
                         </div>
                     </div>
                     <p class="rs-by">Research by: ${escapeHtml(r.researchBy || '')}</p>
-                    <p class="rs-text">${escapeHtml(r.text || '')}</p>
+                    <p class="rs-text">${linkifyText(r.text || '')}</p>
                 </div>`;
             }).join('');
         }
