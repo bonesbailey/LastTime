@@ -219,6 +219,7 @@
         /* ── Seed Inventory page ── */
         #seedPage { display: none; max-width: 1320px; margin: 0 auto; }
         #seedGamePage { display: none; max-width: 1400px; margin: 0 auto; }
+        #seedGerminationPage { display: none; max-width: 1000px; margin: 0 auto; }
 
         .seed-page-header {
             display: flex;
@@ -1030,6 +1031,7 @@
             <button class="page-tab" id="tabSeeds" onclick="showPage('seeds')">🌰 Seed<br>Inventory</button>
             <button class="dropdown-caret" id="seedsCaret" onclick="toggleGameDropdown(event)">▾</button>
             <div class="dropdown-menu" id="gameDropdownMenu">
+                <button id="germMenuItem" onclick="showPage('seedGermination')">🌱 Seed Germination</button>
                 <button id="gameMenuItem" onclick="showPage('seedGame')">🎮 Seed Saver Game</button>
             </div>
         </div>
@@ -1177,6 +1179,37 @@
                     </table>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- ══ SEED GERMINATION PAGE ══ -->
+    <div id="seedGerminationPage">
+        <div class="seed-page-header">
+            <h2>🌱 Seed Germination</h2>
+            <button class="seed-add-btn" id="germAddBtn" onclick="showGermForm()" style="display:none;">+ Add Row</button>
+        </div>
+        <div class="inv-table-wrap">
+            <table class="inv-table">
+                <colgroup>
+                    <col style="width:140px;">
+                    <col style="width:150px;">
+                    <col style="width:120px;">
+                    <col>
+                    <col style="width:100px;">
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th># Seeds Planted</th>
+                        <th># Seeds Germinated</th>
+                        <th>Germination %</th>
+                        <th>Comments</th>
+                        <th id="germActionsHeader" style="color:transparent;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="germTableBody">
+                    <tr><td colspan="5" class="inv-empty">Loading…</td></tr>
+                </tbody>
+            </table>
         </div>
     </div>
 
@@ -1389,6 +1422,23 @@
         </div>
     </div>
 
+    <!-- ══ SEED GERMINATION Add/Edit Modal ══ -->
+    <div id="germModal" style="display:none; position:fixed; top:0;left:0;right:0;bottom:0; background:rgba(0,0,0,0.7); align-items:center; justify-content:center; z-index:1000;">
+        <div class="modal-content">
+            <h2 id="germModalTitle">Add Row</h2>
+            <label># Seeds Planted</label>
+            <input type="number" id="germPlanted" min="0" placeholder="0">
+            <label># Seeds Germinated</label>
+            <input type="number" id="germGerminated" min="0" placeholder="0">
+            <label>Comments</label>
+            <textarea id="germComments" placeholder="Optional comments…" style="min-height:80px;"></textarea>
+            <div class="modal-actions">
+                <button class="save-btn"   onclick="saveGermRecord()">Save</button>
+                <button class="cancel-btn" onclick="closeGermModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <!-- ══ SEED INFO Modal (click seed name in Seed Inventory table) ══ -->
     <div class="modal" id="seedInfoModal">
         <div class="modal-content" style="max-width:500px;">
@@ -1556,6 +1606,8 @@
             document.getElementById('dateActionsHeader').style.display = '';
             document.getElementById('game1AddBtn').style.display    = 'block';
             document.getElementById('game2AddBtn').style.display    = 'block';
+            document.getElementById('germAddBtn').style.display     = 'block';
+            document.getElementById('germActionsHeader').style.color = '';
             document.getElementById('game1ActionsHeader').style.color = '';
             document.getElementById('game2ActionsHeader').style.color = '';
             document.querySelectorAll('.action-buttons').forEach(el => el.classList.add('visible'));
@@ -1570,6 +1622,7 @@
             document.getElementById('photosPage').style.display     = page === 'photos'     ? 'block' : 'none';
             document.getElementById('seedPage').style.display       = page === 'seeds'       ? 'block' : 'none';
             document.getElementById('seedGamePage').style.display   = page === 'seedGame'    ? 'block' : 'none';
+            document.getElementById('seedGerminationPage').style.display = page === 'seedGermination' ? 'block' : 'none';
             document.getElementById('gardenBedsPage').style.display = page === 'gardenBeds'  ? 'block' : 'none';
             document.getElementById('eventsPage').style.display     = page === 'events'      ? 'block' : 'none';
             document.getElementById('researchPage').style.display   = page === 'research'    ? 'block' : 'none';
@@ -1582,8 +1635,9 @@
             document.getElementById('tabResearch').classList.toggle('active',   page === 'research');
             document.getElementById('tabDates').classList.toggle('active',      page === 'dates');
             document.getElementById('tabMinutes').classList.toggle('active',    page === 'minutes');
-            document.getElementById('seedsCaret').classList.toggle('active',    page === 'seedGame');
+            document.getElementById('seedsCaret').classList.toggle('active',    page === 'seedGame' || page === 'seedGermination');
             document.getElementById('gameMenuItem').classList.toggle('active',  page === 'seedGame');
+            document.getElementById('germMenuItem').classList.toggle('active',  page === 'seedGermination');
             document.getElementById('gameDropdownMenu').classList.remove('show');
         };
 
@@ -2925,6 +2979,93 @@
             try { await deleteDoc(doc(db, 'seedDetectGame', id)); }
             catch(e) { alert("Delete failed: " + e.message); }
         };
+
+        // ══════════════════════════════════════════════════════════════
+        // SEED GERMINATION
+        // ══════════════════════════════════════════════════════════════
+        const germCol = collection(db, 'seedGermination');
+        let germRows = [];
+        let editingGermId = null;
+
+        function germPercent(planted, germinated) {
+            const p = Number(planted) || 0;
+            const g = Number(germinated) || 0;
+            if (p <= 0) return null;
+            return Math.round((g / p) * 1000) / 10; // one decimal place
+        }
+
+        onSnapshot(query(germCol, orderBy('createdAt', 'desc')), (snapshot) => {
+            germRows = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderGerm();
+        }, (error) => {
+            document.getElementById('germTableBody').innerHTML = `<tr><td colspan="5" class="inv-empty">Cannot load: ${error.message}</td></tr>`;
+        });
+
+        function renderGerm() {
+            const tbody = document.getElementById('germTableBody');
+            if (germRows.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="inv-empty">No rows yet. ${editingEnabled ? 'Click "+ Add Row" to get started.' : ''}</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = germRows.map(r => {
+                const pct = germPercent(r.planted, r.germinated);
+                return `<tr>
+                    <td>${r.planted ?? '—'}</td>
+                    <td>${r.germinated ?? '—'}</td>
+                    <td>${pct === null ? '—' : pct + '%'}</td>
+                    <td class="rs-text" style="white-space:pre-wrap;">${escapeHtml(r.comments || '')}</td>
+                    <td>
+                        <div class="inv-actions">
+                            <button class="inv-edit-btn ${editingEnabled ? 'visible' : ''}"   onclick="editGermRecord('${escapeHtml(r.id)}')">Edit</button>
+                            <button class="inv-delete-btn ${editingEnabled ? 'visible' : ''}" onclick="deleteGermRecord('${escapeHtml(r.id)}')">Delete</button>
+                        </div>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        window.showGermForm = function() {
+            editingGermId = null;
+            document.getElementById('germModalTitle').textContent = 'Add Row';
+            document.getElementById('germPlanted').value = '';
+            document.getElementById('germGerminated').value = '';
+            document.getElementById('germComments').value = '';
+            document.getElementById('germModal').style.display = 'flex';
+        };
+
+        window.editGermRecord = function(id) {
+            const r = germRows.find(x => x.id === id); if (!r) return;
+            editingGermId = id;
+            document.getElementById('germModalTitle').textContent = 'Edit Row';
+            document.getElementById('germPlanted').value = r.planted ?? '';
+            document.getElementById('germGerminated').value = r.germinated ?? '';
+            document.getElementById('germComments').value = r.comments || '';
+            document.getElementById('germModal').style.display = 'flex';
+        };
+
+        window.closeGermModal = function() { document.getElementById('germModal').style.display = 'none'; };
+
+        window.saveGermRecord = async function() {
+            const planted = parseInt(document.getElementById('germPlanted').value) || 0;
+            const germinated = parseInt(document.getElementById('germGerminated').value) || 0;
+            const comments = document.getElementById('germComments').value.trim();
+            const saveBtn = document.querySelector('#germModal .save-btn');
+            saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
+            try {
+                const data = { planted, germinated, comments };
+                if (editingGermId) { await updateDoc(doc(db, 'seedGermination', editingGermId), data); }
+                else { data.createdAt = serverTimestamp(); await addDoc(germCol, data); }
+                window.closeGermModal();
+            } catch(e) { alert("Save failed: " + e.message); }
+            finally { saveBtn.disabled = false; saveBtn.textContent = 'Save'; }
+        };
+
+        window.deleteGermRecord = async function(id) {
+            if (!confirm("Delete this row for EVERYONE? This cannot be undone.")) return;
+            try { await deleteDoc(doc(db, 'seedGermination', id)); }
+            catch(e) { alert("Delete failed: " + e.message); }
+        };
+
 
         // Expose to global scope for onclick attributes
         window.showAddForm       = showAddForm;
