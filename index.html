@@ -1070,7 +1070,7 @@
                         <span class="arrow-icon">▾</span>
                     </button>
                     <div class="type-dropdown-panel" id="typeDropdownPanel">
-                        <span class="type-chip" data-type="Tree">Tree</span>, <span class="type-chip" data-type="Shrub">Shrub</span>, <span class="type-chip" data-type="Flower">Flower</span>, <span class="type-chip" data-type="Wildflower">Wildflower</span>, <span class="type-chip" data-type="Herb">Herb</span>, <span class="type-chip" data-type="Vine">Vine</span>, <span class="type-chip" data-type="Cactus">Cactus</span>
+                        <span class="type-chip" data-type="Tree">Tree</span>, <span class="type-chip" data-type="Shrub">Shrub</span>, <span class="type-chip" data-type="Flower">Flower</span>, <span class="type-chip" data-type="Wildflower">Wildflower</span>, <span class="type-chip" data-type="Herb">Herb</span>, <span class="type-chip" data-type="Vine">Vine</span>, <span class="type-chip" data-type="Cactus">Cactus</span>, <span class="type-chip" data-type="Arizona Native">Arizona Native</span>
                     </div>
                 </div>
                 <div class="select-wrap">
@@ -1762,7 +1762,7 @@
                         <div class="seed-side">
                             ${plant.seedImageUrl
                                 ? `<div class="photo-wrap"><img src="${seedUrl}" class="seed-image" alt="Seeds" data-action="open" data-url="${seedUrl}"><a class="download-btn" href="${seedUrl}" download="${escapeHtml(plant.name)}-seed-photo.jpg" target="_blank" title="Save seed photo" onclick="event.stopPropagation();">⬇</a></div>`
-                                : `<div class="no-seed-photo">🌰 No Seed Photo</div>`}
+                                : ''}
                             <span class="seed-label">Seeds</span>
                         </div>
                     </div>
