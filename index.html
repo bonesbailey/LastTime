@@ -321,6 +321,7 @@
         }
 
         .pill-yes      { background: #c8e6c9; color: #1b5e20; }
+        .pill-no       { background: #ffcdd2; color: #b71c1c; }
         .pill-partially { background: #fff9c4; color: #f57f17; }
         .pill-printed  { background: #e3f2fd; color: #1565c0; }
         .pill-folded   { background: #f3e5f5; color: #6a1b9a; }
@@ -1125,13 +1126,13 @@
                     <tr>
                         <th>Date</th>
                         <th>Seed Source</th>
-                        <th>Seed</th>
-                        <th>Cleaned</th>
+                        <th>Seed Name</th>
+                        <th>Seeds Cleaned?</th>
                         <th>Seed Pkts<br>Printed</th>
-                        <th>Seed Pkts<br>Processed</th>
-                        <th>Germination %</th>
+                        <th>Seed Pkt<br>Status</th>
+                        <th>Seed Germination %</th>
                         <th>Notes</th>
-                        <th># Packets</th>
+                        <th>Total # Packets Filled</th>
                         <th id="actionsHeader" style="display:none;">Actions</th>
                     </tr>
                 </thead>
@@ -1380,17 +1381,18 @@
             <input type="date" id="sDate">
             <label>Seed Source</label>
             <input type="text" id="sSeedSource" placeholder="e.g. Desert Botanical Garden">
-            <label>Seed</label>
+            <label>Seed Name</label>
             <input type="text" id="sSeed" placeholder="e.g. Desert Marigold">
-            <label>Cleaned</label>
+            <label>Seeds Cleaned?</label>
             <select id="sCleaned">
                 <option value="">— Select —</option>
                 <option value="Yes">Yes</option>
                 <option value="Partially">Partially</option>
+                <option value="No">No</option>
             </select>
             <label>Seed Pkts Printed</label>
             <input type="number" id="sPktsPrinted" min="0" placeholder="0">
-            <label>Seed Pkts Processed</label>
+            <label>Seed Pkt Status</label>
             <select id="sSeedPackets">
                 <option value="">— Select —</option>
                 <option value="Printed">Printed</option>
@@ -1398,11 +1400,11 @@
                 <option value="Glued">Glued</option>
                 <option value="Filled">Filled</option>
             </select>
-            <label>Germination %</label>
+            <label>Seed Germination %</label>
             <input type="number" id="sGermination" min="0" max="100" placeholder="e.g. 85">
             <label>Notes</label>
             <input type="text" id="sNotes" placeholder="Notes">
-            <label># Packets</label>
+            <label>Total # Packets Filled</label>
             <input type="number" id="sNumPackets" min="0" placeholder="0">
             <div class="modal-actions">
                 <button class="save-btn"   onclick="saveSeedRecord()">Save Record</button>
@@ -2219,7 +2221,7 @@
         });
 
         function pillClass(val) {
-            const map = { Yes:'pill-yes', Partially:'pill-partially', Printed:'pill-printed', Folded:'pill-folded', Glued:'pill-glued', Filled:'pill-filled' };
+            const map = { Yes:'pill-yes', Partially:'pill-partially', No:'pill-no', Printed:'pill-printed', Folded:'pill-folded', Glued:'pill-glued', Filled:'pill-filled' };
             return map[val] || '';
         }
 
