@@ -299,6 +299,19 @@
         .germ-table th { white-space: normal; line-height: 1.2; }
         .germ-table td.germ-comments { white-space: pre-wrap; word-break: break-word; }
 
+        /* Important Dates table - keep Description column roomy on narrow phones */
+        .dates-table col.dt-date { width: 160px; }
+        .dates-table col.dt-actions { width: 140px; }
+        .dates-table td.dt-description-cell { white-space: normal; word-break: break-word; }
+
+        @media (max-width: 600px) {
+            .dates-table col.dt-date { width: 84px; }
+            .dates-table col.dt-actions { width: 60px; }
+            .dates-table th, .dates-table td { padding: 8px 6px; font-size: 0.85rem; }
+            .dates-table .inv-actions { flex-direction: column; gap: 4px; }
+            .dates-table .inv-edit-btn, .dates-table .inv-delete-btn { padding: 4px 6px; font-size: 0.72rem; }
+        }
+
         .status-pill {
             display: inline-block;
             padding: 3px 12px;
@@ -1259,11 +1272,11 @@
             <button class="seed-add-btn" id="dateAddBtn" onclick="showDateForm()">+ Add Date</button>
         </div>
         <div class="inv-table-wrap">
-            <table class="inv-table" style="min-width:0;">
+            <table class="inv-table dates-table" style="min-width:0;">
                 <colgroup>
-                    <col style="width:160px;">
+                    <col class="dt-date">
                     <col>
-                    <col style="width:140px;">
+                    <col class="dt-actions">
                 </colgroup>
                 <thead>
                     <tr>
@@ -2718,7 +2731,7 @@
                 const dateStr = d.date ? new Date(d.date + 'T00:00:00').toLocaleDateString() : '—';
                 return `<tr>
                     <td>${dateStr}</td>
-                    <td style="text-align:left;">${escapeHtml(d.description || '')}</td>
+                    <td class="dt-description-cell" style="text-align:left;">${escapeHtml(d.description || '')}</td>
                     <td>
                         <div class="inv-actions">
                             <button class="inv-edit-btn ${editingEnabled ? 'visible' : ''}"   onclick="editImportantDate('${escapeHtml(d.id)}')">Edit</button>
