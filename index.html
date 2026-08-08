@@ -1044,7 +1044,13 @@
 
     <!-- Page Navigation Tabs -->
     <div class="page-nav">
-        <button class="page-tab active" id="tabPhotos"     onclick="showPage('photos')">🌿 Plant<br>Photos</button>
+        <div class="page-tab-dropdown" id="photosDropdownWrap">
+            <button class="page-tab active" id="tabPhotos" onclick="showPage('photos')">🌿 Plant<br>Photos</button>
+            <button class="dropdown-caret" id="photosCaret" onclick="togglePhotosDropdown(event)">▾</button>
+            <div class="dropdown-menu" id="photosDropdownMenu">
+                <button id="photoSearchMenuItem" onclick="showPage('photoSearch')">🔍 Plant Photo Search</button>
+            </div>
+        </div>
         <div class="page-tab-dropdown" id="seedsDropdownWrap">
             <button class="page-tab" id="tabSeeds" onclick="showPage('seeds')">🌰 Seed<br>Inventory</button>
             <button class="dropdown-caret" id="seedsCaret" onclick="toggleGameDropdown(event)">▾</button>
@@ -1055,7 +1061,7 @@
         </div>
         <button class="page-tab"        id="tabGardenBeds" onclick="showPage('gardenBeds')">🪴 Garden<br>Beds</button>
         <button class="page-tab"        id="tabEvents"     onclick="showPage('events')">🎉<br>Events</button>
-        <button class="page-tab"        id="tabResearch"   onclick="showPage('research')">🔬 Interesting Plant<br>Research</button>
+        <button class="page-tab"        id="tabResearch"   onclick="showPage('research')">🔬 Research and<br>Misc. Information</button>
         <button class="page-tab"        id="tabDates"      onclick="showPage('dates')">📅 Important<br>Dates</button>
         <button class="page-tab"        id="tabMinutes"    onclick="showPage('minutes')">📝 Meeting<br>Minutes</button>
     </div>
@@ -1098,6 +1104,29 @@
         </div>
 
         <div class="grid" id="plants-grid"></div>
+    </div>
+
+    <!-- ══ PLANT PHOTO SEARCH PAGE ══ -->
+    <div id="photoSearchPage">
+        <button class="unlock-btn" id="unlockPhotoSearchBtn" onclick="unlockPhotoSearchEditing()" style="display:none;">🔓 Unlock Editing</button>
+        <div class="editing-banner" id="photoSearchEditingBanner" style="display:none;">✏️ Editing Mode Active — Edit and Delete buttons are now visible</div>
+
+        <div class="seed-page-header">
+            <h2>🔍 Plant Photo Search</h2>
+            <button class="seed-add-btn" id="photoSearchAddBtn" onclick="showPhotoSearchForm()" style="display:none;">+ Add Photo</button>
+        </div>
+
+        <div class="top-bar">
+            <div class="search-container">
+                <div class="search-input-wrap">
+                    <input type="text" id="psSearchInput" autocomplete="off" placeholder="🔍 Search by plant name">
+                </div>
+            </div>
+        </div>
+
+        <div class="grid" id="photoSearchGrid">
+            <p class="gb-empty">Loading photos…</p>
+        </div>
     </div>
 
     <!-- ══ SEED INVENTORY PAGE ══ -->
@@ -1255,10 +1284,10 @@
         </div>
     </div>
 
-    <!-- ══ INTERESTING PLANT RESEARCH PAGE ══ -->
+    <!-- ══ RESEARCH AND MISC. INFORMATION PAGE ══ -->
     <div id="researchPage">
         <div class="seed-page-header">
-            <h2>🔬 Interesting Plant Research</h2>
+            <h2>🔬 Research and Misc. Information</h2>
             <button class="seed-add-btn" id="researchAddBtn" onclick="showResearchForm()">+ Add Research</button>
         </div>
         <div id="researchList">
@@ -1504,6 +1533,31 @@
         </div>
     </div>
 
+    <!-- ══ PLANT PHOTO SEARCH Add/Edit Modal ══ -->
+    <div class="modal" id="photoSearchModal">
+        <div class="modal-content">
+            <h2 id="psModalTitle">Add Photo</h2>
+            <label>Plant Name</label>
+            <input type="text" id="psPlantName" placeholder="e.g. Desert Marigold">
+
+            <label>Photo:</label>
+            <input type="file" id="psImageUpload" accept="image/*,.heic,.heif" style="display:none;">
+            <div class="drop-zone" id="psDropZone">📂 <strong>Click to browse</strong></div>
+            <div id="psImagePreview" class="image-preview"></div>
+
+            <label>Photo Taken By:</label>
+            <input type="text" id="psPhotoCredit" placeholder="e.g. Dorothy">
+
+            <label>Description</label>
+            <textarea id="psDescription" placeholder="Short description…" style="min-height:120px;"></textarea>
+
+            <div class="modal-actions">
+                <button class="save-btn"   onclick="savePhotoSearchEntry()">Save</button>
+                <button class="cancel-btn" onclick="closePhotoSearchModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <!-- ══ EVENT Add/Edit Modal ══ -->
     <div class="modal" id="eventModal">
         <div class="modal-content">
@@ -1525,10 +1579,10 @@
         </div>
     </div>
 
-    <!-- ══ INTERESTING PLANT RESEARCH Add/Edit Modal ══ -->
+    <!-- ══ RESEARCH AND MISC. INFORMATION Add/Edit Modal ══ -->
     <div class="modal" id="researchModal">
         <div class="modal-content">
-            <h2 id="researchModalTitle">Add Interesting Plant Research</h2>
+            <h2 id="researchModalTitle">Add Research / Info</h2>
             <label>Resources</label>
             <input type="text" id="rsResources" placeholder="e.g. link, book title, article name…">
             <label>Research by:</label>
@@ -1597,9 +1651,19 @@
 
         // ============================================================
         // SECRET URL PASSWORD — change "mg" to update the password
-        // Usage: knottylady.com?edit=mg
+        // Usage: seedsavers.space?edit=mg
+        // This master password unlocks editing EVERYWHERE, including
+        // the Plant Photo Search page below.
         // ============================================================
         const EDIT_PASSWORD = "mg";
+
+        // ============================================================
+        // SECOND SECRET URL PASSWORD — only unlocks editing on the
+        // "Plant Photo Search" page. Change "ss" to update it.
+        // Usage: seedsavers.space?photoedit=ss
+        // (The main ?edit=mg password above also still works here.)
+        // ============================================================
+        const PHOTO_EDIT_PASSWORD = "ss";
 
         const app = initializeApp(firebaseConfig);
         const db  = getFirestore(app);
@@ -1607,10 +1671,15 @@
 
         const urlParams    = new URLSearchParams(window.location.search);
         const hasEditAccess = urlParams.get('edit') === EDIT_PASSWORD;
+        const hasPhotoEditAccess = hasEditAccess || urlParams.get('photoedit') === PHOTO_EDIT_PASSWORD;
         let editingEnabled  = false;
+        let photoSearchEditingEnabled = false;
 
         if (hasEditAccess) {
             document.getElementById('unlockBtn').style.display = 'block';
+        }
+        if (hasPhotoEditAccess) {
+            document.getElementById('unlockPhotoSearchBtn').style.display = 'block';
         }
 
         function unlockEditing() {
@@ -1638,11 +1707,23 @@
             document.querySelectorAll('.gb-actions').forEach(el => el.classList.add('visible'));
             document.querySelectorAll('.ev-actions').forEach(el => el.classList.add('visible'));
             document.querySelectorAll('.mm-edit-btn, .mm-delete-btn').forEach(el => el.classList.add('visible'));
+            // Master password also unlocks the Plant Photo Search page
+            unlockPhotoSearchEditing();
         }
+
+        function unlockPhotoSearchEditing() {
+            photoSearchEditingEnabled = true;
+            document.getElementById('unlockPhotoSearchBtn').style.display = 'none';
+            document.getElementById('photoSearchEditingBanner').style.display = 'block';
+            document.getElementById('photoSearchAddBtn').style.display = 'block';
+            applyPhotoSearchFilter();
+        }
+        window.unlockPhotoSearchEditing = unlockPhotoSearchEditing;
 
         // ── Page switching ────────────────────────────────────────────
         window.showPage = function(page) {
             document.getElementById('photosPage').style.display     = page === 'photos'     ? 'block' : 'none';
+            document.getElementById('photoSearchPage').style.display = page === 'photoSearch' ? 'block' : 'none';
             document.getElementById('seedPage').style.display       = page === 'seeds'       ? 'block' : 'none';
             document.getElementById('seedGamePage').style.display   = page === 'seedGame'    ? 'block' : 'none';
             document.getElementById('seedGerminationPage').style.display = page === 'seedGermination' ? 'block' : 'none';
@@ -1652,6 +1733,9 @@
             document.getElementById('datesPage').style.display      = page === 'dates'       ? 'block' : 'none';
             document.getElementById('minutesPage').style.display    = page === 'minutes'     ? 'block' : 'none';
             document.getElementById('tabPhotos').classList.toggle('active',     page === 'photos');
+            document.getElementById('photosCaret').classList.toggle('active',  page === 'photoSearch');
+            document.getElementById('photoSearchMenuItem').classList.toggle('active', page === 'photoSearch');
+            document.getElementById('photosDropdownMenu').classList.remove('show');
             document.getElementById('tabSeeds').classList.toggle('active',      page === 'seeds');
             document.getElementById('tabGardenBeds').classList.toggle('active', page === 'gardenBeds');
             document.getElementById('tabEvents').classList.toggle('active',     page === 'events');
@@ -1671,6 +1755,15 @@
         document.addEventListener('click', (e) => {
             const wrap = document.getElementById('seedsDropdownWrap');
             if (wrap && !wrap.contains(e.target)) document.getElementById('gameDropdownMenu').classList.remove('show');
+        });
+
+        window.togglePhotosDropdown = function(e) {
+            e.stopPropagation();
+            document.getElementById('photosDropdownMenu').classList.toggle('show');
+        };
+        document.addEventListener('click', (e) => {
+            const wrap = document.getElementById('photosDropdownWrap');
+            if (wrap && !wrap.contains(e.target)) document.getElementById('photosDropdownMenu').classList.remove('show');
         });
 
         // ══════════════════════════════════════════════════════════════
@@ -2519,6 +2612,137 @@
         });
 
         // ══════════════════════════════════════════════════════════════
+        // PLANT PHOTO SEARCH
+        // ══════════════════════════════════════════════════════════════
+        const photoSearchCol = collection(db, 'photoSearchEntries');
+        let photoSearchEntries = [];
+        let editingPhotoSearchId = null;
+        let currentPsImageFile = null, currentPsImageUrl = null, currentPsImagePath = null;
+
+        onSnapshot(query(photoSearchCol, orderBy('createdAt', 'desc')), (snapshot) => {
+            photoSearchEntries = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            applyPhotoSearchFilter();
+        }, (error) => {
+            document.getElementById('photoSearchGrid').innerHTML = `<p class="gb-empty">Cannot load photos: ${error.message}</p>`;
+        });
+
+        function applyPhotoSearchFilter() {
+            const term = document.getElementById('psSearchInput').value.toLowerCase().trim();
+            const list = term
+                ? photoSearchEntries.filter(p => (p.plantName || '').toLowerCase().includes(term))
+                : photoSearchEntries;
+            renderPhotoSearch(list);
+        }
+
+        function renderPhotoSearch(list) {
+            const wrap = document.getElementById('photoSearchGrid');
+            if (list.length === 0) {
+                wrap.innerHTML = `<p style="grid-column:1/-1;text-align:center;padding:3rem;color:#666;">${photoSearchEntries.length === 0 ? `No photos yet. ${photoSearchEditingEnabled ? 'Click "+ Add Photo" to get started.' : ''}` : 'No matching plants found.'}</p>`;
+                return;
+            }
+            wrap.innerHTML = list.map(p => {
+                const id  = escapeHtml(p.id);
+                const img = escapeHtml(p.imageUrl || '');
+                return `<div class="card">
+                    <div class="action-buttons ${photoSearchEditingEnabled ? 'visible' : ''}">
+                        <button class="edit-btn"   onclick="editPhotoSearchEntry('${id}')">Edit</button>
+                        <button class="delete-btn" onclick="deletePhotoSearchEntry('${id}')">Delete</button>
+                    </div>
+                    <div class="photo-credit">
+                        ${p.photoCredit
+                            ? `<span>📷 Photo taken by ${escapeHtml(p.photoCredit)}</span><span class="photo-permission-notice">⚠️ Please ask photographer for permission to copy photo for other purposes.</span>`
+                            : `<span class="no-photo-notice">⚠️ Please ask photographer for permission to copy photo for other purposes.</span>`}
+                    </div>
+                    ${p.imageUrl
+                        ? `<div class="photo-wrap"><img src="${img}" class="plant-image" alt="${escapeHtml(p.plantName || '')}" onclick="window.open('${img}','_blank')"><a class="download-btn" href="${img}" download="${escapeHtml(p.plantName || 'photo')}.jpg" target="_blank" title="Save photo" onclick="event.stopPropagation();">⬇</a></div>`
+                        : `<div class="no-photo">🌱 No Photo</div>`}
+                    <div class="plant-info">
+                        <h3 class="plant-name">${escapeHtml(p.plantName || '')}</h3>
+                        ${p.description ? `<p>${escapeHtml(p.description)}</p>` : ''}
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        document.getElementById('psSearchInput').addEventListener('input', applyPhotoSearchFilter);
+
+        window.showPhotoSearchForm = function() {
+            editingPhotoSearchId = null;
+            currentPsImageFile = null; currentPsImageUrl = null; currentPsImagePath = null;
+            document.getElementById('psModalTitle').textContent = 'Add Photo';
+            document.getElementById('psPlantName').value = '';
+            document.getElementById('psPhotoCredit').value = '';
+            document.getElementById('psDescription').value = '';
+            document.getElementById('psImagePreview').style.backgroundImage = '';
+            document.getElementById('photoSearchModal').style.display = 'flex';
+        };
+
+        window.editPhotoSearchEntry = function(id) {
+            const p = photoSearchEntries.find(x => x.id === id); if (!p) return;
+            editingPhotoSearchId = id;
+            currentPsImageFile = null; currentPsImageUrl = p.imageUrl || null; currentPsImagePath = p.imagePath || null;
+            document.getElementById('psModalTitle').textContent = 'Edit Photo';
+            document.getElementById('psPlantName').value = p.plantName || '';
+            document.getElementById('psPhotoCredit').value = p.photoCredit || '';
+            document.getElementById('psDescription').value = p.description || '';
+            document.getElementById('psImagePreview').style.backgroundImage = p.imageUrl ? `url('${p.imageUrl}')` : '';
+            document.getElementById('photoSearchModal').style.display = 'flex';
+        };
+
+        window.closePhotoSearchModal = function() { document.getElementById('photoSearchModal').style.display = 'none'; };
+
+        window.savePhotoSearchEntry = async function() {
+            const plantName = document.getElementById('psPlantName').value.trim();
+            if (!plantName) { alert("Please enter a plant name."); return; }
+            const saveBtn = document.querySelector('#photoSearchModal .save-btn');
+            saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
+            try {
+                const data = {
+                    plantName,
+                    photoCredit: document.getElementById('psPhotoCredit').value.trim(),
+                    description: document.getElementById('psDescription').value.trim()
+                };
+                if (currentPsImageFile) {
+                    const safeName = currentPsImageFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+                    const newPath  = `plants/photoSearch/${Date.now()}-${safeName}`;
+                    const fileRef  = storageRef(storage, newPath);
+                    await uploadBytes(fileRef, currentPsImageFile);
+                    data.imageUrl  = await getDownloadURL(fileRef);
+                    data.imagePath = newPath;
+                    if (editingPhotoSearchId && currentPsImagePath && currentPsImagePath !== newPath) {
+                        try { await deleteObject(storageRef(storage, currentPsImagePath)); } catch(e){}
+                    }
+                }
+                if (editingPhotoSearchId) { await updateDoc(doc(db, 'photoSearchEntries', editingPhotoSearchId), data); }
+                else { data.createdAt = serverTimestamp(); await addDoc(photoSearchCol, data); }
+                window.closePhotoSearchModal();
+            } catch(e) { alert("Save failed: " + e.message); }
+            finally { saveBtn.disabled = false; saveBtn.textContent = 'Save'; }
+        };
+
+        window.deletePhotoSearchEntry = async function(id) {
+            if (!confirm("Delete this photo for EVERYONE? This cannot be undone.")) return;
+            try { await deleteDoc(doc(db, 'photoSearchEntries', id)); }
+            catch(e) { alert("Delete failed: " + e.message); }
+        };
+
+        function loadPsImageFile(file) {
+            if (!file || !(file.type.startsWith('image/') || /\.(heic|heif)$/i.test(file.name))) { alert("Please choose an image file."); return; }
+            if (file.size > 10 * 1024 * 1024) { alert("Image too large (max 10MB)."); return; }
+            const reader = new FileReader();
+            reader.onload = ev => { document.getElementById('psImagePreview').style.backgroundImage = `url('${ev.target.result}')`; };
+            reader.readAsDataURL(file);
+            currentPsImageFile = file;
+        }
+
+        document.getElementById('psDropZone').addEventListener('click', () => document.getElementById('psImageUpload').click());
+        document.getElementById('psImageUpload').addEventListener('change', e => {
+            const file = e.target.files[0];
+            if (file) loadPsImageFile(file);
+            e.target.value = '';
+        });
+
+        // ══════════════════════════════════════════════════════════════
         // EVENTS
         // ══════════════════════════════════════════════════════════════
         const eventsCol = collection(db, 'events');
@@ -2668,7 +2892,7 @@
 
         window.showResearchForm = function() {
             editingResearchId = null;
-            document.getElementById('researchModalTitle').textContent = 'Add Interesting Plant Research';
+            document.getElementById('researchModalTitle').textContent = 'Add Research / Info';
             document.getElementById('rsResources').value = '';
             document.getElementById('rsBy').value = '';
             document.getElementById('rsText').value = '';
@@ -2678,7 +2902,7 @@
         window.editResearch = function(id) {
             const r = plantResearch.find(x => x.id === id); if (!r) return;
             editingResearchId = id;
-            document.getElementById('researchModalTitle').textContent = 'Edit Interesting Plant Research';
+            document.getElementById('researchModalTitle').textContent = 'Edit Research / Info';
             document.getElementById('rsResources').value = r.resources || '';
             document.getElementById('rsBy').value = r.researchBy || '';
             document.getElementById('rsText').value = r.text || '';
