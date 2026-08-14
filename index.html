@@ -1027,6 +1027,20 @@
         .rs-resources a:hover, .rs-text a:hover { color: #2e7d32; }
         .rs-empty { text-align: center; padding: 3rem; color: #888; font-size: 1rem; }
 
+        .rs-link-btn {
+            background: none; border: 1px solid #ccc; border-radius: 6px;
+            padding: 3px 8px; font-size: 0.85rem; color: #555; cursor: pointer;
+        }
+        .rs-link-btn:hover { background: #f0f0f0; color: #1b5e20; border-color: #1b5e20; }
+
+        .deep-link-highlight {
+            animation: deepLinkGlow 2.5s ease-out 1;
+        }
+        @keyframes deepLinkGlow {
+            0%   { box-shadow: 0 0 0 4px rgba(46,125,50,0.6); }
+            100% { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        }
+
         /* ── Important Dates page ── */
         #datesPage { display: none; max-width: 1000px; margin: 0 auto; }
 
@@ -2927,10 +2941,11 @@
             }
             wrap.innerHTML = plantResearch.map(r => {
                 const id = escapeHtml(r.id);
-                return `<div class="rs-card">
+                return `<div class="rs-card" id="research-${id}">
                     <div class="rs-card-header">
                         <span class="rs-resources">${linkifyText(r.resources || '')}</span>
                         <div class="inv-actions">
+                            <button class="rs-link-btn" title="Copy a link straight to this entry" onclick="copyResearchLink('${id}', this)">🔗 Copy Link</button>
                             <button class="inv-edit-btn ${editingEnabled ? 'visible' : ''}"   onclick="editResearch('${id}')">Edit</button>
                             <button class="inv-delete-btn ${editingEnabled ? 'visible' : ''}" onclick="deleteResearch('${id}')">Delete</button>
                         </div>
@@ -2939,7 +2954,39 @@
                     <p class="rs-text">${linkifyText(r.text || '')}</p>
                 </div>`;
             }).join('');
+            goToHashTarget();
         }
+
+        window.copyResearchLink = function(id, btn) {
+            const url = window.location.origin + window.location.pathname + '#research-' + id;
+            const done = () => {
+                const original = btn.textContent;
+                btn.textContent = '✅ Copied!';
+                setTimeout(() => { btn.textContent = original; }, 1800);
+            };
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url).then(done).catch(() => prompt('Copy this link:', url));
+            } else {
+                prompt('Copy this link:', url);
+            }
+        };
+
+        // ── Deep-link routing: jump to a specific research entry via URL hash ──
+        function goToHashTarget() {
+            const hash = window.location.hash;
+            if (!hash || !hash.startsWith('#research-')) return;
+            const targetId = hash.slice(1); // e.g. "research-abc123"
+            const el = document.getElementById(targetId);
+            if (!el) return; // entry not loaded/rendered yet
+            showPage('research');
+            setTimeout(() => {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                el.classList.remove('deep-link-highlight');
+                void el.offsetWidth; // restart animation if clicked twice
+                el.classList.add('deep-link-highlight');
+            }, 150);
+        }
+        window.addEventListener('hashchange', goToHashTarget);
 
         window.showResearchForm = function() {
             editingResearchId = null;
