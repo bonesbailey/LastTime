@@ -1191,6 +1191,7 @@
                     <col style="width:110px;">
                     <col style="width:260px;">
                     <col style="width:95px;">
+                    <col style="width:115px;">
                     <col style="width:140px;">
                 </colgroup>
                 <thead>
@@ -1204,11 +1205,12 @@
                         <th>Seed<br>Germination %</th>
                         <th>Notes</th>
                         <th>Total #<br>Pkts Filled</th>
+                        <th>Date<br>Filled</th>
                         <th id="actionsHeader" style="display:none;">Actions</th>
                     </tr>
                 </thead>
                 <tbody id="seedTableBody">
-                    <tr><td colspan="10" class="inv-empty">Loading seed inventory…</td></tr>
+                    <tr><td colspan="11" class="inv-empty">Loading seed inventory…</td></tr>
                 </tbody>
             </table>
         </div>
@@ -1477,6 +1479,8 @@
             <input type="text" id="sNotes" placeholder="Notes">
             <label>Total # Packets Filled</label>
             <input type="number" id="sNumPackets" min="0" placeholder="0">
+            <label>Date Filled</label>
+            <input type="date" id="sDateFilled">
             <div class="modal-actions">
                 <button class="save-btn"   onclick="saveSeedRecord()">Save Record</button>
                 <button class="cancel-btn" onclick="closeSeedModal()">Cancel</button>
@@ -2355,7 +2359,7 @@
             renderSeeds();
         }, (err) => {
             document.getElementById('seedTableBody').innerHTML =
-                `<tr><td colspan="10" class="inv-empty" style="color:#d32f2f;">Cannot load inventory: ${err.message}</td></tr>`;
+                `<tr><td colspan="11" class="inv-empty" style="color:#d32f2f;">Cannot load inventory: ${err.message}</td></tr>`;
         });
 
         function pillClass(val) {
@@ -2369,7 +2373,7 @@
             document.getElementById('totalPackets').textContent = total;
 
             if (seeds.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="10" class="inv-empty">No seed records yet. ${editingEnabled ? 'Click "+ Add Seed Record" to get started.' : ''}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="11" class="inv-empty">No seed records yet. ${editingEnabled ? 'Click "+ Add Seed Record" to get started.' : ''}</td></tr>`;
                 return;
             }
 
@@ -2394,6 +2398,7 @@
                     <td>${(s.germination !== undefined && s.germination !== null && s.germination !== '') ? s.germination + '%' : '—'}</td>
                     <td>${escapeHtml(s.notes || '')}</td>
                     <td>${s.numPackets ?? '—'}</td>
+                    <td>${s.dateFilled ? new Date(s.dateFilled + 'T00:00:00').toLocaleDateString() : '—'}</td>
                     <td>
                         <div class="inv-actions">
                             <button class="inv-edit-btn ${editingEnabled ? 'visible' : ''}"   onclick="editSeedRecord('${escapeHtml(s.id)}')">Edit</button>
@@ -2416,6 +2421,7 @@
             document.getElementById('sGermination').value = '';
             document.getElementById('sNotes').value       = '';
             document.getElementById('sNumPackets').value  = '';
+            document.getElementById('sDateFilled').value  = '';
             document.getElementById('seedModal').style.display = 'flex';
         }
 
@@ -2432,6 +2438,7 @@
             document.getElementById('sGermination').value = s.germination ?? '';
             document.getElementById('sNotes').value       = s.notes       || '';
             document.getElementById('sNumPackets').value  = s.numPackets  ?? '';
+            document.getElementById('sDateFilled').value  = s.dateFilled  || '';
             document.getElementById('seedModal').style.display = 'flex';
         }
 
@@ -2450,7 +2457,8 @@
                     seedPackets: document.getElementById('sSeedPackets').value,
                     germination: document.getElementById('sGermination').value === '' ? null : parseInt(document.getElementById('sGermination').value),
                     notes:       document.getElementById('sNotes').value.trim(),
-                    numPackets:  parseInt(document.getElementById('sNumPackets').value) || 0
+                    numPackets:  parseInt(document.getElementById('sNumPackets').value) || 0,
+                    dateFilled:  document.getElementById('sDateFilled').value
                 };
                 if (editingSeedId) { await updateDoc(doc(db, 'seedInventory', editingSeedId), data); }
                 else { data.createdAt = serverTimestamp(); await addDoc(seedsCol, data); }
