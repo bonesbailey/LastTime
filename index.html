@@ -1182,16 +1182,16 @@
         <div class="inv-table-wrap">
             <table class="inv-table">
                 <colgroup>
-                    <col style="width:105px;">
+                    <col style="width:85px;">
                     <col style="width:150px;">
                     <col style="width:150px;">
                     <col style="width:100px;">
-                    <col style="width:120px;">
-                    <col style="width:150px;">
+                    <col style="width:100px;">
+                    <col style="width:130px;">
                     <col style="width:110px;">
                     <col style="width:260px;">
                     <col style="width:95px;">
-                    <col style="width:100px;">
+                    <col style="width:140px;">
                     <col style="width:140px;">
                 </colgroup>
                 <thead>
@@ -2398,7 +2398,7 @@
                     <td>${(s.germination !== undefined && s.germination !== null && s.germination !== '') ? s.germination + '%' : '—'}</td>
                     <td>${escapeHtml(s.notes || '')}</td>
                     <td>${s.numPackets ?? '—'}</td>
-                    <td>${s.dateFilled ? new Date(s.dateFilled + 'T00:00:00').toLocaleDateString() : '—'}</td>
+                    <td style="white-space:nowrap;">${s.dateFilled ? new Date(s.dateFilled + 'T00:00:00').toLocaleDateString() : '—'}</td>
                     <td>
                         <div class="inv-actions">
                             <button class="inv-edit-btn ${editingEnabled ? 'visible' : ''}"   onclick="editSeedRecord('${escapeHtml(s.id)}')">Edit</button>
