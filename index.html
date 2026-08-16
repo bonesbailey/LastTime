@@ -1041,6 +1041,61 @@
             100% { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         }
 
+        /* ── Bulletin Board (File Library) page ── */
+        #fileLibraryPage { display: none; max-width: 1000px; margin: 0 auto; }
+
+        .fl-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            padding: 16px 20px;
+            margin-bottom: 16px;
+            position: relative;
+        }
+
+        .fl-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .fl-title-wrap { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .fl-title { font-weight: 700; color: #1b5e20; font-size: 1.1rem; }
+        .fl-ext-badge {
+            display: inline-block; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.03em;
+            padding: 2px 7px; border-radius: 5px; background: #e8f5e9; color: #1b5e20;
+            border: 1px solid #c8e6c9; text-transform: uppercase;
+        }
+        .fl-desc { white-space: pre-wrap; margin: 4px 0 10px 0; color: #333; }
+        .fl-desc a { color: #1b5e20; text-decoration: underline; }
+        .fl-desc a:hover { color: #2e7d32; }
+        .fl-empty { text-align: center; padding: 3rem; color: #888; font-size: 1rem; }
+
+        .fl-link-btn {
+            background: none; border: 1px solid #ccc; border-radius: 6px;
+            padding: 3px 8px; font-size: 0.85rem; color: #555; cursor: pointer;
+            text-decoration: none; display: inline-block;
+        }
+        .fl-link-btn:hover { background: #f0f0f0; color: #1b5e20; border-color: #1b5e20; }
+
+        .fl-drop-zone {
+            border: 2px dashed #ccc; border-radius: 8px; padding: 14px;
+            text-align: center; cursor: pointer; color: #666; margin-bottom: 10px;
+        }
+        .fl-drop-zone:hover { border-color: #1b5e20; color: #1b5e20; }
+        .fl-preview {
+            display: none; align-items: center; gap: 8px; margin-bottom: 10px;
+            background: #f0f7f0; border-radius: 6px; padding: 8px 10px; font-size: 0.9rem;
+        }
+        .fl-remove-btn {
+            background: none; border: none; color: #999; cursor: pointer;
+            font-size: 1rem; margin-left: auto; padding: 0 4px;
+        }
+        .fl-remove-btn:hover { color: #c62828; }
+
         /* ── Important Dates page ── */
         #datesPage { display: none; max-width: 1000px; margin: 0 auto; }
 
@@ -1097,6 +1152,7 @@
         <button class="page-tab"        id="tabGardenBeds" onclick="showPage('gardenBeds')">🪴 Garden<br>Beds</button>
         <button class="page-tab"        id="tabEvents"     onclick="showPage('events')">🎉<br>Events</button>
         <button class="page-tab"        id="tabResearch"   onclick="showPage('research')">🔬 Research and<br>Misc. Information</button>
+        <button class="page-tab"        id="tabFileLibrary" onclick="showPage('fileLibrary')">📌 Bulletin<br>Board</button>
         <button class="page-tab"        id="tabDates"      onclick="showPage('dates')">📅 Important<br>Dates</button>
         <button class="page-tab"        id="tabMinutes"    onclick="showPage('minutes')">📝 Meeting<br>Minutes</button>
     </div>
@@ -1336,6 +1392,17 @@
         </div>
         <div id="researchList">
             <p class="rs-empty">Loading research…</p>
+        </div>
+    </div>
+
+    <!-- ══ FILE LIBRARY PAGE ══ -->
+    <div id="fileLibraryPage">
+        <div class="seed-page-header">
+            <h2>📌 Bulletin Board</h2>
+            <button class="seed-add-btn" id="fileLibAddBtn" onclick="showFileLibForm()">+ Add File</button>
+        </div>
+        <div id="fileLibraryList">
+            <p class="fl-empty">Loading files…</p>
         </div>
     </div>
 
@@ -1643,6 +1710,26 @@
         </div>
     </div>
 
+    <!-- ══ FILE LIBRARY Add/Edit Modal ══ -->
+    <div class="modal" id="fileLibModal">
+        <div class="modal-content">
+            <h2 id="fileLibModalTitle">Add File</h2>
+            <label>Title</label>
+            <input type="text" id="flTitle" placeholder="e.g. 2026 Seed Order Form">
+            <label>Description (optional)</label>
+            <textarea id="flDescription" placeholder="Notes about this file…"></textarea>
+            <label>File (PDF, Word, or Excel)</label>
+            <div class="fl-drop-zone" id="fileLibDropZone">📎 Click to choose a PDF, Word (.docx), or Excel (.xlsx) file</div>
+            <input type="file" id="fileLibUpload" accept=".pdf,.docx,.xlsx" style="display:none;">
+            <div class="fl-preview" id="fileLibPreview"></div>
+
+            <div class="modal-actions">
+                <button class="save-btn"   onclick="saveFileLib()">Save</button>
+                <button class="cancel-btn" onclick="closeFileLibModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <!-- ══ IMPORTANT DATE Add/Edit Modal ══ -->
     <div class="modal" id="dateModal">
         <div class="modal-content">
@@ -1739,6 +1826,7 @@
             document.getElementById('gbAddBtn').style.display       = 'block';
             document.getElementById('eventAddBtn').style.display    = 'block';
             document.getElementById('researchAddBtn').style.display = 'block';
+            document.getElementById('fileLibAddBtn').style.display  = 'block';
             document.getElementById('dateAddBtn').style.display     = 'block';
             document.getElementById('minutesAddBtn').style.display  = 'block';
             document.getElementById('dateActionsHeader').style.display = '';
@@ -1779,6 +1867,7 @@
             document.getElementById('gardenBedsPage').style.display = page === 'gardenBeds'  ? 'block' : 'none';
             document.getElementById('eventsPage').style.display     = page === 'events'      ? 'block' : 'none';
             document.getElementById('researchPage').style.display   = page === 'research'    ? 'block' : 'none';
+            document.getElementById('fileLibraryPage').style.display = page === 'fileLibrary' ? 'block' : 'none';
             document.getElementById('datesPage').style.display      = page === 'dates'       ? 'block' : 'none';
             document.getElementById('minutesPage').style.display    = page === 'minutes'     ? 'block' : 'none';
             document.getElementById('tabPhotos').classList.toggle('active',     page === 'photos');
@@ -1789,6 +1878,7 @@
             document.getElementById('tabGardenBeds').classList.toggle('active', page === 'gardenBeds');
             document.getElementById('tabEvents').classList.toggle('active',     page === 'events');
             document.getElementById('tabResearch').classList.toggle('active',   page === 'research');
+            document.getElementById('tabFileLibrary').classList.toggle('active', page === 'fileLibrary');
             document.getElementById('tabDates').classList.toggle('active',      page === 'dates');
             document.getElementById('tabMinutes').classList.toggle('active',    page === 'minutes');
             document.getElementById('seedsCaret').classList.toggle('active',    page === 'seedGame' || page === 'seedGermination');
@@ -2982,11 +3072,14 @@
         // ── Deep-link routing: jump to a specific research entry via URL hash ──
         function goToHashTarget() {
             const hash = window.location.hash;
-            if (!hash || !hash.startsWith('#research-')) return;
-            const targetId = hash.slice(1); // e.g. "research-abc123"
+            if (!hash) return;
+            const isResearch = hash.startsWith('#research-');
+            const isFileLib  = hash.startsWith('#filelib-');
+            if (!isResearch && !isFileLib) return;
+            const targetId = hash.slice(1); // e.g. "research-abc123" or "filelib-abc123"
             const el = document.getElementById(targetId);
             if (!el) return; // entry not loaded/rendered yet
-            showPage('research');
+            showPage(isResearch ? 'research' : 'fileLibrary');
             setTimeout(() => {
                 el.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 el.classList.remove('deep-link-highlight');
@@ -3037,6 +3130,189 @@
             if (!confirm("Delete this research entry for EVERYONE? This cannot be undone.")) return;
             try { await deleteDoc(doc(db, 'plantResearch', id)); }
             catch(e) { alert("Delete failed: " + e.message); }
+        };
+
+        // ══════════════════════════════════════════════════════════════
+        // FILE LIBRARY (PDF / Word / Excel uploads)
+        // ══════════════════════════════════════════════════════════════
+        const fileLibCol = collection(db, 'fileLibrary');
+        let fileLibrary = [];
+        let editingFileLibId = null;
+        let pendingFileLibFile = null;
+        let currentFileLibUrl = null, currentFileLibPath = null, currentFileLibName = null, currentFileLibExt = null;
+        let originalFileLibPath = null;
+
+        const FL_EXT_MIME = {
+            pdf:  'application/pdf',
+            docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        };
+        const FL_EXT_ICON = { pdf: '📄', docx: '📝', xlsx: '📊' };
+
+        onSnapshot(query(fileLibCol, orderBy('createdAt', 'desc')), (snapshot) => {
+            fileLibrary = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderFileLibrary();
+        }, (error) => {
+            document.getElementById('fileLibraryList').innerHTML = `<p class="fl-empty">Cannot load files: ${error.message}</p>`;
+        });
+
+        function renderFileLibrary() {
+            const wrap = document.getElementById('fileLibraryList');
+            if (fileLibrary.length === 0) {
+                wrap.innerHTML = `<p class="fl-empty">No files yet. ${editingEnabled ? 'Click "+ Add File" to get started.' : ''}</p>`;
+                return;
+            }
+            wrap.innerHTML = fileLibrary.map(f => {
+                const id = escapeHtml(f.id);
+                const ext = escapeHtml(f.fileExt || 'pdf');
+                const icon = FL_EXT_ICON[f.fileExt] || '📄';
+                const fileName = `${escapeHtml(f.fileName || 'file')}.${ext}`;
+                return `<div class="fl-card" id="filelib-${id}">
+                    <div class="fl-card-header">
+                        <div class="fl-title-wrap">
+                            <span class="fl-title">${escapeHtml(f.title || 'Untitled')}</span>
+                            <span class="fl-ext-badge">${ext}</span>
+                        </div>
+                        <div class="inv-actions">
+                            <a class="fl-link-btn" href="${escapeHtml(f.fileUrl)}" target="_blank" rel="noopener" title="Open file">${icon} Open</a>
+                            <a class="fl-link-btn" href="${escapeHtml(f.fileUrl)}" download="${fileName}" title="Download file">⬇ Download</a>
+                            <button class="fl-link-btn" title="Copy a link straight to this entry" onclick="copyFileLibLink('${id}', this)">🔗 Copy Link</button>
+                            <button class="inv-edit-btn ${editingEnabled ? 'visible' : ''}"   onclick="editFileLib('${id}')">Edit</button>
+                            <button class="inv-delete-btn ${editingEnabled ? 'visible' : ''}" onclick="deleteFileLib('${id}')">Delete</button>
+                        </div>
+                    </div>
+                    ${f.description ? `<p class="fl-desc">${linkifyText(f.description)}</p>` : ''}
+                </div>`;
+            }).join('');
+            goToHashTarget();
+        }
+
+        window.copyFileLibLink = function(id, btn) {
+            const url = window.location.origin + window.location.pathname + '#filelib-' + id;
+            const done = () => {
+                const original = btn.textContent;
+                btn.textContent = '✅ Copied!';
+                setTimeout(() => { btn.textContent = original; }, 1800);
+            };
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url).then(done).catch(() => prompt('Copy this link:', url));
+            } else {
+                prompt('Copy this link:', url);
+            }
+        };
+
+        function setupFileLibDropZone() {
+            const zone  = document.getElementById('fileLibDropZone');
+            const input = document.getElementById('fileLibUpload');
+            zone.addEventListener('click', () => input.click());
+            input.addEventListener('change', e => {
+                const file = e.target.files[0];
+                input.value = '';
+                if (!file) return;
+                const lowerName = file.name.toLowerCase();
+                const ext = lowerName.endsWith('.pdf') ? 'pdf' : lowerName.endsWith('.docx') ? 'docx' : lowerName.endsWith('.xlsx') ? 'xlsx' : null;
+                if (!ext) {
+                    alert('Please choose a PDF, Word (.docx), or Excel (.xlsx) file.');
+                    return;
+                }
+                if (file.size > 20 * 1024 * 1024) { alert('File too large (max 20MB).'); return; }
+                pendingFileLibFile = file;
+                currentFileLibExt = ext;
+                currentFileLibName = file.name.replace(/\.(pdf|docx|xlsx)$/i, '');
+                const preview = document.getElementById('fileLibPreview');
+                preview.style.display = 'flex';
+                preview.innerHTML = `${FL_EXT_ICON[ext]} ${escapeHtml(currentFileLibName)}.${ext} (ready — click Save) <button type="button" class="fl-remove-btn" title="Remove" onclick="clearFileLibFile()">✕</button>`;
+            });
+        }
+        setupFileLibDropZone();
+
+        window.clearFileLibFile = function() {
+            pendingFileLibFile = null;
+            currentFileLibUrl = null;
+            currentFileLibPath = null;
+            currentFileLibName = null;
+            currentFileLibExt = null;
+            const preview = document.getElementById('fileLibPreview');
+            preview.style.display = 'none';
+            preview.innerHTML = '';
+        };
+
+        window.showFileLibForm = function() {
+            editingFileLibId = null;
+            originalFileLibPath = null;
+            document.getElementById('fileLibModalTitle').textContent = 'Add File';
+            document.getElementById('flTitle').value = '';
+            document.getElementById('flDescription').value = '';
+            window.clearFileLibFile();
+            document.getElementById('fileLibModal').style.display = 'flex';
+        };
+
+        window.editFileLib = function(id) {
+            const f = fileLibrary.find(x => x.id === id); if (!f) return;
+            editingFileLibId = id;
+            originalFileLibPath = f.filePath || null;
+            document.getElementById('fileLibModalTitle').textContent = 'Edit File';
+            document.getElementById('flTitle').value = f.title || '';
+            document.getElementById('flDescription').value = f.description || '';
+            currentFileLibUrl = f.fileUrl || null;
+            currentFileLibPath = f.filePath || null;
+            currentFileLibName = f.fileName || null;
+            currentFileLibExt = f.fileExt || null;
+            pendingFileLibFile = null;
+            const preview = document.getElementById('fileLibPreview');
+            if (f.fileUrl) {
+                preview.style.display = 'flex';
+                preview.innerHTML = `${FL_EXT_ICON[f.fileExt] || '📄'} ${escapeHtml(f.fileName || 'file')}.${escapeHtml(f.fileExt || 'pdf')} (current file — choose a new one to replace) <button type="button" class="fl-remove-btn" title="Remove" onclick="clearFileLibFile()">✕</button>`;
+            } else {
+                preview.style.display = 'none';
+                preview.innerHTML = '';
+            }
+            document.getElementById('fileLibModal').style.display = 'flex';
+        };
+
+        window.closeFileLibModal = function() { document.getElementById('fileLibModal').style.display = 'none'; };
+
+        window.saveFileLib = async function() {
+            const title = document.getElementById('flTitle').value.trim();
+            const description = document.getElementById('flDescription').value.trim();
+            if (!title) { alert("Please enter a title."); return; }
+            if (!pendingFileLibFile && !currentFileLibUrl) { alert("Please choose a file to upload."); return; }
+            const saveBtn = document.querySelector('#fileLibModal .save-btn');
+            saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
+            try {
+                let fileUrl = currentFileLibUrl, filePath = currentFileLibPath;
+                let oldFileLibPathToDelete = null;
+                if (pendingFileLibFile) {
+                    const safeFileName = (currentFileLibName || 'file').replace(/[^a-zA-Z0-9.-]/g, '_');
+                    const contentType = FL_EXT_MIME[currentFileLibExt] || 'application/octet-stream';
+                    const newPath = `plants/library/${Date.now()}-${safeFileName}.${currentFileLibExt}`;
+                    const fileRef = storageRef(storage, newPath);
+                    await uploadBytes(fileRef, pendingFileLibFile, { contentType });
+                    fileUrl = await getDownloadURL(fileRef);
+                    if (originalFileLibPath && originalFileLibPath !== newPath) oldFileLibPathToDelete = originalFileLibPath;
+                    filePath = newPath;
+                }
+                const data = {
+                    title, description,
+                    fileUrl, filePath,
+                    fileName: currentFileLibName || null,
+                    fileExt:  currentFileLibExt  || null
+                };
+                if (editingFileLibId) { await updateDoc(doc(db, 'fileLibrary', editingFileLibId), data); }
+                else { data.createdAt = serverTimestamp(); await addDoc(fileLibCol, data); }
+                if (oldFileLibPathToDelete) { try { await deleteObject(storageRef(storage, oldFileLibPathToDelete)); } catch(e){} }
+                window.closeFileLibModal();
+            } catch(e) { alert("Save failed: " + e.message); }
+            finally { saveBtn.disabled = false; saveBtn.textContent = 'Save'; }
+        };
+
+        window.deleteFileLib = async function(id) {
+            if (!confirm("Delete this file for EVERYONE? This cannot be undone.")) return;
+            try {
+                const f = fileLibrary.find(x => x.id === id);
+                await deleteDoc(doc(db, 'fileLibrary', id));
+                if (f && f.filePath) { try { await deleteObject(storageRef(storage, f.filePath)); } catch(e){} }
+            } catch(e) { alert("Delete failed: " + e.message); }
         };
 
         // ══════════════════════════════════════════════════════════════
