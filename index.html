@@ -1399,7 +1399,7 @@
     <div id="fileLibraryPage">
         <div class="seed-page-header">
             <h2>📌 Bulletin Board</h2>
-            <button class="seed-add-btn" id="fileLibAddBtn" onclick="showFileLibForm()">+ Add File</button>
+            <button class="seed-add-btn" id="fileLibAddBtn" onclick="showFileLibForm()" style="display:block;">+ Add File</button>
         </div>
         <div id="fileLibraryList">
             <p class="fl-empty">Loading files…</p>
@@ -3159,7 +3159,7 @@
         function renderFileLibrary() {
             const wrap = document.getElementById('fileLibraryList');
             if (fileLibrary.length === 0) {
-                wrap.innerHTML = `<p class="fl-empty">No files yet. ${editingEnabled ? 'Click "+ Add File" to get started.' : ''}</p>`;
+                wrap.innerHTML = `<p class="fl-empty">No files yet. Click "+ Add File" to get started.</p>`;
                 return;
             }
             wrap.innerHTML = fileLibrary.map(f => {
@@ -3177,8 +3177,8 @@
                             <a class="fl-link-btn" href="${escapeHtml(f.fileUrl)}" target="_blank" rel="noopener" title="Open file">${icon} Open</a>
                             <a class="fl-link-btn" href="${escapeHtml(f.fileUrl)}" download="${fileName}" title="Download file">⬇ Download</a>
                             <button class="fl-link-btn" title="Copy a link straight to this entry" onclick="copyFileLibLink('${id}', this)">🔗 Copy Link</button>
-                            <button class="inv-edit-btn ${editingEnabled ? 'visible' : ''}"   onclick="editFileLib('${id}')">Edit</button>
-                            <button class="inv-delete-btn ${editingEnabled ? 'visible' : ''}" onclick="deleteFileLib('${id}')">Delete</button>
+                            <button class="inv-edit-btn visible"   onclick="editFileLib('${id}')">Edit</button>
+                            <button class="inv-delete-btn visible" onclick="deleteFileLib('${id}')">Delete</button>
                         </div>
                     </div>
                     ${f.description ? `<p class="fl-desc">${linkifyText(f.description)}</p>` : ''}
