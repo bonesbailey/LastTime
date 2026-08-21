@@ -1720,7 +1720,7 @@
             <textarea id="flDescription" placeholder="Notes about this file…"></textarea>
             <label>Bulleted Items (optional — one per line, each becomes a bullet)</label>
             <textarea id="flItems" placeholder="Order deadline is March 1&#10;Contact Dorothy with questions" style="min-height:120px;"></textarea>
-            <label>File (PDF, Word, or Excel)</label>
+            <label>File (PDF, Word, or Excel) — optional if you're just adding bulleted items</label>
             <div class="fl-drop-zone" id="fileLibDropZone">📎 Click to choose a PDF, Word (.docx), or Excel (.xlsx) file</div>
             <input type="file" id="fileLibUpload" accept=".pdf,.docx,.xlsx" style="display:none;">
             <div class="fl-preview" id="fileLibPreview"></div>
@@ -3166,6 +3166,7 @@
             }
             wrap.innerHTML = fileLibrary.map(f => {
                 const id = escapeHtml(f.id);
+                const hasFile = !!f.fileUrl;
                 const ext = escapeHtml(f.fileExt || 'pdf');
                 const icon = FL_EXT_ICON[f.fileExt] || '📄';
                 const fileName = `${escapeHtml(f.fileName || 'file')}.${ext}`;
@@ -3173,11 +3174,11 @@
                     <div class="fl-card-header">
                         <div class="fl-title-wrap">
                             <span class="fl-title">${escapeHtml(f.title || 'Untitled')}</span>
-                            <span class="fl-ext-badge">${ext}</span>
+                            ${hasFile ? `<span class="fl-ext-badge">${ext}</span>` : ''}
                         </div>
                         <div class="inv-actions">
-                            <a class="fl-link-btn" href="${escapeHtml(f.fileUrl)}" target="_blank" rel="noopener" title="Open file">${icon} Open</a>
-                            <a class="fl-link-btn" href="${escapeHtml(f.fileUrl)}" download="${fileName}" title="Download file">⬇ Download</a>
+                            ${hasFile ? `<a class="fl-link-btn" href="${escapeHtml(f.fileUrl)}" target="_blank" rel="noopener" title="Open file">${icon} Open</a>
+                            <a class="fl-link-btn" href="${escapeHtml(f.fileUrl)}" download="${fileName}" title="Download file">⬇ Download</a>` : ''}
                             <button class="fl-link-btn" title="Copy a link straight to this entry" onclick="copyFileLibLink('${id}', this)">🔗 Copy Link</button>
                             <button class="inv-edit-btn visible"   onclick="editFileLib('${id}')">Edit</button>
                             <button class="inv-delete-btn visible" onclick="deleteFileLib('${id}')">Delete</button>
@@ -3285,7 +3286,7 @@
             const description = document.getElementById('flDescription').value.trim();
             const items = document.getElementById('flItems').value.trim();
             if (!title) { alert("Please enter a title."); return; }
-            if (!pendingFileLibFile && !currentFileLibUrl) { alert("Please choose a file to upload."); return; }
+            if (!pendingFileLibFile && !currentFileLibUrl && !items) { alert("Please choose a file to upload, or enter some bulleted items."); return; }
             const saveBtn = document.querySelector('#fileLibModal .save-btn');
             saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
             try {
