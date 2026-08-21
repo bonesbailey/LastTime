@@ -1718,6 +1718,8 @@
             <input type="text" id="flTitle" placeholder="e.g. 2026 Seed Order Form">
             <label>Description (optional)</label>
             <textarea id="flDescription" placeholder="Notes about this file…"></textarea>
+            <label>Bulleted Items (optional — one per line, each becomes a bullet)</label>
+            <textarea id="flItems" placeholder="Order deadline is March 1&#10;Contact Dorothy with questions" style="min-height:120px;"></textarea>
             <label>File (PDF, Word, or Excel)</label>
             <div class="fl-drop-zone" id="fileLibDropZone">📎 Click to choose a PDF, Word (.docx), or Excel (.xlsx) file</div>
             <input type="file" id="fileLibUpload" accept=".pdf,.docx,.xlsx" style="display:none;">
@@ -3182,6 +3184,10 @@
                         </div>
                     </div>
                     ${f.description ? `<p class="fl-desc">${linkifyText(f.description)}</p>` : ''}
+                    ${(() => {
+                        const items = (f.items || '').split('\n').map(s => s.trim()).filter(Boolean);
+                        return items.length ? `<ul>${items.map(i => `<li>${escapeHtml(i)}</li>`).join('')}</ul>` : '';
+                    })()}
                 </div>`;
             }).join('');
             goToHashTarget();
@@ -3243,6 +3249,7 @@
             document.getElementById('fileLibModalTitle').textContent = 'Add File';
             document.getElementById('flTitle').value = '';
             document.getElementById('flDescription').value = '';
+            document.getElementById('flItems').value = '';
             window.clearFileLibFile();
             document.getElementById('fileLibModal').style.display = 'flex';
         };
@@ -3254,6 +3261,7 @@
             document.getElementById('fileLibModalTitle').textContent = 'Edit File';
             document.getElementById('flTitle').value = f.title || '';
             document.getElementById('flDescription').value = f.description || '';
+            document.getElementById('flItems').value = f.items || '';
             currentFileLibUrl = f.fileUrl || null;
             currentFileLibPath = f.filePath || null;
             currentFileLibName = f.fileName || null;
@@ -3275,6 +3283,7 @@
         window.saveFileLib = async function() {
             const title = document.getElementById('flTitle').value.trim();
             const description = document.getElementById('flDescription').value.trim();
+            const items = document.getElementById('flItems').value.trim();
             if (!title) { alert("Please enter a title."); return; }
             if (!pendingFileLibFile && !currentFileLibUrl) { alert("Please choose a file to upload."); return; }
             const saveBtn = document.querySelector('#fileLibModal .save-btn');
@@ -3293,7 +3302,7 @@
                     filePath = newPath;
                 }
                 const data = {
-                    title, description,
+                    title, description, items,
                     fileUrl, filePath,
                     fileName: currentFileLibName || null,
                     fileExt:  currentFileLibExt  || null
