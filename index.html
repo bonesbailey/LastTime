@@ -2469,19 +2469,12 @@
                 return;
             }
 
-            // Keep existing order, but push any row with a # Packets value down to the bottom.
-            // Within the bottom group, sort by Date Filled (newest first; blanks last).
+            // Sort by Date Filled, newest to oldest (rows with no Date Filled go last).
             const sortedSeeds = [...seeds].sort((a, b) => {
-                const aHas = (parseInt(a.numPackets) || 0) > 0 ? 1 : 0;
-                const bHas = (parseInt(b.numPackets) || 0) > 0 ? 1 : 0;
-                if (aHas !== bHas) return aHas - bHas;
-                if (aHas === 1) {
-                    if (!a.dateFilled && !b.dateFilled) return 0;
-                    if (!a.dateFilled) return 1;
-                    if (!b.dateFilled) return -1;
-                    return b.dateFilled.localeCompare(a.dateFilled);
-                }
-                return 0;
+                if (!a.dateFilled && !b.dateFilled) return 0;
+                if (!a.dateFilled) return 1;
+                if (!b.dateFilled) return -1;
+                return b.dateFilled.localeCompare(a.dateFilled);
             });
 
             tbody.innerHTML = sortedSeeds.map(s => {
