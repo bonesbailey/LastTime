@@ -2469,13 +2469,15 @@
                 return;
             }
 
-            // Rows with a Date Filled entry drop to the bottom, sorted newest to oldest.
-            // Rows without a Date Filled entry stay at the top, in their existing order.
+            // Rows with a Date Filled entry drop to the bottom, sorted newest to oldest
+            // (oldest Date Filled ends up at the very bottom of the table).
             const sortedSeeds = [...seeds].sort((a, b) => {
                 const aHas = a.dateFilled ? 1 : 0;
                 const bHas = b.dateFilled ? 1 : 0;
                 if (aHas !== bHas) return aHas - bHas;
-                if (aHas === 1) return b.dateFilled.localeCompare(a.dateFilled);
+                if (aHas === 1) {
+                    return new Date(b.dateFilled) - new Date(a.dateFilled);
+                }
                 return 0;
             });
 
