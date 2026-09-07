@@ -2027,11 +2027,13 @@
                         ${plant.documentUrl ? (() => {
                             // Word/Excel docs aren't previewable by browsers and would
                             // just force a download (especially on phones), so route
-                            // those through Microsoft's free Office Online Viewer.
+                            // those through Google's document viewer (works more
+                            // reliably with Firebase Storage's tokenized URLs than
+                            // Microsoft's Office viewer does).
                             // PDFs already open fine directly.
                             const docNeedsViewer = plant.documentExt === 'docx' || plant.documentExt === 'xlsx';
                             const docOpenUrl = docNeedsViewer
-                                ? `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(plant.documentUrl)}`
+                                ? `https://docs.google.com/viewer?url=${encodeURIComponent(plant.documentUrl)}&embedded=true`
                                 : escapeHtml(plant.documentUrl);
                             return `<div class="doc-row"><a class="doc-link" href="${docOpenUrl}" target="_blank" rel="noopener" title="Open document">📄 ${escapeHtml(plant.documentName || 'Document')}.${escapeHtml(plant.documentExt || 'pdf')}</a><a class="download-btn doc-download-btn" href="${escapeHtml(plant.documentUrl)}" download="${escapeHtml(plant.documentName || 'document')}.${escapeHtml(plant.documentExt || 'pdf')}" title="Download document">⬇</a></div>`;
                         })() : ''}
@@ -2208,8 +2210,8 @@
         // ── Document attachment (PDF or Word) ────────────────────────────
         // Stores whichever file type you pick as-is — no conversion.
         // PDFs open right in the browser when clicked; .docx files open via
-        // Microsoft's Office Online Viewer instead of downloading (see
-        // documentUrl rendering above).
+        // Google's document viewer instead of downloading (see documentUrl
+        // rendering above).
         function setupDocDropZone() {
             const zone  = document.getElementById('docDropZone');
             const input = document.getElementById('docUpload');
@@ -3189,11 +3191,12 @@
                 // PDFs render natively in-browser, so link straight to the file.
                 // Word/Excel files aren't previewable by browsers and would just
                 // force a download (especially on phones), so route those through
-                // Microsoft's free Office Online Viewer, which displays them in a
-                // normal web page instead.
+                // Google's free document viewer, which displays them in a normal
+                // web page instead (more reliable with Firebase Storage's
+                // tokenized URLs than Microsoft's Office viewer).
                 const needsViewer = f.fileExt === 'docx' || f.fileExt === 'xlsx';
                 const openUrl = needsViewer
-                    ? `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(f.fileUrl)}`
+                    ? `https://docs.google.com/viewer?url=${encodeURIComponent(f.fileUrl)}&embedded=true`
                     : escapeHtml(f.fileUrl);
                 return `<div class="fl-card" id="filelib-${id}">
                     <div class="fl-card-header">
