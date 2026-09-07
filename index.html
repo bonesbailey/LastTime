@@ -792,6 +792,12 @@
 
         .modal-content h2 { color: #2e7d32; margin-top: 0; }
 
+        .doc-preview-html table { border-collapse: collapse; width: 100%; }
+        .doc-preview-html table td, .doc-preview-html table th {
+            border: 1px solid #ccc; padding: 4px 8px; font-size: 0.9rem;
+        }
+        .doc-preview-html img { max-width: 100%; }
+
         input, select, textarea {
             width: 100%;
             padding: 12px;
@@ -1627,6 +1633,17 @@
         </div>
     </div>
 
+    <!-- ══ Document Preview Modal (renders docx/xlsx in-browser) ══ -->
+    <div class="modal" id="docPreviewModal">
+        <div class="modal-content" style="max-width:800px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h2 id="docPreviewTitle" style="margin:0;">📄 Document</h2>
+                <button type="button" class="cancel-btn" onclick="closeDocPreview()">Close</button>
+            </div>
+            <div id="docPreviewBody" style="margin-top:1rem; overflow-x:auto;"></div>
+        </div>
+    </div>
+
     <!-- ══ GARDEN BED Add/Edit Modal ══ -->
     <div class="modal" id="gardenBedModal">
         <div class="modal-content">
@@ -1763,6 +1780,10 @@
             </div>
         </div>
     </div>
+
+    <!-- Client-side document rendering (docx/xlsx previews) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
@@ -2026,16 +2047,19 @@
                         ${plant.description ? `<p><strong>Description:</strong> ${escapeHtml(plant.description)}</p>` : ''}
                         ${plant.documentUrl ? (() => {
                             // Word/Excel docs aren't previewable by browsers and would
-                            // just force a download (especially on phones), so route
-                            // those through Google's document viewer (works more
-                            // reliably with Firebase Storage's tokenized URLs than
-                            // Microsoft's Office viewer does).
-                            // PDFs already open fine directly.
-                            const docNeedsViewer = plant.documentExt === 'docx' || plant.documentExt === 'xlsx';
-                            const docOpenUrl = docNeedsViewer
-                                ? `https://docs.google.com/viewer?url=${encodeURIComponent(plant.documentUrl)}&embedded=true`
-                                : escapeHtml(plant.documentUrl);
-                            return `<div class="doc-row"><a class="doc-link" href="${docOpenUrl}" target="_blank" rel="noopener" title="Open document">📄 ${escapeHtml(plant.documentName || 'Document')}.${escapeHtml(plant.documentExt || 'pdf')}</a><a class="download-btn doc-download-btn" href="${escapeHtml(plant.documentUrl)}" download="${escapeHtml(plant.documentName || 'document')}.${escapeHtml(plant.documentExt || 'pdf')}" title="Download document">⬇</a></div>`;
+                            // just force a download (especially on phones). Third-party
+                            // viewer services proved unreliable with Firebase Storage's
+                            // tokenized URLs, so instead we fetch and render the file
+                            // in-browser via openDocPreview(). PDFs already open fine
+                            // directly, so those keep their normal link.
+                            const isWordOrExcel = plant.documentExt === 'docx' || plant.documentExt === 'xlsx';
+                            const docName = escapeHtml(plant.documentName || 'Document');
+                            const docExt  = escapeHtml(plant.documentExt || 'pdf');
+                            const docUrlAttr = escapeHtml(plant.documentUrl);
+                            const openLink = isWordOrExcel
+                                ? `<a class="doc-link" href="#" onclick="openDocPreview('${docUrlAttr}','${docExt}','${docName}'); return false;" title="Open document">📄 ${docName}.${docExt}</a>`
+                                : `<a class="doc-link" href="${docUrlAttr}" target="_blank" rel="noopener" title="Open document">📄 ${docName}.${docExt}</a>`;
+                            return `<div class="doc-row">${openLink}<a class="download-btn doc-download-btn" href="${docUrlAttr}" download="${docName}.${docExt}" title="Download document">⬇</a></div>`;
                         })() : ''}
                     </div>`;
                 grid.appendChild(card);
@@ -3188,16 +3212,17 @@
                 const ext = escapeHtml(f.fileExt || 'pdf');
                 const icon = FL_EXT_ICON[f.fileExt] || '📄';
                 const fileName = `${escapeHtml(f.fileName || 'file')}.${ext}`;
+                const fileUrlAttr = escapeHtml(f.fileUrl || '');
                 // PDFs render natively in-browser, so link straight to the file.
                 // Word/Excel files aren't previewable by browsers and would just
-                // force a download (especially on phones), so route those through
-                // Google's free document viewer, which displays them in a normal
-                // web page instead (more reliable with Firebase Storage's
-                // tokenized URLs than Microsoft's Office viewer).
-                const needsViewer = f.fileExt === 'docx' || f.fileExt === 'xlsx';
-                const openUrl = needsViewer
-                    ? `https://docs.google.com/viewer?url=${encodeURIComponent(f.fileUrl)}&embedded=true`
-                    : escapeHtml(f.fileUrl);
+                // force a download (especially on phones). Third-party viewer
+                // services proved unreliable with Firebase Storage's tokenized
+                // URLs, so instead we fetch and render the file in-browser via
+                // openDocPreview().
+                const isWordOrExcel = f.fileExt === 'docx' || f.fileExt === 'xlsx';
+                const openLink = isWordOrExcel
+                    ? `<a class="fl-link-btn" href="#" onclick="openDocPreview('${fileUrlAttr}','${escapeHtml(f.fileExt)}','${escapeHtml(f.title || 'Document')}'); return false;" title="Open file">${icon} Open</a>`
+                    : `<a class="fl-link-btn" href="${fileUrlAttr}" target="_blank" rel="noopener" title="Open file">${icon} Open</a>`;
                 return `<div class="fl-card" id="filelib-${id}">
                     <div class="fl-card-header">
                         <div class="fl-title-wrap">
@@ -3205,8 +3230,8 @@
                             ${hasFile ? `<span class="fl-ext-badge">${ext}</span>` : ''}
                         </div>
                         <div class="inv-actions">
-                            ${hasFile ? `<a class="fl-link-btn" href="${openUrl}" target="_blank" rel="noopener" title="Open file">${icon} Open</a>
-                            <a class="fl-link-btn" href="${escapeHtml(f.fileUrl)}" download="${fileName}" title="Download file">⬇ Download</a>` : ''}
+                            ${hasFile ? `${openLink}
+                            <a class="fl-link-btn" href="${fileUrlAttr}" download="${fileName}" title="Download file">⬇ Download</a>` : ''}
                             <button class="fl-link-btn" title="Copy a link straight to this entry" onclick="copyFileLibLink('${id}', this)">🔗 Copy Link</button>
                             <button class="inv-edit-btn visible"   onclick="editFileLib('${id}')">Edit</button>
                             <button class="inv-delete-btn visible" onclick="deleteFileLib('${id}')">Delete</button>
@@ -3751,6 +3776,46 @@
         window.editSeedRecord    = editSeedRecord;
         window.deleteSeedRecord  = deleteSeedRecord;
         window.closeSeedModal    = closeSeedModal;
+
+        // ── Document preview (renders docx/xlsx in-browser instead of
+        //    downloading or relying on a third-party viewer service) ──
+        function openDocPreview(url, ext, name) {
+            const modal = document.getElementById('docPreviewModal');
+            const body  = document.getElementById('docPreviewBody');
+            const title = document.getElementById('docPreviewTitle');
+            title.textContent = `📄 ${name || 'Document'}`;
+            body.innerHTML = '<p>Loading preview…</p>';
+            modal.style.display = 'flex';
+
+            fetch(url)
+                .then(res => {
+                    if (!res.ok) throw new Error('Fetch failed: ' + res.status);
+                    return res.arrayBuffer();
+                })
+                .then(buffer => {
+                    if (ext === 'docx') {
+                        return mammoth.convertToHtml({ arrayBuffer: buffer })
+                            .then(result => { body.innerHTML = `<div class="doc-preview-html">${result.value}</div>`; });
+                    } else if (ext === 'xlsx') {
+                        const wb = XLSX.read(buffer, { type: 'array' });
+                        const firstSheet = wb.Sheets[wb.SheetNames[0]];
+                        const html = XLSX.utils.sheet_to_html(firstSheet);
+                        body.innerHTML = `<div class="doc-preview-html">${html}</div>`;
+                    } else {
+                        throw new Error('Unsupported file type for preview');
+                    }
+                })
+                .catch(err => {
+                    console.error('Document preview failed:', err);
+                    body.innerHTML = `<p>Sorry, this file couldn't be previewed. <a href="${url}" download>Download it instead</a>.</p>`;
+                });
+        }
+        function closeDocPreview() {
+            document.getElementById('docPreviewModal').style.display = 'none';
+            document.getElementById('docPreviewBody').innerHTML = '';
+        }
+        window.openDocPreview  = openDocPreview;
+        window.closeDocPreview = closeDocPreview;
     </script>
 </body>
 </html>
