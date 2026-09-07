@@ -2024,7 +2024,17 @@
                             ${(plant.seedPktCount > 0) ? `<span class="tag">📦 ${escapeHtml(String(plant.seedPktCount))} Seed Pkt</span>` : ''}
                         </div>
                         ${plant.description ? `<p><strong>Description:</strong> ${escapeHtml(plant.description)}</p>` : ''}
-                        ${plant.documentUrl ? `<div class="doc-row"><a class="doc-link" href="${escapeHtml(plant.documentUrl)}" target="_blank" rel="noopener" title="Open document">📄 ${escapeHtml(plant.documentName || 'Document')}.${escapeHtml(plant.documentExt || 'pdf')}</a><a class="download-btn doc-download-btn" href="${escapeHtml(plant.documentUrl)}" download="${escapeHtml(plant.documentName || 'document')}.${escapeHtml(plant.documentExt || 'pdf')}" title="Download document">⬇</a></div>` : ''}
+                        ${plant.documentUrl ? (() => {
+                            // Word/Excel docs aren't previewable by browsers and would
+                            // just force a download (especially on phones), so route
+                            // those through Microsoft's free Office Online Viewer.
+                            // PDFs already open fine directly.
+                            const docNeedsViewer = plant.documentExt === 'docx' || plant.documentExt === 'xlsx';
+                            const docOpenUrl = docNeedsViewer
+                                ? `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(plant.documentUrl)}`
+                                : escapeHtml(plant.documentUrl);
+                            return `<div class="doc-row"><a class="doc-link" href="${docOpenUrl}" target="_blank" rel="noopener" title="Open document">📄 ${escapeHtml(plant.documentName || 'Document')}.${escapeHtml(plant.documentExt || 'pdf')}</a><a class="download-btn doc-download-btn" href="${escapeHtml(plant.documentUrl)}" download="${escapeHtml(plant.documentName || 'document')}.${escapeHtml(plant.documentExt || 'pdf')}" title="Download document">⬇</a></div>`;
+                        })() : ''}
                     </div>`;
                 grid.appendChild(card);
             });
@@ -2197,8 +2207,9 @@
 
         // ── Document attachment (PDF or Word) ────────────────────────────
         // Stores whichever file type you pick as-is — no conversion.
-        // PDFs open right in the browser when clicked; .docx files will
-        // download instead, since browsers don't preview Word docs natively.
+        // PDFs open right in the browser when clicked; .docx files open via
+        // Microsoft's Office Online Viewer instead of downloading (see
+        // documentUrl rendering above).
         function setupDocDropZone() {
             const zone  = document.getElementById('docDropZone');
             const input = document.getElementById('docUpload');
@@ -3175,6 +3186,15 @@
                 const ext = escapeHtml(f.fileExt || 'pdf');
                 const icon = FL_EXT_ICON[f.fileExt] || '📄';
                 const fileName = `${escapeHtml(f.fileName || 'file')}.${ext}`;
+                // PDFs render natively in-browser, so link straight to the file.
+                // Word/Excel files aren't previewable by browsers and would just
+                // force a download (especially on phones), so route those through
+                // Microsoft's free Office Online Viewer, which displays them in a
+                // normal web page instead.
+                const needsViewer = f.fileExt === 'docx' || f.fileExt === 'xlsx';
+                const openUrl = needsViewer
+                    ? `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(f.fileUrl)}`
+                    : escapeHtml(f.fileUrl);
                 return `<div class="fl-card" id="filelib-${id}">
                     <div class="fl-card-header">
                         <div class="fl-title-wrap">
@@ -3182,7 +3202,7 @@
                             ${hasFile ? `<span class="fl-ext-badge">${ext}</span>` : ''}
                         </div>
                         <div class="inv-actions">
-                            ${hasFile ? `<a class="fl-link-btn" href="${escapeHtml(f.fileUrl)}" target="_blank" rel="noopener" title="Open file">${icon} Open</a>
+                            ${hasFile ? `<a class="fl-link-btn" href="${openUrl}" target="_blank" rel="noopener" title="Open file">${icon} Open</a>
                             <a class="fl-link-btn" href="${escapeHtml(f.fileUrl)}" download="${fileName}" title="Download file">⬇ Download</a>` : ''}
                             <button class="fl-link-btn" title="Copy a link straight to this entry" onclick="copyFileLibLink('${id}', this)">🔗 Copy Link</button>
                             <button class="inv-edit-btn visible"   onclick="editFileLib('${id}')">Edit</button>
