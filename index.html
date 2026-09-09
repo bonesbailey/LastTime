@@ -1471,6 +1471,8 @@
             <input type="file" id="seedImageUpload" accept="image/*" style="display:none;">
             <div class="drop-zone" id="seedDropZone">📂 <strong>Click to browse</strong></div>
             <div id="seedImagePreview" class="image-preview"></div>
+            <label>Seed Photo Taken By:</label>
+            <input type="text" id="seedPhotoCredit" placeholder="e.g. Dorothy">
 
             <label>Attached Document (PDF or Word):</label>
             <input type="file" id="docUpload" accept=".pdf,.docx" style="display:none;">
@@ -2033,7 +2035,7 @@
                             ${plant.seedImageUrl
                                 ? `<div class="photo-wrap"><img src="${seedUrl}" class="seed-image" alt="Seeds" data-action="open" data-url="${seedUrl}"><a class="download-btn" href="${seedUrl}" download="${escapeHtml(plant.name)}-seed-photo.jpg" target="_blank" title="Save seed photo" onclick="event.stopPropagation();">⬇</a></div>`
                                 : ''}
-                            <span class="seed-label">Seeds</span>
+                            <span class="seed-label">${plant.seedPhotoCredit ? `Seeds 📷 ${escapeHtml(plant.seedPhotoCredit)}` : 'Seeds'}</span>
                         </div>
                     </div>
                     <div class="plant-info">
@@ -2149,6 +2151,7 @@
             document.getElementById('seedPktCount').value = '';
             document.getElementById('photoCredit').value = '';
             document.getElementById('photoDate').value = '';
+            document.getElementById('seedPhotoCredit').value = '';
             document.getElementById('description').value = '';
             document.getElementById('imagePreview').style.backgroundImage = '';
             document.getElementById('seedImagePreview').style.backgroundImage = '';
@@ -2179,6 +2182,7 @@
             document.getElementById('seedPktCount').value = p.seedPktCount ?? '';
             document.getElementById('photoCredit').value = p.photoCredit || '';
             document.getElementById('photoDate').value   = p.photoDate   || '';
+            document.getElementById('seedPhotoCredit').value = p.seedPhotoCredit || '';
             document.getElementById('description').value = p.description || '';
             document.getElementById('imagePreview').style.backgroundImage = p.imageUrl ? `url('${p.imageUrl}')` : '';
             document.getElementById('seedImagePreview').style.backgroundImage = p.seedImageUrl ? `url('${p.seedImageUrl}')` : '';
@@ -2384,6 +2388,7 @@
                     seedPktCount:  parseInt(document.getElementById('seedPktCount').value) || 0,
                     photoCredit:   document.getElementById('photoCredit').value.trim(),
                     photoDate:     document.getElementById('photoDate').value,
+                    seedPhotoCredit: document.getElementById('seedPhotoCredit').value.trim(),
                     description:   document.getElementById('description').value.trim(),
                     imageUrl, imagePath,
                     seedImageUrl:  seedImageUrl  || null,
