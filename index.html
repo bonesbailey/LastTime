@@ -2511,14 +2511,14 @@
                 return;
             }
 
-            // Rows with a Date Filled entry drop to the bottom.
-            // This is the exact reverse of the previous sort direction.
+            // Rows with a Date Filled entry drop to the bottom,
+            // and within that group they sort newest date first.
             const sortedSeeds = [...seeds].sort((a, b) => {
                 const aHas = a.dateFilled ? 1 : 0;
                 const bHas = b.dateFilled ? 1 : 0;
                 if (aHas !== bHas) return aHas - bHas;
                 if (aHas === 1) {
-                    return new Date(a.dateFilled) - new Date(b.dateFilled);
+                    return new Date(b.dateFilled) - new Date(a.dateFilled);
                 }
                 return 0;
             });
