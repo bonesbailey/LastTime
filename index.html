@@ -1130,8 +1130,177 @@
         .mm-card li { margin-bottom: 4px; }
         .mm-empty { text-align: center; padding: 3rem; color: #888; font-size: 1rem; }
     </style>
+
+    <!-- 🎃 HALLOWEEN THEME START (delete this block, the decorations block, and the script block to remove) -->
+    <link href="https://fonts.googleapis.com/css2?family=Creepster&display=swap" rel="stylesheet">
+    <style id="halloween-theme">
+        :root { --hw-orange:#ff7518; --hw-purple:#6a1b9a; --hw-deep:#1b0f2a; --hw-night:#2d1b3d; --hw-cream:#fff4e0; --hw-ink:#2b1a3a; }
+
+        body {
+            background: radial-gradient(ellipse at top, #3b2357 0%, #241437 45%, #130a1f 100%) fixed;
+            color: #f3e6ff;
+            position: relative;
+        }
+        h1 {
+            font-family: 'Creepster', 'Chiller', 'Impact', system-ui, sans-serif;
+            font-weight: 400;
+            letter-spacing: 0.06em;
+            font-size: 2.6rem;
+            color: var(--hw-orange);
+            text-shadow: 0 0 8px rgba(255,117,24,.8), 0 0 22px rgba(255,117,24,.5), 3px 3px 0 #000;
+            animation: hw-flicker 4s infinite;
+        }
+        @keyframes hw-flicker {
+            0%,18%,22%,60%,64%,100% { opacity:1; }
+            20%,62% { opacity:.65; }
+        }
+
+        /* Logo images get a glow */
+        body > div > img { box-shadow: 0 0 14px rgba(255,117,24,.7); border: 2px solid var(--hw-orange); }
+
+        /* Tabs */
+        .page-nav { box-shadow: 0 0 18px rgba(255,117,24,.35); }
+        .page-tab, .dropdown-caret { background: #4a2a6b; color: #ffd9a8; }
+        .page-tab:not(:last-child), .dropdown-caret { border-right-color: #1b0f2a; }
+        .page-tab.active, .dropdown-caret.active { background: var(--hw-orange); color: #1b0f2a; }
+        .page-tab:hover:not(.active), .dropdown-caret:hover { background: #7b3fa8; color: #fff; }
+        .dropdown-menu { background: var(--hw-deep); box-shadow: 0 6px 18px rgba(0,0,0,.6); }
+        .dropdown-menu button { background: var(--hw-deep); color: #ffd9a8; border-bottom-color: #3b2357; }
+        .dropdown-menu button:hover { background: #4a2a6b; }
+        .dropdown-menu button.active { background: var(--hw-orange); color: #1b0f2a; }
+
+        /* Buttons */
+        .add-btn { background: var(--hw-orange); color: #1b0f2a; font-weight: 700; box-shadow: 0 0 14px rgba(255,117,24,.5); }
+        .toolbar button { background: #3b2357; color: #ffd9a8; border-color: var(--hw-orange); }
+        .toolbar button:hover { background: #55307a; }
+        .edit-btn { background: #6a1b9a; }
+        .storage-usage { background: #3b2357; border-color: var(--hw-orange); color: #ffd9a8; }
+        .storage-usage .bar-track { background: #1b0f2a; }
+        .storage-usage .bar-fill { background: var(--hw-orange); }
+
+        /* Light "paper" surfaces keep dark text so everything stays readable */
+        .card, .gb-card, .ev-card, .rs-card, .fl-card, .mm-card,
+        .modal-content, #seedModal .modal-content, .inv-table, .notes-editor,
+        .type-dropdown-panel, .photo-credit, .doc-preview-html {
+            color: var(--hw-ink);
+        }
+        .card, .gb-card, .ev-card, .rs-card, .fl-card, .mm-card {
+            background: var(--hw-cream);
+            border: 1px solid rgba(255,117,24,.55);
+            box-shadow: 0 4px 16px rgba(0,0,0,.5);
+        }
+        .card:hover, .gb-card:hover, .ev-card:hover, .rs-card:hover, .fl-card:hover, .mm-card:hover {
+            box-shadow: 0 0 18px rgba(255,117,24,.55), 0 4px 16px rgba(0,0,0,.5);
+        }
+        .photo-credit { background: #ffe8c7; border-bottom-color: #f3c28a; color: #4a1f6b; }
+        .modal-content { background: var(--hw-cream); border: 2px solid var(--hw-orange); }
+        .modal-content h2 { color: var(--hw-purple); }
+
+        /* Tables */
+        .inv-table th { background: var(--hw-purple); color: #ffd9a8; border-bottom: 3px solid var(--hw-orange); }
+        .inv-table { background: var(--hw-cream); }
+        .inv-table td { border-bottom-color: #f3d9b1; }
+        .inv-table tr:nth-child(even) td { background: #fbe6c6; }
+        .inv-table tr:hover td { background: #ffd9a8; }
+        .inv-table td.seed-name { color: var(--hw-purple); }
+        .inv-table-wrap { box-shadow: 0 0 18px rgba(255,117,24,.35); }
+
+        /* Headings that sit directly on the dark background */
+        h2, h3 { color: #ffb86b; }
+        .modal-content h2, .modal-content h3, .card h2, .card h3 { color: var(--hw-purple); }
+
+        /* Form fields */
+        input[type="text"], input[type="search"], input[type="date"], input[type="number"], select, textarea {
+            border-color: #b86bff !important;
+        }
+        input:focus, select:focus, textarea:focus { outline: 2px solid var(--hw-orange); }
+
+        /* Spooky decorations */
+        #hw-decor { position: fixed; inset: 0; pointer-events: none; z-index: 5; overflow: hidden; }
+        .hw-moon {
+            position: absolute; top: 200px; right: 26px; width: 70px; height: 70px; border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%, #fffbe6, #ffe38a 60%, #e6b84d);
+            box-shadow: 0 0 30px 10px rgba(255,227,138,.45);
+            opacity: .9;
+        }
+        .hw-moon::after { content:''; position:absolute; left:18px; top:20px; width:12px; height:12px; border-radius:50%; background:rgba(0,0,0,.08); box-shadow: 24px 14px 0 3px rgba(0,0,0,.07), 6px 34px 0 -2px rgba(0,0,0,.07); }
+
+        .hw-web { position: absolute; width: 150px; height: 150px; opacity: .55; }
+        .hw-web.tl { top: 0; left: 0; }
+        .hw-web.tr { top: 0; right: 0; transform: scaleX(-1); }
+        .hw-web.bl { bottom: 0; left: 0; transform: scaleY(-1); }
+        .hw-web.br { bottom: 0; right: 0; transform: scale(-1,-1); }
+
+        .hw-bat { position: absolute; font-size: 26px; left: -60px; animation: hw-fly linear infinite; filter: drop-shadow(0 0 4px #000); }
+        @keyframes hw-fly {
+            0%   { transform: translate(0, 0) scale(1); }
+            25%  { transform: translate(30vw, -30px) scale(1.15) rotate(-6deg); }
+            50%  { transform: translate(60vw, 20px) scale(.95) rotate(6deg); }
+            75%  { transform: translate(85vw, -20px) scale(1.1) rotate(-4deg); }
+            100% { transform: translate(115vw, 10px) scale(1); }
+        }
+
+        .hw-ghost { position: absolute; font-size: 34px; opacity: .8; animation: hw-float 6s ease-in-out infinite; filter: drop-shadow(0 0 8px rgba(255,255,255,.7)); }
+        @keyframes hw-float {
+            0%,100% { transform: translateY(0) rotate(-5deg); }
+            50%     { transform: translateY(-22px) rotate(5deg); }
+        }
+
+        .hw-ground { position: absolute; left: 0; right: 0; bottom: 0; display: flex; justify-content: space-around; align-items: flex-end; font-size: 34px; padding: 0 70px; opacity: .95; }
+        .hw-ground span { filter: drop-shadow(0 0 8px rgba(255,117,24,.7)); }
+        .hw-ground .glow { animation: hw-glow 2.5s ease-in-out infinite; }
+        .hw-ground .glow:nth-child(2n) { animation-delay: .8s; }
+        .hw-ground .glow:nth-child(3n) { animation-delay: 1.6s; }
+        @keyframes hw-glow {
+            0%,100% { filter: drop-shadow(0 0 6px rgba(255,117,24,.6)); }
+            50%     { filter: drop-shadow(0 0 16px rgba(255,200,60,1)); }
+        }
+
+        @media (max-width: 600px) {
+            h1 { font-size: 1.8rem; }
+            .hw-web { width: 90px; height: 90px; }
+            .hw-moon { width: 44px; height: 44px; }
+            .hw-ground { font-size: 22px; padding: 0 40px; }
+            .hw-ground span:nth-child(n+5) { display: none; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .hw-bat, .hw-ghost, .hw-ground .glow, h1 { animation: none; }
+        }
+    </style>
+    <!-- 🎃 HALLOWEEN THEME END -->
 </head>
 <body>
+    <!-- 🎃 HALLOWEEN DECORATIONS START -->
+    <div id="hw-decor" aria-hidden="true">
+        <div class="hw-moon"></div>
+        <svg class="hw-web tl" viewBox="0 0 100 100" fill="none" stroke="#e8dcff" stroke-width="0.7">
+<path d="M0 0 L100 0 M0 0 L100 30 M0 0 L100 60 M0 0 L80 100 M0 0 L40 100 M0 0 L0 100"/>
+<path d="M18 0 Q14 14 0 18 M36 0 Q30 28 0 36 M54 0 Q46 44 0 54 M72 0 Q60 60 0 72 M90 0 Q74 76 0 90"/>
+<g fill="#e8dcff" stroke="none"><circle cx="30" cy="60" r="0"/></g></svg>
+        <svg class="hw-web tr" viewBox="0 0 100 100" fill="none" stroke="#e8dcff" stroke-width="0.7">
+<path d="M0 0 L100 0 M0 0 L100 30 M0 0 L100 60 M0 0 L80 100 M0 0 L40 100 M0 0 L0 100"/>
+<path d="M18 0 Q14 14 0 18 M36 0 Q30 28 0 36 M54 0 Q46 44 0 54 M72 0 Q60 60 0 72 M90 0 Q74 76 0 90"/>
+<g fill="#e8dcff" stroke="none"><circle cx="30" cy="60" r="0"/></g></svg>
+        <svg class="hw-web bl" viewBox="0 0 100 100" fill="none" stroke="#e8dcff" stroke-width="0.7">
+<path d="M0 0 L100 0 M0 0 L100 30 M0 0 L100 60 M0 0 L80 100 M0 0 L40 100 M0 0 L0 100"/>
+<path d="M18 0 Q14 14 0 18 M36 0 Q30 28 0 36 M54 0 Q46 44 0 54 M72 0 Q60 60 0 72 M90 0 Q74 76 0 90"/>
+<g fill="#e8dcff" stroke="none"><circle cx="30" cy="60" r="0"/></g></svg>
+        <svg class="hw-web br" viewBox="0 0 100 100" fill="none" stroke="#e8dcff" stroke-width="0.7">
+<path d="M0 0 L100 0 M0 0 L100 30 M0 0 L100 60 M0 0 L80 100 M0 0 L40 100 M0 0 L0 100"/>
+<path d="M18 0 Q14 14 0 18 M36 0 Q30 28 0 36 M54 0 Q46 44 0 54 M72 0 Q60 60 0 72 M90 0 Q74 76 0 90"/>
+<g fill="#e8dcff" stroke="none"><circle cx="30" cy="60" r="0"/></g></svg>
+        <span class="hw-bat" style="top:12%; animation-duration:22s; animation-delay:0s;">🦇</span>
+        <span class="hw-bat" style="top:26%; animation-duration:30s; animation-delay:7s; font-size:20px;">🦇</span>
+        <span class="hw-bat" style="top:8%;  animation-duration:26s; animation-delay:14s; font-size:32px;">🦇</span>
+        <span class="hw-bat" style="top:38%; animation-duration:34s; animation-delay:3s; font-size:18px;">🦇</span>
+        <span class="hw-ghost" style="top:30%; left:2%;">👻</span>
+        <span class="hw-ghost" style="top:55%; right:2%; animation-delay:2s;">👻</span>
+        <div class="hw-ground">
+            <span class="glow">🎃</span><span>🕸️</span><span class="glow">🎃</span><span>🕷️</span><span>💀</span><span class="glow">🎃</span><span>🕸️</span><span class="glow">🎃</span><span>🪦</span><span class="glow">🎃</span>
+        </div>
+    </div>
+    <!-- 🎃 HALLOWEEN DECORATIONS END -->
+
     <div style="display:flex; align-items:center; justify-content:center; gap:18px; margin-bottom:20px;">
         <img src="SeedSaverLogo.jpg" alt="Seed Savers Committee" style="height:90px; width:auto; border-radius:8px;">
         <h1 style="margin:0;">🌱 Seed Savers Group</h1>
@@ -3822,5 +3991,16 @@
         window.openDocPreview  = openDocPreview;
         window.closeDocPreview = closeDocPreview;
     </script>
+
+    <!-- 🎃 HALLOWEEN SCRIPT START -->
+    <script>
+        // Spooky title + one-time "boo" flicker. Safe to delete.
+        (function () {
+            try { document.title = '🎃 ' + document.title.replace(/^🌱\s*/, ''); } catch (e) {}
+            var h1 = document.querySelector('h1');
+            if (h1) h1.textContent = h1.textContent.replace('🌱', '🎃').trim() + ' 🦇';
+        })();
+    </script>
+    <!-- 🎃 HALLOWEEN SCRIPT END -->
 </body>
 </html>
