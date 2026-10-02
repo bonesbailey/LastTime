@@ -1453,7 +1453,7 @@
             <div class="game-col">
                 <div class="seed-page-header">
                     <h2>🔍 Seed Detect Game</h2>
-                    <button class="seed-add-btn" id="game2AddBtn" onclick="showGame2Form()" style="display:none;">+ Add Row</button>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;"><button class="seed-add-btn" id="game2UploadBtn" onclick="showGameUpload(2)" style="display:none;">📥 Upload Excel</button><button class="seed-add-btn" id="game2AddBtn" onclick="showGame2Form()" style="display:none;">+ Add Row</button></div>
                 </div>
                 <div class="inv-table-wrap">
                     <table class="inv-table game-table">
@@ -1479,7 +1479,7 @@
             <div class="game-col">
                 <div class="seed-page-header">
                     <h2>🎮 Seed Savers Game</h2>
-                    <button class="seed-add-btn" id="game1AddBtn" onclick="showGame1Form()" style="display:none;">+ Add Row</button>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;"><button class="seed-add-btn" id="game1UploadBtn" onclick="showGameUpload(1)" style="display:none;">📥 Upload Excel</button><button class="seed-add-btn" id="game1AddBtn" onclick="showGame1Form()" style="display:none;">+ Add Row</button></div>
                 </div>
                 <div class="inv-table-wrap">
                     <table class="inv-table game-table">
@@ -1762,6 +1762,28 @@
         </div>
     </div>
 
+    <!-- ══ GAME EXCEL UPLOAD MODAL (shared by Seed Detect Game and Seed Savers Game) ══ -->
+    <div id="gameUploadModal" style="display:none; position:fixed; top:0;left:0;right:0;bottom:0; background:rgba(0,0,0,0.7); align-items:center; justify-content:center; z-index:1000;">
+        <div class="modal-content">
+            <h2 id="gameUploadTitle">Upload Excel</h2>
+            <p style="font-size:0.9rem; margin-top:0;">Your spreadsheet should have <b>Seed Name</b> in column A and <b>Number</b> in column B. A header row at the top is fine — it will be skipped automatically.</p>
+            <input type="file" id="gameUploadFile" accept=".xlsx,.xls,.csv" style="width:100%; box-sizing:border-box;">
+            <div id="gameUploadPreview" style="margin:12px 0; font-size:0.9rem; min-height:1.2em;"></div>
+            <div id="gameUploadModeWrap" style="display:none; margin-bottom:12px;">
+                <label style="display:flex; align-items:center; gap:8px; margin:6px 0; font-weight:600;">
+                    <input type="radio" name="gameUploadMode" value="add" checked style="width:auto; margin:0;"> Add these to the existing rows
+                </label>
+                <label style="display:flex; align-items:center; gap:8px; margin:6px 0; font-weight:600;">
+                    <input type="radio" name="gameUploadMode" value="replace" style="width:auto; margin:0;"> Replace ALL existing rows with these
+                </label>
+            </div>
+            <div class="modal-actions">
+                <button class="save-btn" id="gameUploadImportBtn" onclick="importGameRows()" disabled>Import</button>
+                <button class="cancel-btn" onclick="closeGameUpload()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <!-- ══ SEED GERMINATION Add/Edit Modal ══ -->
     <div id="germModal" style="display:none; position:fixed; top:0;left:0;right:0;bottom:0; background:rgba(0,0,0,0.7); align-items:center; justify-content:center; z-index:1000;">
         <div class="modal-content">
@@ -1960,7 +1982,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
         import {
             getFirestore, collection, addDoc, updateDoc, deleteDoc, doc,
-            onSnapshot, serverTimestamp, query, orderBy, getDoc, setDoc
+            onSnapshot, serverTimestamp, query, orderBy, getDoc, setDoc, writeBatch, getDocs
         } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
         import {
             getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject, listAll, getMetadata
@@ -2025,6 +2047,8 @@
             document.getElementById('minutesAddBtn').style.display  = 'block';
             document.getElementById('dateActionsHeader').style.display = '';
             document.getElementById('game1AddBtn').style.display    = 'block';
+            document.getElementById('game1UploadBtn').style.display = 'block';
+            document.getElementById('game2UploadBtn').style.display = 'block';
             document.getElementById('game2AddBtn').style.display    = 'block';
             document.getElementById('germAddBtn').style.display     = 'block';
             document.getElementById('germActionsHeader').style.color = '';
@@ -3773,6 +3797,115 @@
             if (!confirm("Delete this row for EVERYONE? This cannot be undone.")) return;
             try { await deleteDoc(doc(db, 'seedSaversGame', id)); }
             catch(e) { alert("Delete failed: " + e.message); }
+        };
+
+        // ══════════════════════════════════════════════════════════════
+        // EXCEL UPLOAD for Seed Savers Game / Seed Detect Game
+        // Column A = Seed Name, Column B = Number (header row optional)
+        // ══════════════════════════════════════════════════════════════
+        let gameUploadWhich = 1;
+        let gameUploadParsed = [];
+        const gameUploadInfo = {
+            1: { coll: 'seedSaversGame', label: 'Seed Savers Game' },
+            2: { coll: 'seedDetectGame', label: 'Seed Detect Game' }
+        };
+
+        window.showGameUpload = function(which) {
+            gameUploadWhich = which;
+            gameUploadParsed = [];
+            document.getElementById('gameUploadTitle').textContent = '📥 Upload Excel — ' + gameUploadInfo[which].label;
+            document.getElementById('gameUploadFile').value = '';
+            document.getElementById('gameUploadPreview').innerHTML = '';
+            document.getElementById('gameUploadModeWrap').style.display = 'none';
+            document.querySelector('input[name="gameUploadMode"][value="add"]').checked = true;
+            document.getElementById('gameUploadImportBtn').disabled = true;
+            document.getElementById('gameUploadModal').style.display = 'flex';
+        };
+
+        window.closeGameUpload = function() { document.getElementById('gameUploadModal').style.display = 'none'; };
+
+        document.getElementById('gameUploadFile').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            const preview = document.getElementById('gameUploadPreview');
+            const importBtn = document.getElementById('gameUploadImportBtn');
+            gameUploadParsed = [];
+            importBtn.disabled = true;
+            document.getElementById('gameUploadModeWrap').style.display = 'none';
+            if (!file) { preview.innerHTML = ''; return; }
+            try {
+                const wb = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+                const sheet = wb.Sheets[wb.SheetNames[0]];
+                const raw = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+                let rows = raw.filter(r => String(r[0] ?? '').trim() !== '');
+                // Skip a header row (first row whose Number cell isn't a number, or that says "seed")
+                if (rows.length) {
+                    const first = rows[0];
+                    const numCell = String(first[1] ?? '').trim();
+                    if (/^seed/i.test(String(first[0]).trim()) || (numCell !== '' && isNaN(Number(numCell)))) rows.shift();
+                }
+                let truncated = 0, clamped = 0, noNumber = 0;
+                gameUploadParsed = rows.map(r => {
+                    let name = String(r[0]).trim();
+                    if (name.length > 18) { name = name.slice(0, 18); truncated++; }
+                    const numRaw = String(r[1] ?? '').trim();
+                    let num = parseInt(numRaw, 10);
+                    if (isNaN(num)) { num = 0; noNumber++; }
+                    if (num > 999) { num = 999; clamped++; }
+                    if (num < 0) { num = 0; clamped++; }
+                    return { seedName: name, number: num };
+                });
+                if (gameUploadParsed.length === 0) {
+                    preview.innerHTML = '<span style="color:#d32f2f;">No rows found. Put Seed Names in column A and Numbers in column B.</span>';
+                    return;
+                }
+                const sample = gameUploadParsed.slice(0, 5).map(r => `${escapeHtml(r.seedName)} — ${r.number}`).join('<br>');
+                const more = gameUploadParsed.length > 5 ? `<br>…and ${gameUploadParsed.length - 5} more` : '';
+                let notes = '';
+                if (truncated) notes += `<br><span style="color:#b45309;">⚠️ ${truncated} name(s) were longer than 18 characters and were shortened.</span>`;
+                if (noNumber)  notes += `<br><span style="color:#b45309;">⚠️ ${noNumber} row(s) had no valid number and were set to 0.</span>`;
+                if (clamped)   notes += `<br><span style="color:#b45309;">⚠️ ${clamped} number(s) were outside 0–999 and were adjusted.</span>`;
+                preview.innerHTML = `<b>Found ${gameUploadParsed.length} row(s):</b><br>${sample}${more}${notes}`;
+                document.getElementById('gameUploadModeWrap').style.display = 'block';
+                importBtn.disabled = false;
+            } catch (err) {
+                preview.innerHTML = `<span style="color:#d32f2f;">Could not read that file: ${escapeHtml(err.message)}</span>`;
+            }
+        });
+
+        window.importGameRows = async function() {
+            if (!gameUploadParsed.length) return;
+            const info = gameUploadInfo[gameUploadWhich];
+            const mode = document.querySelector('input[name="gameUploadMode"]:checked').value;
+            if (mode === 'replace' && !confirm(`This will DELETE all current rows in the ${info.label} for EVERYONE and replace them with ${gameUploadParsed.length} row(s) from your file. Continue?`)) return;
+            const btn = document.getElementById('gameUploadImportBtn');
+            btn.disabled = true; btn.textContent = 'Importing…';
+            try {
+                const col = collection(db, info.coll);
+                if (mode === 'replace') {
+                    const existing = await getDocs(col);
+                    for (let i = 0; i < existing.docs.length; i += 400) {
+                        const b = writeBatch(db);
+                        existing.docs.slice(i, i + 400).forEach(d => b.delete(d.ref));
+                        await b.commit();
+                    }
+                }
+                // Newest-first display: give the first spreadsheet row the newest timestamp so order matches the file
+                const base = Date.now();
+                for (let i = 0; i < gameUploadParsed.length; i += 400) {
+                    const b = writeBatch(db);
+                    gameUploadParsed.slice(i, i + 400).forEach((r, j) => {
+                        b.set(doc(col), { seedName: r.seedName, number: r.number, createdAt: new Date(base - (i + j) * 1000) });
+                    });
+                    await b.commit();
+                }
+                const n = gameUploadParsed.length;
+                window.closeGameUpload();
+                alert(`Imported ${n} row(s) into the ${info.label}.`);
+            } catch (e) {
+                alert('Import failed: ' + e.message);
+            } finally {
+                btn.disabled = false; btn.textContent = 'Import';
+            }
         };
 
         // ══════════════════════════════════════════════════════════════
