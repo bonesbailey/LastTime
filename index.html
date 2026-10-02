@@ -186,23 +186,25 @@
             justify-content: center;
         }
         .game-col {
-            flex: 0 0 330px;
-            width: 330px;
+            flex: 0 0 560px;
+            width: 560px;
+            max-width: 100%;
         }
         .game-table td.seed-name {
-            max-width: 150px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            white-space: normal;
+            word-break: break-word;
         }
+        .game-table td.sci-name { font-style: italic; text-align: left; white-space: normal; word-break: break-word; }
+        .game-table th.sci-name { text-align: left; }
         .game-table {
-            width: 330px !important;
+            width: 560px !important;
             min-width: 0 !important;
             table-layout: fixed;
         }
         .game-col .inv-table-wrap {
             overflow: hidden;
-            width: 330px;
+            width: 560px;
+            max-width: 100%;
         }
         .game-table th,
         .game-table td {
@@ -215,6 +217,7 @@
             font-size: 0.78rem;
         }
         .game-table td:last-child { background: #c8e6c9 !important; }
+        .game-table td.seed-name { text-align: left; }
 
         /* ── Seed Inventory page ── */
         #seedPage { display: none; max-width: 1500px; margin: 0 auto; }
@@ -1196,6 +1199,9 @@
         .modal-content { background: var(--hw-cream); border: 2px solid var(--hw-orange); }
         .modal-content h2 { color: var(--hw-purple); }
 
+        .game-table td:last-child { background: #ffd9a8 !important; }
+        .seed-page-header h2 { color: #ffb86b; text-shadow: 0 0 10px rgba(255,117,24,.5); }
+
         /* Tables */
         .inv-table th { background: var(--hw-purple); color: #ffd9a8; border-bottom: 3px solid var(--hw-orange); }
         .inv-table { background: var(--hw-cream); }
@@ -1458,19 +1464,21 @@
                 <div class="inv-table-wrap">
                     <table class="inv-table game-table">
                         <colgroup>
-                            <col style="width:150px;">
                             <col style="width:80px;">
+                            <col style="width:190px;">
+                            <col style="width:190px;">
                             <col style="width:100px;">
                         </colgroup>
                         <thead>
                             <tr>
+                                <th>Container #</th>
                                 <th>Seed Name</th>
-                                <th>Number</th>
+                                <th class="sci-name">Scientific Name</th>
                                 <th id="game2ActionsHeader" style="color:transparent;">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="game2TableBody">
-                            <tr><td colspan="3" class="inv-empty">Loading…</td></tr>
+                            <tr><td colspan="4" class="inv-empty">Loading…</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -1484,19 +1492,21 @@
                 <div class="inv-table-wrap">
                     <table class="inv-table game-table">
                         <colgroup>
-                            <col style="width:150px;">
                             <col style="width:80px;">
+                            <col style="width:190px;">
+                            <col style="width:190px;">
                             <col style="width:100px;">
                         </colgroup>
                         <thead>
                             <tr>
+                                <th>Container #</th>
                                 <th>Seed Name</th>
-                                <th>Number</th>
+                                <th class="sci-name">Scientific Name</th>
                                 <th id="game1ActionsHeader" style="color:transparent;">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="game1TableBody">
-                            <tr><td colspan="3" class="inv-empty">Loading…</td></tr>
+                            <tr><td colspan="4" class="inv-empty">Loading…</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -1736,10 +1746,12 @@
     <div id="game1Modal" style="display:none; position:fixed; top:0;left:0;right:0;bottom:0; background:rgba(0,0,0,0.7); align-items:center; justify-content:center; z-index:1000;">
         <div class="modal-content">
             <h2 id="game1ModalTitle">Add Row</h2>
-            <label>Seed Name</label>
-            <input type="text" id="g1SeedName" maxlength="18" placeholder="e.g. Desert Marigold">
-            <label>Number</label>
+            <label>Container #</label>
             <input type="number" id="g1Number" min="0" max="999" placeholder="0">
+            <label>Seed Name</label>
+            <input type="text" id="g1SeedName" maxlength="80" placeholder="e.g. Desert Marigold">
+            <label>Scientific Name</label>
+            <input type="text" id="g1SciName" maxlength="80" placeholder="e.g. Baileya multiradiata">
             <div class="modal-actions">
                 <button class="save-btn"   onclick="saveGame1Record()">Save</button>
                 <button class="cancel-btn" onclick="closeGame1Modal()">Cancel</button>
@@ -1751,10 +1763,12 @@
     <div id="game2Modal" style="display:none; position:fixed; top:0;left:0;right:0;bottom:0; background:rgba(0,0,0,0.7); align-items:center; justify-content:center; z-index:1000;">
         <div class="modal-content">
             <h2 id="game2ModalTitle">Add Row</h2>
-            <label>Seed Name</label>
-            <input type="text" id="g2SeedName" maxlength="18" placeholder="e.g. Desert Marigold">
-            <label>Number</label>
+            <label>Container #</label>
             <input type="number" id="g2Number" min="0" max="999" placeholder="0">
+            <label>Seed Name</label>
+            <input type="text" id="g2SeedName" maxlength="80" placeholder="e.g. Desert Marigold">
+            <label>Scientific Name</label>
+            <input type="text" id="g2SciName" maxlength="80" placeholder="e.g. Baileya multiradiata">
             <div class="modal-actions">
                 <button class="save-btn"   onclick="saveGame2Record()">Save</button>
                 <button class="cancel-btn" onclick="closeGame2Modal()">Cancel</button>
@@ -1766,7 +1780,7 @@
     <div id="gameUploadModal" style="display:none; position:fixed; top:0;left:0;right:0;bottom:0; background:rgba(0,0,0,0.7); align-items:center; justify-content:center; z-index:1000;">
         <div class="modal-content">
             <h2 id="gameUploadTitle">Upload Excel</h2>
-            <p style="font-size:0.9rem; margin-top:0;">Your spreadsheet should have <b>Seed Name</b> in column A and <b>Number</b> in column B. A header row at the top is fine — it will be skipped automatically.</p>
+            <p style="font-size:0.9rem; margin-top:0;">Your spreadsheet needs a heading row with the columns <b>Container #</b>, <b>Seed Name</b> and <b>Scientific Name</b> (they can be in any column, and other columns are ignored). Rows with no Seed Name are skipped.</p>
             <input type="file" id="gameUploadFile" accept=".xlsx,.xls,.csv" style="width:100%; box-sizing:border-box;">
             <div id="gameUploadPreview" style="margin:12px 0; font-size:0.9rem; min-height:1.2em;"></div>
             <div id="gameUploadModeWrap" style="display:none; margin-bottom:12px;">
@@ -3739,18 +3753,19 @@
             game1Rows = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
             renderGame1();
         }, (error) => {
-            document.getElementById('game1TableBody').innerHTML = `<tr><td colspan="3" class="inv-empty">Cannot load: ${error.message}</td></tr>`;
+            document.getElementById('game1TableBody').innerHTML = `<tr><td colspan="4" class="inv-empty">Cannot load: ${error.message}</td></tr>`;
         });
 
         function renderGame1() {
             const tbody = document.getElementById('game1TableBody');
             if (game1Rows.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="3" class="inv-empty">No rows yet. ${editingEnabled ? 'Click "+ Add Row" to get started.' : ''}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="4" class="inv-empty">No rows yet. ${editingEnabled ? 'Click "+ Add Row" to get started.' : ''}</td></tr>`;
                 return;
             }
             tbody.innerHTML = game1Rows.map(r => `<tr>
-                    <td class="seed-name" style="cursor:default;">${escapeHtml(r.seedName || '')}</td>
                     <td>${r.number ?? '—'}</td>
+                    <td class="seed-name" style="cursor:default;">${escapeHtml(r.seedName || '')}</td>
+                    <td class="sci-name">${escapeHtml(r.scientificName || '')}</td>
                     <td>
                         <div class="inv-actions">
                             <button class="inv-edit-btn ${editingEnabled ? 'visible' : ''}"   onclick="editGame1Record('${escapeHtml(r.id)}')">Edit</button>
@@ -3765,6 +3780,7 @@
             document.getElementById('game1ModalTitle').textContent = 'Add Row';
             document.getElementById('g1SeedName').value = '';
             document.getElementById('g1Number').value = '';
+            document.getElementById('g1SciName').value = '';
             document.getElementById('game1Modal').style.display = 'flex';
         };
 
@@ -3774,6 +3790,7 @@
             document.getElementById('game1ModalTitle').textContent = 'Edit Row';
             document.getElementById('g1SeedName').value = r.seedName || '';
             document.getElementById('g1Number').value = r.number ?? '';
+            document.getElementById('g1SciName').value = r.scientificName || '';
             document.getElementById('game1Modal').style.display = 'flex';
         };
 
@@ -3785,7 +3802,7 @@
             const saveBtn = document.querySelector('#game1Modal .save-btn');
             saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
             try {
-                const data = { seedName, number: Math.min(999, parseInt(document.getElementById('g1Number').value) || 0) };
+                const data = { seedName, scientificName: document.getElementById('g1SciName').value.trim(), number: Math.min(999, parseInt(document.getElementById('g1Number').value) || 0) };
                 if (editingGame1Id) { await updateDoc(doc(db, 'seedSaversGame', editingGame1Id), data); }
                 else { data.createdAt = serverTimestamp(); await addDoc(game1Col, data); }
                 window.closeGame1Modal();
@@ -3801,7 +3818,7 @@
 
         // ══════════════════════════════════════════════════════════════
         // EXCEL UPLOAD for Seed Savers Game / Seed Detect Game
-        // Column A = Seed Name, Column B = Number (header row optional)
+        // Needs a heading row: Container # , Seed Name , Scientific Name (any column order)
         // ══════════════════════════════════════════════════════════════
         let gameUploadWhich = 1;
         let gameUploadParsed = [];
@@ -3836,34 +3853,46 @@
                 const wb = XLSX.read(await file.arrayBuffer(), { type: 'array' });
                 const sheet = wb.Sheets[wb.SheetNames[0]];
                 const raw = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
-                let rows = raw.filter(r => String(r[0] ?? '').trim() !== '');
-                // Skip a header row (first row whose Number cell isn't a number, or that says "seed")
-                if (rows.length) {
-                    const first = rows[0];
-                    const numCell = String(first[1] ?? '').trim();
-                    if (/^seed/i.test(String(first[0]).trim()) || (numCell !== '' && isNaN(Number(numCell)))) rows.shift();
+                // Find the heading row (within the first 10 rows) by looking for "Seed Name"
+                const norm = v => String(v ?? '').toLowerCase().replace(/[^a-z0-9#]/g, '');
+                let hdrIdx = -1, cName = -1, cNum = -1, cSci = -1;
+                for (let i = 0; i < Math.min(raw.length, 10) && hdrIdx < 0; i++) {
+                    const cells = raw[i].map(norm);
+                    const nameCol = cells.findIndex(c => c === 'seedname');
+                    if (nameCol >= 0) {
+                        hdrIdx = i; cName = nameCol;
+                        cNum = cells.findIndex(c => c.startsWith('container') || c === 'number' || c === '#');
+                        cSci = cells.findIndex(c => c.startsWith('scientific'));
+                    }
                 }
-                let truncated = 0, clamped = 0, noNumber = 0;
-                gameUploadParsed = rows.map(r => {
-                    let name = String(r[0]).trim();
-                    if (name.length > 18) { name = name.slice(0, 18); truncated++; }
-                    const numRaw = String(r[1] ?? '').trim();
-                    let num = parseInt(numRaw, 10);
-                    if (isNaN(num)) { num = 0; noNumber++; }
-                    if (num > 999) { num = 999; clamped++; }
-                    if (num < 0) { num = 0; clamped++; }
-                    return { seedName: name, number: num };
-                });
-                if (gameUploadParsed.length === 0) {
-                    preview.innerHTML = '<span style="color:#d32f2f;">No rows found. Put Seed Names in column A and Numbers in column B.</span>';
+                if (hdrIdx < 0) {
+                    preview.innerHTML = '<span style="color:#d32f2f;">Could not find a heading row with a <b>Seed Name</b> column. Please check the column headings (Container #, Seed Name, Scientific Name).</span>';
                     return;
                 }
-                const sample = gameUploadParsed.slice(0, 5).map(r => `${escapeHtml(r.seedName)} — ${r.number}`).join('<br>');
+                let skippedNoName = 0, noNumber = 0, clamped = 0;
+                gameUploadParsed = [];
+                raw.slice(hdrIdx + 1).forEach(r => {
+                    const name = String(r[cName] ?? '').replace(/\s+/g, ' ').trim();
+                    const numRaw = cNum >= 0 ? String(r[cNum] ?? '').trim() : '';
+                    if (!name) { if (numRaw !== '') skippedNoName++; return; }
+                    let num = parseInt(numRaw, 10);
+                    if (isNaN(num)) { num = 0; noNumber++; }
+                    if (num > 999) { num = 999; clamped++; } else if (num < 0) { num = 0; clamped++; }
+                    const sci = cSci >= 0 ? String(r[cSci] ?? '').replace(/\s+/g, ' ').trim() : '';
+                    gameUploadParsed.push({ seedName: name.slice(0, 80), scientificName: sci.slice(0, 80), number: num });
+                });
+                if (gameUploadParsed.length === 0) {
+                    preview.innerHTML = '<span style="color:#d32f2f;">No rows with a Seed Name were found.</span>';
+                    return;
+                }
+                const sample = gameUploadParsed.slice(0, 5).map(r => `#${r.number} — ${escapeHtml(r.seedName)}${r.scientificName ? ' (<i>' + escapeHtml(r.scientificName) + '</i>)' : ''}`).join('<br>');
                 const more = gameUploadParsed.length > 5 ? `<br>…and ${gameUploadParsed.length - 5} more` : '';
                 let notes = '';
-                if (truncated) notes += `<br><span style="color:#b45309;">⚠️ ${truncated} name(s) were longer than 18 characters and were shortened.</span>`;
-                if (noNumber)  notes += `<br><span style="color:#b45309;">⚠️ ${noNumber} row(s) had no valid number and were set to 0.</span>`;
-                if (clamped)   notes += `<br><span style="color:#b45309;">⚠️ ${clamped} number(s) were outside 0–999 and were adjusted.</span>`;
+                if (cNum < 0)       notes += `<br><span style="color:#b45309;">⚠️ No “Container #” column found — numbers were set to 0.</span>`;
+                if (cSci < 0)       notes += `<br><span style="color:#b45309;">⚠️ No “Scientific Name” column found.</span>`;
+                if (skippedNoName)  notes += `<br><span style="color:#b45309;">ℹ️ ${skippedNoName} row(s) had a container number but no Seed Name and were skipped.</span>`;
+                if (noNumber && cNum >= 0) notes += `<br><span style="color:#b45309;">⚠️ ${noNumber} row(s) had no valid container number and were set to 0.</span>`;
+                if (clamped)        notes += `<br><span style="color:#b45309;">⚠️ ${clamped} number(s) were outside 0–999 and were adjusted.</span>`;
                 preview.innerHTML = `<b>Found ${gameUploadParsed.length} row(s):</b><br>${sample}${more}${notes}`;
                 document.getElementById('gameUploadModeWrap').style.display = 'block';
                 importBtn.disabled = false;
@@ -3894,7 +3923,7 @@
                 for (let i = 0; i < gameUploadParsed.length; i += 400) {
                     const b = writeBatch(db);
                     gameUploadParsed.slice(i, i + 400).forEach((r, j) => {
-                        b.set(doc(col), { seedName: r.seedName, number: r.number, createdAt: new Date(base - (i + j) * 1000) });
+                        b.set(doc(col), { seedName: r.seedName, scientificName: r.scientificName, number: r.number, createdAt: new Date(base - (i + j) * 1000) });
                     });
                     await b.commit();
                 }
@@ -3919,18 +3948,19 @@
             game2Rows = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
             renderGame2();
         }, (error) => {
-            document.getElementById('game2TableBody').innerHTML = `<tr><td colspan="3" class="inv-empty">Cannot load: ${error.message}</td></tr>`;
+            document.getElementById('game2TableBody').innerHTML = `<tr><td colspan="4" class="inv-empty">Cannot load: ${error.message}</td></tr>`;
         });
 
         function renderGame2() {
             const tbody = document.getElementById('game2TableBody');
             if (game2Rows.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="3" class="inv-empty">No rows yet. ${editingEnabled ? 'Click "+ Add Row" to get started.' : ''}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="4" class="inv-empty">No rows yet. ${editingEnabled ? 'Click "+ Add Row" to get started.' : ''}</td></tr>`;
                 return;
             }
             tbody.innerHTML = game2Rows.map(r => `<tr>
-                    <td class="seed-name" style="cursor:default;">${escapeHtml(r.seedName || '')}</td>
                     <td>${r.number ?? '—'}</td>
+                    <td class="seed-name" style="cursor:default;">${escapeHtml(r.seedName || '')}</td>
+                    <td class="sci-name">${escapeHtml(r.scientificName || '')}</td>
                     <td>
                         <div class="inv-actions">
                             <button class="inv-edit-btn ${editingEnabled ? 'visible' : ''}"   onclick="editGame2Record('${escapeHtml(r.id)}')">Edit</button>
@@ -3945,6 +3975,7 @@
             document.getElementById('game2ModalTitle').textContent = 'Add Row';
             document.getElementById('g2SeedName').value = '';
             document.getElementById('g2Number').value = '';
+            document.getElementById('g2SciName').value = '';
             document.getElementById('game2Modal').style.display = 'flex';
         };
 
@@ -3954,6 +3985,7 @@
             document.getElementById('game2ModalTitle').textContent = 'Edit Row';
             document.getElementById('g2SeedName').value = r.seedName || '';
             document.getElementById('g2Number').value = r.number ?? '';
+            document.getElementById('g2SciName').value = r.scientificName || '';
             document.getElementById('game2Modal').style.display = 'flex';
         };
 
@@ -3965,7 +3997,7 @@
             const saveBtn = document.querySelector('#game2Modal .save-btn');
             saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
             try {
-                const data = { seedName, number: Math.min(999, parseInt(document.getElementById('g2Number').value) || 0) };
+                const data = { seedName, scientificName: document.getElementById('g2SciName').value.trim(), number: Math.min(999, parseInt(document.getElementById('g2Number').value) || 0) };
                 if (editingGame2Id) { await updateDoc(doc(db, 'seedDetectGame', editingGame2Id), data); }
                 else { data.createdAt = serverTimestamp(); await addDoc(game2Col, data); }
                 window.closeGame2Modal();
