@@ -3749,7 +3749,7 @@
         let game1Rows = [];
         let editingGame1Id = null;
 
-        onSnapshot(query(game1Col, orderBy('createdAt', 'desc')), (snapshot) => {
+        onSnapshot(query(game1Col, orderBy('createdAt', 'asc')), (snapshot) => {
             game1Rows = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
             renderGame1();
         }, (error) => {
@@ -3918,12 +3918,13 @@
                         await b.commit();
                     }
                 }
-                // Newest-first display: give the first spreadsheet row the newest timestamp so order matches the file
+                // Oldest-first display (new rows go to the bottom): give the first spreadsheet row the oldest timestamp so order matches the file
                 const base = Date.now();
+                const totalRows = gameUploadParsed.length;
                 for (let i = 0; i < gameUploadParsed.length; i += 400) {
                     const b = writeBatch(db);
                     gameUploadParsed.slice(i, i + 400).forEach((r, j) => {
-                        b.set(doc(col), { seedName: r.seedName, scientificName: r.scientificName, number: r.number, createdAt: new Date(base - (i + j) * 1000) });
+                        b.set(doc(col), { seedName: r.seedName, scientificName: r.scientificName, number: r.number, createdAt: new Date(base - (totalRows - (i + j)) * 1000) });
                     });
                     await b.commit();
                 }
@@ -3944,7 +3945,7 @@
         let game2Rows = [];
         let editingGame2Id = null;
 
-        onSnapshot(query(game2Col, orderBy('createdAt', 'desc')), (snapshot) => {
+        onSnapshot(query(game2Col, orderBy('createdAt', 'asc')), (snapshot) => {
             game2Rows = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
             renderGame2();
         }, (error) => {
