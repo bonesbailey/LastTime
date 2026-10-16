@@ -223,6 +223,11 @@
         #seedPage { display: none; max-width: 1500px; margin: 0 auto; }
         #seedGamePage { display: none; max-width: 1400px; margin: 0 auto; }
         #seedListPage { display: none; max-width: 1500px; margin: 0 auto; }
+        #seedListSheet { background: #ffffff; color: #1b1b1b; padding: 10px; border-radius: 12px; overflow-x: auto; min-height: 60px; }
+        #seedListSheet table { border-collapse: collapse; width: 100%; }
+        #seedListSheet td, #seedListSheet th { border: 1px solid #c8d6c8; padding: 6px 10px; color: #1b1b1b; background: #ffffff; text-align: left; font-size: 0.95rem; }
+        #seedListSheet tr:first-child td { background: #e8f5e9; font-weight: 700; }
+        #seedListSheet .inv-empty { color: #555; }
         #seedGerminationPage { display: none; max-width: 1000px; margin: 0 auto; }
 
         .seed-page-header {
@@ -3993,9 +3998,17 @@
                 if (editingEnabled) delBtn.style.display = 'block';
                 const when = meta.updated ? new Date(meta.updated).toLocaleString() : '';
                 info.innerHTML = `📎 <b>${escapeHtml(origName)}</b>${when ? ' — uploaded ' + escapeHtml(when) : ''}`;
-                const res = await fetch(url, { cache: 'no-store' });
-                if (!res.ok) throw new Error('Fetch failed: ' + res.status);
-                seedListWorkbook = XLSX.read(await res.arrayBuffer(), { type: 'array' });
+                let buf;
+                try {
+                    const res = await fetch(url, { cache: 'no-store' });
+                    if (!res.ok) throw new Error('Fetch failed: ' + res.status);
+                    buf = await res.arrayBuffer();
+                } catch (fe) {
+                    sheet.innerHTML = '<p class="inv-empty">The Seed List file is saved, but this page isn\'t allowed to read it for display (the storage bucket needs a one-time CORS setting). You can still use the ⬇️ Download button above to open it in Excel.</p>';
+                    pick.style.display = 'none';
+                    return;
+                }
+                seedListWorkbook = XLSX.read(buf, { type: 'array' });
                 const names = seedListWorkbook.SheetNames;
                 if (names.length > 1) {
                     pick.style.display = 'block';
@@ -4031,6 +4044,7 @@
                     customMetadata: { originalName: file.name }
                 });
                 await loadSeedList();
+                alert('Seed List uploaded.');
             } catch (err) {
                 alert('Upload failed: ' + err.message);
             } finally {
