@@ -1459,16 +1459,17 @@
     <div id="seedListPage">
         <div class="seed-page-header">
             <h2>📋 Seed List</h2>
-            <span class="total-badge">Rows: <span id="seedListCount">0</span></span>
-            <button class="seed-add-btn" id="seedListUploadBtn" onclick="showSeedListUpload()" style="display:none;">📥 Upload Excel</button>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                <a class="seed-add-btn" id="seedListDownloadBtn" href="#" target="_blank" rel="noopener" download style="display:none; text-decoration:none;">⬇️ Download</a>
+                <button class="seed-add-btn" id="seedListUploadBtn" onclick="document.getElementById('seedListFileInput').click()" style="display:none;">📥 Upload Excel</button>
+                <button class="seed-add-btn" id="seedListDeleteBtn" onclick="deleteSeedListFile()" style="display:none; background:#d32f2f;">🗑️ Remove File</button>
+            </div>
         </div>
+        <input type="file" id="seedListFileInput" accept=".xlsx" style="display:none;">
+        <div id="seedListInfo" style="margin:8px 0; font-size:0.9rem;"></div>
+        <div id="seedListSheetPick" style="margin:8px 0; display:none;"></div>
         <div class="inv-table-wrap">
-            <table class="inv-table" id="seedListTable">
-                <thead id="seedListHead"></thead>
-                <tbody id="seedListBody">
-                    <tr><td class="inv-empty">Loading seed list…</td></tr>
-                </tbody>
-            </table>
+            <div id="seedListSheet" class="doc-preview-html"><p class="inv-empty">Loading seed list…</p></div>
         </div>
     </div>
 
@@ -1795,20 +1796,6 @@
         </div>
     </div>
 
-    <!-- ══ SEED LIST EXCEL UPLOAD MODAL ══ -->
-    <div id="seedListUploadModal" style="display:none; position:fixed; top:0;left:0;right:0;bottom:0; background:rgba(0,0,0,0.7); align-items:center; justify-content:center; z-index:1000;">
-        <div class="modal-content">
-            <h2>📥 Upload Excel — Seed List</h2>
-            <p style="font-size:0.9rem; margin-top:0;">Choose an Excel file (.xlsx, .xls or .csv). The first sheet is used and its first row becomes the column headings. Uploading <b>replaces</b> the current Seed List for everyone.</p>
-            <input type="file" id="seedListUploadFile" accept=".xlsx,.xls,.csv" style="width:100%; box-sizing:border-box;">
-            <div id="seedListUploadPreview" style="margin:12px 0; font-size:0.9rem; min-height:1.2em;"></div>
-            <div class="modal-actions">
-                <button class="save-btn" id="seedListImportBtn" onclick="importSeedList()" disabled>Import</button>
-                <button class="cancel-btn" onclick="closeSeedListUpload()">Cancel</button>
-            </div>
-        </div>
-    </div>
-
     <!-- ══ GAME EXCEL UPLOAD MODAL (shared by Seed Detect Game and Seed Savers Game) ══ -->
     <div id="gameUploadModal" style="display:none; position:fixed; top:0;left:0;right:0;bottom:0; background:rgba(0,0,0,0.7); align-items:center; justify-content:center; z-index:1000;">
         <div class="modal-content">
@@ -2096,6 +2083,7 @@
             document.getElementById('game1AddBtn').style.display    = 'block';
             document.getElementById('game1UploadBtn').style.display = 'block';
             document.getElementById('seedListUploadBtn').style.display = 'block';
+            if (seedListHasFile) document.getElementById('seedListDeleteBtn').style.display = 'block';
             document.getElementById('game2UploadBtn').style.display = 'block';
             document.getElementById('game2AddBtn').style.display    = 'block';
             document.getElementById('germAddBtn').style.display     = 'block';
@@ -3975,109 +3963,87 @@
         };
 
         // ══════════════════════════════════════════════════════════════
-        // SEED LIST — Excel upload, stored in Firestore ('seedList')
-        // First row of the sheet = column headings. Upload replaces the list.
+        // SEED LIST — the Excel file itself is saved to Firebase Storage
+        // (one file at a fixed path; uploading a new one replaces it)
         // ══════════════════════════════════════════════════════════════
-        const seedListCol = collection(db, 'seedList');
-        let seedListHeaders = [];
-        let seedListRows = [];
-        let seedListParsed = null;
+        const SEED_LIST_PATH = 'plants/library/seedlist/SeedList.xlsx';
+        const SEED_LIST_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+        let seedListHasFile = false;
+        let seedListWorkbook = null;
 
-        onSnapshot(query(seedListCol, orderBy('order', 'asc')), (snapshot) => {
-            seedListHeaders = [];
-            seedListRows = [];
-            snapshot.docs.forEach(d => {
-                const data = d.data();
-                if (data.kind === 'header') seedListHeaders = data.headers || [];
-                else seedListRows.push(data.cells || []);
-            });
-            renderSeedList();
-        }, (error) => {
-            document.getElementById('seedListBody').innerHTML = `<tr><td class="inv-empty">Cannot load: ${escapeHtml(error.message)}</td></tr>`;
-        });
-
-        function renderSeedList() {
-            const head = document.getElementById('seedListHead');
-            const body = document.getElementById('seedListBody');
-            document.getElementById('seedListCount').textContent = seedListRows.length;
-            if (seedListRows.length === 0) {
-                head.innerHTML = '';
-                body.innerHTML = `<tr><td class="inv-empty">No seed list yet. ${editingEnabled ? 'Click "Upload Excel" to add one.' : ''}</td></tr>`;
-                return;
-            }
-            head.innerHTML = '<tr>' + seedListHeaders.map(h => `<th>${escapeHtml(h)}</th>`).join('') + '</tr>';
-            body.innerHTML = seedListRows.map(r =>
-                '<tr>' + seedListHeaders.map((_, i) => `<td>${escapeHtml(r[i] ?? '')}</td>`).join('') + '</tr>'
-            ).join('');
+        function renderSeedListSheet(name) {
+            const html = XLSX.utils.sheet_to_html(seedListWorkbook.Sheets[name]);
+            document.getElementById('seedListSheet').innerHTML = html;
         }
 
-        window.showSeedListUpload = function() {
-            seedListParsed = null;
-            document.getElementById('seedListUploadFile').value = '';
-            document.getElementById('seedListUploadPreview').innerHTML = '';
-            document.getElementById('seedListImportBtn').disabled = true;
-            document.getElementById('seedListUploadModal').style.display = 'flex';
-        };
-        window.closeSeedListUpload = function() { document.getElementById('seedListUploadModal').style.display = 'none'; };
+        window.changeSeedListSheet = function(name) { renderSeedListSheet(name); };
 
-        document.getElementById('seedListUploadFile').addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            const preview = document.getElementById('seedListUploadPreview');
-            const importBtn = document.getElementById('seedListImportBtn');
-            seedListParsed = null;
-            importBtn.disabled = true;
-            if (!file) { preview.innerHTML = ''; return; }
+        async function loadSeedList() {
+            const info  = document.getElementById('seedListInfo');
+            const sheet = document.getElementById('seedListSheet');
+            const pick  = document.getElementById('seedListSheetPick');
+            const dl    = document.getElementById('seedListDownloadBtn');
+            const delBtn = document.getElementById('seedListDeleteBtn');
             try {
-                const wb = XLSX.read(await file.arrayBuffer(), { type: 'array' });
-                const sheet = wb.Sheets[wb.SheetNames[0]];
-                let raw = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '', raw: false });
-                raw = raw.map(r => r.map(c => String(c ?? '').replace(/\s+/g, ' ').trim()))
-                         .filter(r => r.some(c => c !== ''));
-                if (raw.length < 2) {
-                    preview.innerHTML = '<span style="color:#d32f2f;">That file needs a heading row plus at least one row of data.</span>';
-                    return;
-                }
-                let width = 0;
-                raw.forEach(r => { for (let i = r.length - 1; i >= 0; i--) { if (r[i] !== '') { width = Math.max(width, i + 1); break; } } });
-                const headers = raw[0].slice(0, width).map((h, i) => h || `Column ${i + 1}`);
-                const rows = raw.slice(1).map(r => headers.map((_, i) => r[i] ?? ''));
-                seedListParsed = { headers, rows };
-                preview.innerHTML = `<b>Found ${rows.length} row(s)</b> with ${headers.length} column(s):<br>${headers.map(escapeHtml).join(' · ')}`;
-                importBtn.disabled = false;
+                const fileRef = storageRef(storage, SEED_LIST_PATH);
+                const [url, meta] = await Promise.all([getDownloadURL(fileRef), getMetadata(fileRef)]);
+                seedListHasFile = true;
+                const origName = (meta.customMetadata && meta.customMetadata.originalName) || 'SeedList.xlsx';
+                dl.href = url; dl.setAttribute('download', origName); dl.style.display = '';
+                if (editingEnabled) delBtn.style.display = 'block';
+                const when = meta.updated ? new Date(meta.updated).toLocaleString() : '';
+                info.innerHTML = `📎 <b>${escapeHtml(origName)}</b>${when ? ' — uploaded ' + escapeHtml(when) : ''}`;
+                const res = await fetch(url, { cache: 'no-store' });
+                if (!res.ok) throw new Error('Fetch failed: ' + res.status);
+                seedListWorkbook = XLSX.read(await res.arrayBuffer(), { type: 'array' });
+                const names = seedListWorkbook.SheetNames;
+                if (names.length > 1) {
+                    pick.style.display = 'block';
+                    pick.innerHTML = 'Sheet: <select onchange="changeSeedListSheet(this.value)">' +
+                        names.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('') + '</select>';
+                } else { pick.style.display = 'none'; pick.innerHTML = ''; }
+                renderSeedListSheet(names[0]);
             } catch (err) {
-                preview.innerHTML = `<span style="color:#d32f2f;">Could not read that file: ${escapeHtml(err.message)}</span>`;
+                if (err && err.code === 'storage/object-not-found') {
+                    seedListHasFile = false;
+                    dl.style.display = 'none'; delBtn.style.display = 'none';
+                    pick.style.display = 'none';
+                    info.textContent = '';
+                    sheet.innerHTML = `<p class="inv-empty">No Seed List file yet. ${editingEnabled ? 'Click "Upload Excel" to add one.' : ''}</p>`;
+                } else {
+                    sheet.innerHTML = `<p class="inv-empty">Cannot load the Seed List: ${escapeHtml(err.message || String(err))}</p>`;
+                }
+            }
+        }
+        loadSeedList();
+
+        document.getElementById('seedListFileInput').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            e.target.value = '';
+            if (!file) return;
+            if (!file.name.toLowerCase().endsWith('.xlsx')) { alert('Please choose an Excel (.xlsx) file.'); return; }
+            if (seedListHasFile && !confirm('This will REPLACE the current Seed List file for EVERYONE. Continue?')) return;
+            const btn = document.getElementById('seedListUploadBtn');
+            btn.disabled = true; btn.textContent = 'Uploading…';
+            try {
+                await uploadBytes(storageRef(storage, SEED_LIST_PATH), file, {
+                    contentType: SEED_LIST_MIME,
+                    customMetadata: { originalName: file.name }
+                });
+                await loadSeedList();
+            } catch (err) {
+                alert('Upload failed: ' + err.message);
+            } finally {
+                btn.disabled = false; btn.textContent = '📥 Upload Excel';
             }
         });
 
-        window.importSeedList = async function() {
-            if (!seedListParsed) return;
-            if (seedListRows.length > 0 && !confirm(`This will REPLACE the current Seed List for EVERYONE with ${seedListParsed.rows.length} row(s) from your file. Continue?`)) return;
-            const btn = document.getElementById('seedListImportBtn');
-            btn.disabled = true; btn.textContent = 'Importing…';
+        window.deleteSeedListFile = async function() {
+            if (!confirm('Remove the Seed List file for EVERYONE? This cannot be undone.')) return;
             try {
-                const existing = await getDocs(seedListCol);
-                for (let i = 0; i < existing.docs.length; i += 400) {
-                    const b = writeBatch(db);
-                    existing.docs.slice(i, i + 400).forEach(d => b.delete(d.ref));
-                    await b.commit();
-                }
-                const { headers, rows } = seedListParsed;
-                await setDoc(doc(seedListCol, 'header'), { kind: 'header', order: -1, headers });
-                for (let i = 0; i < rows.length; i += 400) {
-                    const b = writeBatch(db);
-                    rows.slice(i, i + 400).forEach((cells, j) => {
-                        b.set(doc(seedListCol), { kind: 'row', order: i + j, cells });
-                    });
-                    await b.commit();
-                }
-                const n = rows.length;
-                window.closeSeedListUpload();
-                alert(`Imported ${n} row(s) into the Seed List.`);
-            } catch (e) {
-                alert('Import failed: ' + e.message);
-            } finally {
-                btn.disabled = false; btn.textContent = 'Import';
-            }
+                await deleteObject(storageRef(storage, SEED_LIST_PATH));
+                await loadSeedList();
+            } catch (err) { alert('Remove failed: ' + err.message); }
         };
 
         // ══════════════════════════════════════════════════════════════
