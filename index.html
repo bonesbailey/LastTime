@@ -1457,9 +1457,9 @@
 
     <!-- ══ SEED LIST PAGE ══ -->
     <div id="seedListPage">
-        <div class="seed-page-header">
-            <h2>📋 Seed List</h2>
-            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+        <div class="seed-page-header" style="flex-direction:column; justify-content:center; text-align:center;">
+            <h2 style="text-align:center; margin:0 auto;">📋 Seed List</h2>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; justify-content:center;">
                 <button class="seed-add-btn" id="seedListUploadBtn" onclick="document.getElementById('seedListFileInput').click()" style="display:none;">📥 Upload Excel</button>
                 <button class="seed-add-btn" id="seedListDeleteBtn" onclick="deleteSeedListFile()" style="display:none; background:#d32f2f;">🗑️ Remove File</button>
             </div>
@@ -3977,18 +3977,16 @@
                 const origName = (meta.customMetadata && meta.customMetadata.originalName) || 'SeedList.xlsx';
                 const when = meta.updated ? new Date(meta.updated).toLocaleString() : '';
                 const urlAttr = escapeHtml(url);
-                card.innerHTML = `<div class="fl-card">
-                    <div class="fl-card-header">
-                        <div class="fl-title-wrap">
+                card.innerHTML = `<div class="fl-card" style="text-align:center;">
+                    <div class="fl-card-header" style="flex-direction:column; justify-content:center;">
+                        <div class="fl-title-wrap" style="justify-content:center;">
                             <span class="fl-title">${escapeHtml(origName)}</span>
-                            <span class="fl-ext-badge">xlsx</span>
                         </div>
-                        <div class="inv-actions">
-                            <a class="fl-link-btn" href="#" onclick="openDocPreview('${urlAttr}','xlsx','Seed List'); return false;" title="Open file">📊 Open</a>
+                        <div class="inv-actions" style="display:flex; justify-content:center;">
                             <a class="fl-link-btn" href="${urlAttr}" download="${escapeHtml(origName)}" title="Download file">⬇ Download</a>
                         </div>
                     </div>
-                    ${when ? `<p class="fl-desc">Posted ${escapeHtml(when)}</p>` : ''}
+                    ${when ? `<p class="fl-desc" style="text-align:center;">Posted ${escapeHtml(when)}</p>` : ''}
                 </div>`;
             } catch (err) {
                 seedListHasFile = false;
