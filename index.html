@@ -223,11 +223,6 @@
         #seedPage { display: none; max-width: 1500px; margin: 0 auto; }
         #seedGamePage { display: none; max-width: 1400px; margin: 0 auto; }
         #seedListPage { display: none; max-width: 1500px; margin: 0 auto; }
-        #seedListSheet { background: #ffffff; color: #1b1b1b; padding: 10px; border-radius: 12px; overflow-x: auto; min-height: 60px; }
-        #seedListSheet table { border-collapse: collapse; width: 100%; }
-        #seedListSheet td, #seedListSheet th { border: 1px solid #c8d6c8; padding: 6px 10px; color: #1b1b1b; background: #ffffff; text-align: left; font-size: 0.95rem; }
-        #seedListSheet tr:first-child td { background: #e8f5e9; font-weight: 700; }
-        #seedListSheet .inv-empty { color: #555; }
         #seedGerminationPage { display: none; max-width: 1000px; margin: 0 auto; }
 
         .seed-page-header {
@@ -1465,17 +1460,12 @@
         <div class="seed-page-header">
             <h2>📋 Seed List</h2>
             <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
-                <a class="seed-add-btn" id="seedListDownloadBtn" href="#" target="_blank" rel="noopener" download style="display:none; text-decoration:none;">⬇️ Download</a>
                 <button class="seed-add-btn" id="seedListUploadBtn" onclick="document.getElementById('seedListFileInput').click()" style="display:none;">📥 Upload Excel</button>
                 <button class="seed-add-btn" id="seedListDeleteBtn" onclick="deleteSeedListFile()" style="display:none; background:#d32f2f;">🗑️ Remove File</button>
             </div>
         </div>
         <input type="file" id="seedListFileInput" accept=".xlsx" style="display:none;">
-        <div id="seedListInfo" style="margin:8px 0; font-size:0.9rem;"></div>
-        <div id="seedListSheetPick" style="margin:8px 0; display:none;"></div>
-        <div class="inv-table-wrap">
-            <div id="seedListSheet" class="doc-preview-html"><p class="inv-empty">Loading seed list…</p></div>
-        </div>
+        <div id="seedListCard"><p class="fl-empty">Loading Seed List…</p></div>
     </div>
 
     <!-- ══ SEED SAVER GAME PAGE ══ -->
@@ -3968,63 +3958,45 @@
         };
 
         // ══════════════════════════════════════════════════════════════
-        // SEED LIST — the Excel file itself is saved to Firebase Storage
-        // (one file at a fixed path; uploading a new one replaces it)
+        // SEED LIST — one Excel file posted to Firebase Storage.
+        // Shown as a card (like the Bulletin Board) with Open / Download.
+        // Uploading a new file replaces the old one.
         // ══════════════════════════════════════════════════════════════
         const SEED_LIST_PATH = 'plants/library/seedlist/SeedList.xlsx';
         const SEED_LIST_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
         let seedListHasFile = false;
-        let seedListWorkbook = null;
-
-        function renderSeedListSheet(name) {
-            const html = XLSX.utils.sheet_to_html(seedListWorkbook.Sheets[name]);
-            document.getElementById('seedListSheet').innerHTML = html;
-        }
-
-        window.changeSeedListSheet = function(name) { renderSeedListSheet(name); };
 
         async function loadSeedList() {
-            const info  = document.getElementById('seedListInfo');
-            const sheet = document.getElementById('seedListSheet');
-            const pick  = document.getElementById('seedListSheetPick');
-            const dl    = document.getElementById('seedListDownloadBtn');
+            const card   = document.getElementById('seedListCard');
             const delBtn = document.getElementById('seedListDeleteBtn');
             try {
                 const fileRef = storageRef(storage, SEED_LIST_PATH);
                 const [url, meta] = await Promise.all([getDownloadURL(fileRef), getMetadata(fileRef)]);
                 seedListHasFile = true;
-                const origName = (meta.customMetadata && meta.customMetadata.originalName) || 'SeedList.xlsx';
-                dl.href = url; dl.setAttribute('download', origName); dl.style.display = '';
                 if (editingEnabled) delBtn.style.display = 'block';
+                const origName = (meta.customMetadata && meta.customMetadata.originalName) || 'SeedList.xlsx';
                 const when = meta.updated ? new Date(meta.updated).toLocaleString() : '';
-                info.innerHTML = `📎 <b>${escapeHtml(origName)}</b>${when ? ' — uploaded ' + escapeHtml(when) : ''}`;
-                let buf;
-                try {
-                    const res = await fetch(url, { cache: 'no-store' });
-                    if (!res.ok) throw new Error('Fetch failed: ' + res.status);
-                    buf = await res.arrayBuffer();
-                } catch (fe) {
-                    sheet.innerHTML = '<p class="inv-empty">The Seed List file is saved, but this page isn\'t allowed to read it for display (the storage bucket needs a one-time CORS setting). You can still use the ⬇️ Download button above to open it in Excel.</p>';
-                    pick.style.display = 'none';
-                    return;
-                }
-                seedListWorkbook = XLSX.read(buf, { type: 'array' });
-                const names = seedListWorkbook.SheetNames;
-                if (names.length > 1) {
-                    pick.style.display = 'block';
-                    pick.innerHTML = 'Sheet: <select onchange="changeSeedListSheet(this.value)">' +
-                        names.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('') + '</select>';
-                } else { pick.style.display = 'none'; pick.innerHTML = ''; }
-                renderSeedListSheet(names[0]);
+                const urlAttr = escapeHtml(url);
+                card.innerHTML = `<div class="fl-card">
+                    <div class="fl-card-header">
+                        <div class="fl-title-wrap">
+                            <span class="fl-title">${escapeHtml(origName)}</span>
+                            <span class="fl-ext-badge">xlsx</span>
+                        </div>
+                        <div class="inv-actions">
+                            <a class="fl-link-btn" href="#" onclick="openDocPreview('${urlAttr}','xlsx','Seed List'); return false;" title="Open file">📊 Open</a>
+                            <a class="fl-link-btn" href="${urlAttr}" download="${escapeHtml(origName)}" title="Download file">⬇ Download</a>
+                        </div>
+                    </div>
+                    ${when ? `<p class="fl-desc">Posted ${escapeHtml(when)}</p>` : ''}
+                </div>`;
             } catch (err) {
+                seedListHasFile = false;
+                delBtn.style.display = 'none';
                 if (err && err.code === 'storage/object-not-found') {
-                    seedListHasFile = false;
-                    dl.style.display = 'none'; delBtn.style.display = 'none';
-                    pick.style.display = 'none';
-                    info.textContent = '';
-                    sheet.innerHTML = `<p class="inv-empty">No Seed List file yet. ${editingEnabled ? 'Click "Upload Excel" to add one.' : ''}</p>`;
+                    card.innerHTML = `<p class="fl-empty">No Seed List file posted yet. ${editingEnabled ? 'Click "Upload Excel" to post one.' : ''}</p>`;
                 } else {
-                    sheet.innerHTML = `<p class="inv-empty">Cannot load the Seed List: ${escapeHtml(err.message || String(err))}</p>`;
+                    card.innerHTML = `<p class="fl-empty">Cannot load the Seed List: ${escapeHtml(err.message || String(err))}</p>`;
                 }
             }
         }
@@ -4044,7 +4016,7 @@
                     customMetadata: { originalName: file.name }
                 });
                 await loadSeedList();
-                alert('Seed List uploaded.');
+                alert('Seed List file posted.');
             } catch (err) {
                 alert('Upload failed: ' + err.message);
             } finally {
