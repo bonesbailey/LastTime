@@ -219,6 +219,21 @@
         .game-table td:last-child { background: #c8e6c9 !important; }
         .game-table td.seed-name { text-align: left; }
 
+        /* Phones: shrink the game tables to the screen so Edit/Delete are visible without scrolling */
+        @media (max-width: 620px) {
+            .game-col { flex: 1 1 100%; width: 100%; }
+            .game-col .inv-table-wrap { width: 100%; }
+            .game-table { width: 100% !important; }
+            .game-table col:nth-child(1) { width: 15% !important; }
+            .game-table col:nth-child(2) { width: 30% !important; }
+            .game-table col:nth-child(3) { width: 30% !important; }
+            .game-table col:nth-child(4) { width: 25% !important; }
+            .game-table th, .game-table td { padding: 8px 4px; font-size: 0.85rem; }
+            .game-table th { white-space: normal; }
+            .game-table .inv-actions { flex-direction: column; gap: 4px; align-items: center; }
+            .game-table .inv-edit-btn, .game-table .inv-delete-btn { padding: 4px 6px; font-size: 0.72rem; }
+        }
+
         /* ── Seed Inventory page ── */
         #seedPage { display: none; max-width: 1500px; margin: 0 auto; }
         #seedGamePage { display: none; max-width: 1400px; margin: 0 auto; }
