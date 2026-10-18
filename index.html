@@ -240,23 +240,26 @@
         #seedListPage { display: none; max-width: 1500px; margin: 0 auto; }
         #seedGerminationPage { display: none; max-width: 1000px; margin: 0 auto; }
 
-        /* ── Seed Packet Process (flowcharts) ── */
-        #seedPacketPage { display: none; max-width: 640px; margin: 0 auto; }
-        .sp-bar { display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:center; margin-bottom:16px; }
-        .sp-bar select { padding:8px 10px; font-size:1rem; border:2px solid #2e7d32; border-radius:8px; min-width:200px; }
-        .sp-bar .cancel-btn { padding:8px 14px; font-size:0.9rem; }
-        .sp-box { background:#fff; color:#222; border:2px solid #2e7d32; border-radius:8px; padding:12px 14px; box-shadow:0 2px 6px rgba(0,0,0,.15); }
-        .sp-field { display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin:7px 0; }
-        .sp-field label { font-weight:700; color:#1b5e20; min-width:130px; }
-        .sp-label { font-weight:700; color:#1b5e20; min-width:130px; flex:0 1 190px; padding:4px 6px; border:1px dashed #81c784; border-radius:6px; font-size:0.95rem; }
-        .sp-in { flex:1; min-width:150px; padding:6px 8px; border:1px solid #aaa; border-radius:6px; font-size:1rem; font-family:inherit; }
+        /* ── Seed Packet Process (flowcharts, side by side) ── */
+        #seedPacketPage { display: none; max-width: 1700px; margin: 0 auto; }
+        .sp-grid { display:flex; gap:14px; align-items:flex-start; overflow-x:auto; padding-bottom:12px; }
+        .sp-col { flex:0 0 235px; min-width:0; }
+        .sp-title { display:flex; gap:4px; align-items:center; margin-bottom:8px; }
+        .sp-title h3 { margin:0; flex:1; text-align:center; color:#1b5e20; font-size:1rem; background:#c8e6c9; padding:6px; border-radius:8px; }
+        .sp-ttl { flex:1; min-width:0; font-weight:700; text-align:center; padding:5px; border:2px solid #2e7d32; border-radius:8px; font-size:0.95rem; box-sizing:border-box; }
+        .sp-box { background:#fff; color:#222; border:2px solid #2e7d32; border-radius:8px; padding:8px 9px; box-shadow:0 2px 6px rgba(0,0,0,.15); }
+        .sp-field { display:flex; flex-direction:column; gap:2px; margin:6px 0; }
+        .sp-field label { font-weight:700; color:#1b5e20; font-size:0.85rem; }
+        .sp-label { font-weight:700; color:#1b5e20; width:100%; padding:3px 5px; border:1px dashed #81c784; border-radius:6px; font-size:0.85rem; box-sizing:border-box; }
+        .sp-in { width:100%; min-width:0; box-sizing:border-box; padding:5px 6px; border:1px solid #aaa; border-radius:6px; font-size:0.9rem; font-family:inherit; }
         .sp-in:disabled { color:#222; background:#f4f4f4; opacity:1; }
-        .sp-area { flex-basis:100%; width:100%; height:70px; resize:vertical; overflow-y:auto; }
-        .sp-arrow { text-align:center; font-size:1.9rem; color:#2e7d32; line-height:1.1; margin:4px 0; }
-        .sp-tools, .sp-add { display:flex; gap:6px; justify-content:flex-end; margin:4px 0; }
-        .sp-tools button, .sp-add button, .sp-x { padding:3px 9px; border:1px solid #2e7d32; background:#e8f5e9; color:#1b5e20; border-radius:6px; cursor:pointer; font-size:0.85rem; }
-        .sp-x { border-color:#c62828; background:#ffebee; color:#c62828; }
-        .sp-add select { padding:3px; border-radius:6px; }
+        .sp-area { height:70px; resize:vertical; overflow-y:auto; }
+        .sp-arrow { text-align:center; font-size:1.6rem; color:#2e7d32; line-height:1.1; margin:3px 0; }
+        .sp-tools, .sp-add { display:flex; gap:4px; justify-content:flex-end; margin:3px 0; }
+        .sp-tools button, .sp-add button, .sp-x, .sp-del { padding:2px 7px; border:1px solid #2e7d32; background:#e8f5e9; color:#1b5e20; border-radius:6px; cursor:pointer; font-size:0.8rem; }
+        .sp-x, .sp-del { border-color:#c62828; background:#ffebee; color:#c62828; }
+        .sp-x { align-self:flex-end; }
+        .sp-add select { padding:2px; border-radius:6px; max-width:90px; }
 
         .seed-page-header {
             display: flex;
@@ -1602,14 +1605,7 @@
             <h2>📦 Seed Packet Process</h2>
             <button class="seed-add-btn" id="spNewBtn" onclick="spNew()">+ New Flowchart</button>
         </div>
-        <div class="sp-bar">
-            <select id="spSelect"></select>
-            <span id="spTools" style="display:none; gap:8px;">
-                <button class="cancel-btn" onclick="spRename()">✎ Rename</button>
-                <button class="cancel-btn" style="background:#c62828;" onclick="spDelete()">🗑 Delete</button>
-            </span>
-        </div>
-        <div id="spChart"><p class="gb-empty">Loading…</p></div>
+        <div id="spChart" class="sp-grid"><p class="gb-empty">Loading…</p></div>
     </div>
 
     <!-- ══ GARDEN BEDS PAGE ══ -->
@@ -4250,10 +4246,10 @@
 
 
         // ══════════════════════════════════════════════════════════════
-        // SEED PACKET PROCESS — editable flowcharts (Firestore: seedPacketFlows)
+        // SEED PACKET PROCESS — editable flowcharts, shown side by side (Firestore: seedPacketFlows)
         // ══════════════════════════════════════════════════════════════
         const spCol = collection(db, 'seedPacketFlows');
-        let spFlows = [], spCurrentId = null;
+        let spFlows = [];
         const spF = (l, t) => ({ l, t, v: '' });
         const spTemplate = () => [
             { fields: [spF('Seed Name','text'), spF('SP Number','text'), spF('Date','date')] },
@@ -4264,13 +4260,12 @@
             { fields: [spF('Edits made by','text'), spF('Sent for photos. Date','date')] },
             { fields: [spF('Sent to print. Date','date'), spF('Number Copies','number')] }
         ];
-        const spCur = () => spFlows.find(f => f.id === spCurrentId);
+        const spGet = (id) => spFlows.find(f => f.id === id);
         const spSave = (fl) => updateDoc(doc(db, 'seedPacketFlows', fl.id), { steps: fl.steps })
             .catch(e => alert('Save failed: ' + e.message));
 
-        onSnapshot(query(spCol, orderBy('createdAt', 'desc')), (snap) => {
+        onSnapshot(query(spCol, orderBy('createdAt', 'asc')), (snap) => {
             spFlows = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-            if (!spCur()) spCurrentId = spFlows[0] ? spFlows[0].id : null;
             const ae = document.activeElement;
             if (ae && ae.closest && ae.closest('#spChart') && /INPUT|TEXTAREA|SELECT/.test(ae.tagName)) return; // don't interrupt typing
             renderSP();
@@ -4279,45 +4274,58 @@
         });
 
         function renderSP() {
-            const ed = editingEnabled, fl = spCur(), chart = document.getElementById('spChart');
-            document.getElementById('spSelect').innerHTML = spFlows.map(f =>
-                `<option value="${escapeHtml(f.id)}" ${f.id === spCurrentId ? 'selected' : ''}>${escapeHtml(f.title || 'Untitled')}</option>`).join('');
-            document.getElementById('spTools').style.display = (ed && fl) ? 'flex' : 'none';
-            if (!fl) { chart.innerHTML = `<p class="gb-empty">No flowcharts yet. ${ed ? 'Click "+ New Flowchart" to start one.' : ''}</p>`; return; }
-            const n = fl.steps.length;
-            chart.innerHTML = fl.steps.map((s, i) => `
-                <div class="sp-box">
-                    ${ed ? `<div class="sp-tools"><button data-a="up" data-s="${i}">↑</button><button data-a="down" data-s="${i}">↓</button><button data-a="delstep" data-s="${i}">✕ Step</button></div>` : ''}
-                    ${s.fields.map((f, j) => {
-                        const at = `data-s="${i}" data-f="${j}" data-k="v"`;
-                        const inp = f.t === 'area'
-                            ? `<textarea class="sp-in sp-area" ${at} ${ed ? '' : 'readonly'}>${escapeHtml(f.v || '')}</textarea>`
-                            : `<input class="sp-in" type="${f.t === 'date' ? 'date' : f.t === 'number' ? 'number' : 'text'}" ${at} value="${escapeHtml(f.v || '')}" ${ed ? '' : 'disabled'}>`;
-                        return `<div class="sp-field">
-                            ${ed ? `<input class="sp-label" data-s="${i}" data-f="${j}" data-k="l" value="${escapeHtml(f.l)}">` : `<label>${escapeHtml(f.l)}:</label>`}
-                            ${inp}
-                            ${ed ? `<button class="sp-x" data-a="delfield" data-s="${i}" data-f="${j}" title="Remove field">✕</button>` : ''}
-                        </div>`;
-                    }).join('')}
-                    ${ed ? `<div class="sp-add"><select id="spT${i}"><option value="text">Text</option><option value="date">Date</option><option value="number">Number</option><option value="area">Notes box</option></select><button data-a="addfield" data-s="${i}">+ Field</button></div>` : ''}
-                </div>
-                ${i < n - 1 ? '<div class="sp-arrow">⬇</div>' : ''}`).join('')
-                + (ed ? '<button class="seed-add-btn" style="display:block; margin:16px auto;" data-a="addstep">+ Add Step</button>' : '');
+            const ed = editingEnabled, chart = document.getElementById('spChart');
+            if (!spFlows.length) { chart.innerHTML = `<p class="gb-empty">No flowcharts yet. ${ed ? 'Click "+ New Flowchart" to start one.' : ''}</p>`; return; }
+            chart.innerHTML = spFlows.map(fl => {
+                const fid = escapeHtml(fl.id), n = fl.steps.length;
+                return `<div class="sp-col">
+                  <div class="sp-title">${ed
+                      ? `<input class="sp-ttl" data-fl="${fid}" data-k="title" value="${escapeHtml(fl.title || '')}"><button class="sp-del" data-a="delflow" data-fl="${fid}" title="Delete this flowchart">🗑</button>`
+                      : `<h3>${escapeHtml(fl.title || 'Untitled')}</h3>`}</div>
+                  ${fl.steps.map((s, i) => `
+                    <div class="sp-box">
+                        ${ed ? `<div class="sp-tools"><button data-a="up" data-fl="${fid}" data-s="${i}">↑</button><button data-a="down" data-fl="${fid}" data-s="${i}">↓</button><button data-a="delstep" data-fl="${fid}" data-s="${i}">✕ Step</button></div>` : ''}
+                        ${s.fields.map((f, j) => {
+                            const at = `data-fl="${fid}" data-s="${i}" data-f="${j}" data-k="v"`;
+                            const inp = f.t === 'area'
+                                ? `<textarea class="sp-in sp-area" ${at} ${ed ? '' : 'readonly'}>${escapeHtml(f.v || '')}</textarea>`
+                                : `<input class="sp-in" type="${f.t === 'date' ? 'date' : f.t === 'number' ? 'number' : 'text'}" ${at} value="${escapeHtml(f.v || '')}" ${ed ? '' : 'disabled'}>`;
+                            return `<div class="sp-field">
+                                ${ed ? `<input class="sp-label" data-fl="${fid}" data-s="${i}" data-f="${j}" data-k="l" value="${escapeHtml(f.l)}">` : `<label>${escapeHtml(f.l)}:</label>`}
+                                ${inp}
+                                ${ed ? `<button class="sp-x" data-a="delfield" data-fl="${fid}" data-s="${i}" data-f="${j}" title="Remove field">✕</button>` : ''}
+                            </div>`;
+                        }).join('')}
+                        ${ed ? `<div class="sp-add"><select id="spT_${fid}_${i}"><option value="text">Text</option><option value="date">Date</option><option value="number">Number</option><option value="area">Notes</option></select><button data-a="addfield" data-fl="${fid}" data-s="${i}">+ Field</button></div>` : ''}
+                    </div>
+                    ${i < n - 1 ? '<div class="sp-arrow">⬇</div>' : ''}`).join('')}
+                  ${ed ? `<button class="seed-add-btn" style="display:block; margin:10px auto;" data-a="addstep" data-fl="${fid}">+ Add Step</button>` : ''}
+                </div>`;
+            }).join('');
         }
 
-        document.getElementById('spSelect').addEventListener('change', (e) => { spCurrentId = e.target.value; renderSP(); });
-
         document.getElementById('spChart').addEventListener('change', (e) => {
-            const t = e.target, fl = spCur();
-            if (!fl || !editingEnabled || t.dataset.s === undefined) return;
+            const t = e.target, fl = spGet(t.dataset.fl);
+            if (!fl || !editingEnabled) return;
+            if (t.dataset.k === 'title') {
+                fl.title = t.value.trim() || 'Untitled';
+                updateDoc(doc(db, 'seedPacketFlows', fl.id), { title: fl.title }).catch(err => alert('Rename failed: ' + err.message));
+                return;
+            }
+            if (t.dataset.s === undefined) return;
             fl.steps[+t.dataset.s].fields[+t.dataset.f][t.dataset.k] = t.value;
             spSave(fl);
         });
 
-        document.getElementById('spChart').addEventListener('click', (e) => {
-            const b = e.target.closest('button[data-a]'), fl = spCur();
+        document.getElementById('spChart').addEventListener('click', async (e) => {
+            const b = e.target.closest('button[data-a]'), fl = b && spGet(b.dataset.fl);
             if (!b || !fl || !editingEnabled) return;
             const a = b.dataset.a, s = +b.dataset.s, st = fl.steps;
+            if (a === 'delflow') {
+                if (!confirm('Delete the flowchart "' + (fl.title || 'Untitled') + '" for EVERYONE? This cannot be undone.')) return;
+                try { await deleteDoc(doc(db, 'seedPacketFlows', fl.id)); } catch(err) { alert('Delete failed: ' + err.message); }
+                return;
+            }
             if (a === 'up' && s > 0) [st[s-1], st[s]] = [st[s], st[s-1]];
             else if (a === 'down' && s < st.length - 1) [st[s+1], st[s]] = [st[s], st[s+1]];
             else if (a === 'delstep') { if (!confirm('Delete this step?')) return; st.splice(s, 1); }
@@ -4325,7 +4333,7 @@
             else if (a === 'addfield') {
                 const l = prompt('Label for the new field (e.g. Approved by):');
                 if (!l || !l.trim()) return;
-                st[s].fields.push({ l: l.trim(), t: document.getElementById('spT' + s).value, v: '' });
+                st[s].fields.push({ l: l.trim(), t: document.getElementById('spT_' + fl.id + '_' + s).value, v: '' });
             }
             else if (a === 'addstep') st.push({ fields: [spF('Done by','text'), spF('Date','date')] });
             spSave(fl); renderSP();
@@ -4334,25 +4342,9 @@
         window.spNew = async function() {
             const title = prompt('Name for the new flowchart (e.g. the seed name):');
             if (!title || !title.trim()) return;
-            try {
-                const r = await addDoc(spCol, { title: title.trim(), steps: spTemplate(), createdAt: serverTimestamp() });
-                spCurrentId = r.id; renderSP();
-            } catch(e) { alert('Could not create flowchart: ' + e.message); }
+            try { await addDoc(spCol, { title: title.trim(), steps: spTemplate(), createdAt: serverTimestamp() }); }
+            catch(e) { alert('Could not create flowchart: ' + e.message); }
         };
-        window.spRename = async function() {
-            const fl = spCur(); if (!fl) return;
-            const t = prompt('Rename flowchart:', fl.title || '');
-            if (!t || !t.trim()) return;
-            try { await updateDoc(doc(db, 'seedPacketFlows', fl.id), { title: t.trim() }); }
-            catch(e) { alert('Rename failed: ' + e.message); }
-        };
-        window.spDelete = async function() {
-            const fl = spCur(); if (!fl) return;
-            if (!confirm('Delete the flowchart "' + (fl.title || 'Untitled') + '" for EVERYONE? This cannot be undone.')) return;
-            try { await deleteDoc(doc(db, 'seedPacketFlows', fl.id)); }
-            catch(e) { alert('Delete failed: ' + e.message); }
-        };
-
 
         // Expose to global scope for onclick attributes
         window.showAddForm       = showAddForm;
