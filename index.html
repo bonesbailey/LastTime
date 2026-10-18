@@ -242,23 +242,25 @@
 
         /* ── Seed Packet Process (flowcharts, side by side) ── */
         #seedPacketPage { display: none; max-width: 1700px; margin: 0 auto; }
-        .sp-grid { display:flex; gap:14px; align-items:flex-start; overflow-x:auto; padding-bottom:12px; }
-        .sp-col { flex:0 0 235px; min-width:0; }
+        .sp-grid { display:grid; grid-template-columns:repeat(4, 352px); gap:18px 14px; align-items:start; justify-content:center; overflow-x:auto; padding-bottom:12px; }
+        .sp-col { width:352px; min-width:0; }
         .sp-title { display:flex; gap:4px; align-items:center; margin-bottom:8px; }
         .sp-title h3 { margin:0; flex:1; text-align:center; color:#1b5e20; font-size:1rem; background:#c8e6c9; padding:6px; border-radius:8px; }
         .sp-ttl { flex:1; min-width:0; font-weight:700; text-align:center; padding:5px; border:2px solid #2e7d32; border-radius:8px; font-size:0.95rem; box-sizing:border-box; }
         .sp-box { background:#fff; color:#222; border:2px solid #2e7d32; border-radius:8px; padding:8px 9px; box-shadow:0 2px 6px rgba(0,0,0,.15); }
-        .sp-field { display:flex; flex-direction:column; gap:2px; margin:6px 0; }
-        .sp-field label { font-weight:700; color:#1b5e20; font-size:0.85rem; }
-        .sp-label { font-weight:700; color:#1b5e20; width:100%; padding:3px 5px; border:1px dashed #81c784; border-radius:6px; font-size:0.85rem; box-sizing:border-box; }
-        .sp-in { width:100%; min-width:0; box-sizing:border-box; padding:5px 6px; border:1px solid #aaa; border-radius:6px; font-size:0.9rem; font-family:inherit; }
+        .sp-field { display:flex; align-items:center; gap:6px; margin:7px 0; }
+        .sp-field.sp-top { align-items:flex-start; }
+        .sp-colon { font-weight:700; color:#1b5e20; }
+        .sp-field label { flex:0 1 42%; font-weight:700; color:#1b5e20; font-size:0.88rem; }
+        .sp-label { flex:0 0 38%; min-width:0; font-weight:700; color:#1b5e20; padding:3px 5px; border:1px dashed #81c784; border-radius:6px; font-size:0.85rem; box-sizing:border-box; }
+        .sp-in { flex:1; width:0; min-width:0; box-sizing:border-box; padding:5px 6px; border:1px solid #aaa; border-radius:6px; font-size:0.9rem; font-family:inherit; }
         .sp-in:disabled { color:#222; background:#f4f4f4; opacity:1; }
         .sp-area { height:70px; resize:vertical; overflow-y:auto; }
         .sp-arrow { text-align:center; font-size:1.6rem; color:#2e7d32; line-height:1.1; margin:3px 0; }
         .sp-tools, .sp-add { display:flex; gap:4px; justify-content:flex-end; margin:3px 0; }
         .sp-tools button, .sp-add button, .sp-x, .sp-del { padding:2px 7px; border:1px solid #2e7d32; background:#e8f5e9; color:#1b5e20; border-radius:6px; cursor:pointer; font-size:0.8rem; }
         .sp-x, .sp-del { border-color:#c62828; background:#ffebee; color:#c62828; }
-        .sp-x { align-self:flex-end; }
+        .sp-x { align-self:center; flex:none; }
         .sp-add select { padding:2px; border-radius:6px; max-width:90px; }
 
         .seed-page-header {
@@ -4290,8 +4292,8 @@
                             const inp = f.t === 'area'
                                 ? `<textarea class="sp-in sp-area" ${at} ${ed ? '' : 'readonly'}>${escapeHtml(f.v || '')}</textarea>`
                                 : `<input class="sp-in" type="${f.t === 'date' ? 'date' : f.t === 'number' ? 'number' : 'text'}" ${at} value="${escapeHtml(f.v || '')}" ${ed ? '' : 'disabled'}>`;
-                            return `<div class="sp-field">
-                                ${ed ? `<input class="sp-label" data-fl="${fid}" data-s="${i}" data-f="${j}" data-k="l" value="${escapeHtml(f.l)}">` : `<label>${escapeHtml(f.l)}:</label>`}
+                            return `<div class="sp-field${f.t === 'area' ? ' sp-top' : ''}">
+                                ${ed ? `<input class="sp-label" data-fl="${fid}" data-s="${i}" data-f="${j}" data-k="l" value="${escapeHtml(f.l)}"><span class="sp-colon">:</span>` : `<label>${escapeHtml(f.l)}:</label>`}
                                 ${inp}
                                 ${ed ? `<button class="sp-x" data-a="delfield" data-fl="${fid}" data-s="${i}" data-f="${j}" title="Remove field">✕</button>` : ''}
                             </div>`;
