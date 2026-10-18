@@ -250,7 +250,6 @@
         .sp-box { background:#fff; color:#222; border:2px solid #2e7d32; border-radius:8px; padding:8px 9px; box-shadow:0 2px 6px rgba(0,0,0,.15); }
         .sp-field { display:flex; align-items:center; gap:6px; margin:7px 0; }
         .sp-field.sp-top { align-items:flex-start; }
-        .sp-colon { font-weight:700; color:#1b5e20; margin-left:-5px; }
         .sp-field label { flex:0 1 42%; font-weight:700; color:#1b5e20; font-size:0.88rem; }
         .sp-label { flex:0 1 auto; max-width:60%; min-width:3ch; font-weight:700; color:#1b5e20; padding:3px 5px; border:1px dashed #81c784; border-radius:6px; font-size:0.85rem; box-sizing:border-box; }
         .sp-in { flex:1; width:0; min-width:0; box-sizing:border-box; padding:5px 6px; border:1px solid #aaa; border-radius:6px; font-size:0.9rem; font-family:inherit; }
@@ -4254,14 +4253,20 @@
         let spFlows = [];
         const spF = (l, t) => ({ l, t, v: '' });
         const spTemplate = () => [
-            { fields: [spF('Seed Name','text'), spF('SP Number','text'), spF('Date','date')] },
-            { fields: [spF('Research by','text'), spF('Sent for 1st edit. Date','date')] },
-            { fields: [spF('Received by','text'), spF('Edit Suggestions','area'), spF('Date Returned','date')] },
-            { fields: [spF('Edits made by','text'), spF('Sent for 2nd edit. Date','date')] },
-            { fields: [spF('Received by','text'), spF('Edit Suggestions','area'), spF('Date Returned','date')] },
-            { fields: [spF('Edits made by','text'), spF('Sent for photos. Date','date')] },
-            { fields: [spF('Sent to print. Date','date'), spF('Number Copies','number')] }
+            { fields: [spF('Seed Name:','text'), spF('SP Number:','text'), spF('Date:','date')] },
+            { fields: [spF('Research by:','text'), spF('Sent for 1st edit:','date')] },
+            { fields: [spF('Received by:','text'), spF('Edit Suggestions:','area'), spF('Date Returned:','date')] },
+            { fields: [spF('Edits made by:','text'), spF('Sent for 2nd edit:','date')] },
+            { fields: [spF('Received by:','text'), spF('Edit Suggestions:','area'), spF('Date Returned:','date')] },
+            { fields: [spF('Edits made by:','text'), spF('Sent for photos:','date')] },
+            { fields: [spF('Sent to print:','date'), spF('Number Copies:','number')] }
         ];
+        // Labels always end with a colon (part of the text). Older flowcharts get the new wording/colon automatically.
+        const spOld = { 'Sent for 1st edit. Date': 'Sent for 1st edit', 'Sent for 2nd edit. Date': 'Sent for 2nd edit',
+                        'Sent for photos. Date': 'Sent for photos', 'Sent for photos. Date:': 'Sent for photos',
+                        'Sent to print. Date': 'Sent to print', 'Sent to print. Date:': 'Sent to print' };
+        const spLbl = (l) => { l = spOld[l] ?? l; return /:\s*$/.test(l) ? l : l + ':'; };
+        const spW = (txt) => `calc(${txt.length + 1}ch + 16px)`;
         const spGet = (id) => spFlows.find(f => f.id === id);
         const spSave = (fl) => updateDoc(doc(db, 'seedPacketFlows', fl.id), { steps: fl.steps })
             .catch(e => alert('Save failed: ' + e.message));
@@ -4293,7 +4298,7 @@
                                 ? `<textarea class="sp-in sp-area" ${at} ${ed ? '' : 'readonly'}>${escapeHtml(f.v || '')}</textarea>`
                                 : `<input class="sp-in" type="${f.t === 'date' ? 'date' : f.t === 'number' ? 'number' : 'text'}" ${at} value="${escapeHtml(f.v || '')}" ${ed ? '' : 'disabled'}>`;
                             return `<div class="sp-field${f.t === 'area' ? ' sp-top' : ''}">
-                                ${ed ? `<input class="sp-label" data-fl="${fid}" data-s="${i}" data-f="${j}" data-k="l" value="${escapeHtml(f.l)}" style="width:${Math.max(f.l.length, 2) + 1}ch"><span class="sp-colon">:</span>` : `<label>${escapeHtml(f.l)}:</label>`}
+                                ${ed ? `<input class="sp-label" data-fl="${fid}" data-s="${i}" data-f="${j}" data-k="l" value="${escapeHtml(spLbl(f.l))}" style="width:${spW(spLbl(f.l))}">` : `<label>${escapeHtml(spLbl(f.l))}</label>`}
                                 ${inp}
                                 ${ed ? `<button class="sp-x" data-a="delfield" data-fl="${fid}" data-s="${i}" data-f="${j}" title="Remove field">✕</button>` : ''}
                             </div>`;
@@ -4307,7 +4312,7 @@
         }
 
         document.getElementById('spChart').addEventListener('input', (e) => {
-            if (e.target.classList.contains('sp-label')) e.target.style.width = (Math.max(e.target.value.length, 2) + 1) + 'ch';
+            if (e.target.classList.contains('sp-label')) e.target.style.width = spW(e.target.value);
         });
 
         document.getElementById('spChart').addEventListener('change', (e) => {
@@ -4341,7 +4346,7 @@
                 if (!l || !l.trim()) return;
                 st[s].fields.push({ l: l.trim(), t: document.getElementById('spT_' + fl.id + '_' + s).value, v: '' });
             }
-            else if (a === 'addstep') st.push({ fields: [spF('Done by','text'), spF('Date','date')] });
+            else if (a === 'addstep') st.push({ fields: [spF('Done by:','text'), spF('Date:','date')] });
             spSave(fl); renderSP();
         });
 
