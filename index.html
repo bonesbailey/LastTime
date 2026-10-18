@@ -4272,7 +4272,7 @@
         const spSave = (fl) => updateDoc(doc(db, 'seedPacketFlows', fl.id), { steps: fl.steps })
             .catch(e => alert('Save failed: ' + e.message));
 
-        onSnapshot(query(spCol, orderBy('createdAt', 'asc')), (snap) => {
+        onSnapshot(query(spCol, orderBy('createdAt', 'desc')), (snap) => {
             spFlows = snap.docs.map(d => ({ id: d.id, ...d.data() }));
             const ae = document.activeElement;
             if (ae && ae.closest && ae.closest('#spChart') && /INPUT|TEXTAREA|SELECT/.test(ae.tagName)) return; // don't interrupt typing
