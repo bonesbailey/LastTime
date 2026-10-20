@@ -243,7 +243,11 @@
         .pd-grid { display: grid; grid-template-columns: 200px 1fr; gap: 8px 16px; align-items: start; }
         .pd-lbl { font-weight: 700; color: #1b5e20; }
         .pd-val { white-space: pre-wrap; }
-        .pd-scroll { max-height: 150px; overflow-y: auto; border: 1px solid #ccc; background: #fafafa; border-radius: 8px; padding: 8px 10px; white-space: pre-wrap; margin: 6px 0; font-size: 0.95rem; color: #222; }
+        .pd-del { background: #ffcdd2; color: #b71c1c; border-bottom: 2px solid #e53935; border-radius: 3px; padding: 0 1px; }
+        .pd-ins { background: #c8e6c9; color: #1b5e20; border-bottom: 2px solid #2e7d32; border-radius: 3px; padding: 0 1px; }
+        .pd-caret { color: #fff; background: #2e7d32; border-radius: 4px; padding: 0 4px; font-size: 0.75rem; font-weight: 700; margin: 0 2px; }
+        .pd-caret.cut { background: #e53935; }
+        .pd-scroll { position: relative; max-height: 150px; overflow-y: auto; border: 1px solid #ccc; background: #fafafa; border-radius: 8px; padding: 8px 10px; white-space: pre-wrap; margin: 6px 0; font-size: 0.95rem; color: #222; }
         .pd-sugg { border: 2px dashed #f9a825; background: #fffde7; border-radius: 10px; padding: 10px 14px; margin-top: 12px; color: #222; }
         .pd-sugg-head { font-weight: 700; color: #6d4c00; }
         .pd-mini { font-size: 0.78rem; font-weight: 700; color: #555; margin-top: 8px; }
@@ -2083,8 +2087,9 @@
             <select id="pdSugField" onchange="pdSuggestFieldChanged()"></select>
             <div class="pd-mini">Original text (scroll to read all)</div>
             <div class="pd-scroll" id="pdSugOriginal" style="max-height:170px;"></div>
+            <div class="pd-mini">As you type below, the part you change is marked in the original: <mark class="pd-del">red</mark> = replaced/removed, <span class="pd-caret">▼</span> = new text goes here.</div>
             <label>Your recommended edit (change the text below)</label>
-            <textarea id="pdSugText" style="height:170px;"></textarea>
+            <textarea id="pdSugText" style="height:170px;" oninput="pdSuggestLive()"></textarea>
             <label>Your name</label>
             <input type="text" id="pdSugName" placeholder="Your name">
             <label>Note / reason (optional)</label>
@@ -4338,19 +4343,20 @@
                 const rows = PD_FIELDS.filter(([k]) => f[k]).map(([k, l]) =>
                     `<div class="pd-lbl">${l}:<br><button class="fl-link-btn" style="font-size:0.72rem; padding:1px 6px;" onclick="openPdSuggest('${id}','${k}')">✏️ Suggest</button></div>
                      <div class="pd-val">${escapeHtml(f[k])}</div>`).join('');
-                const suggHtml = sugg.length ? `<h3 style="margin:16px 0 0; color:#6d4c00;">Suggested Edits (${sugg.length})</h3>` + sugg.map(x => `
+                const suggHtml = sugg.length ? `<h3 style="margin:16px 0 0; color:#6d4c00;">Suggested Edits (${sugg.length})</h3>` + sugg.map(x => { const dh = pdDiffHtml(x.original || '', x.suggested || ''); return `
                     <div class="pd-sugg">
                         <div class="pd-sugg-head">${escapeHtml(x.label || '')} — suggested by ${escapeHtml(x.by || 'Anonymous')}${x.date ? ' on ' + escapeHtml(x.date) : ''}</div>
+                        ${PD_LEGEND}
                         <div class="pd-mini">Original</div>
-                        <div class="pd-scroll">${escapeHtml(x.original || '')}</div>
+                        <div class="pd-scroll">${dh.o}</div>
                         <div class="pd-mini">Recommended edit</div>
-                        <div class="pd-scroll">${escapeHtml(x.suggested || '')}</div>
+                        <div class="pd-scroll">${dh.n}</div>
                         ${x.note ? `<div style="margin-top:4px;"><b>Note:</b> ${escapeHtml(x.note)}</div>` : ''}
                         <div style="margin-top:8px; display:flex; gap:8px;">
                             <button class="inv-edit-btn ${editingEnabled ? 'visible' : ''}" onclick="acceptPdSuggestion('${id}','${escapeHtml(x.id)}')">✔ Accept</button>
                             <button class="inv-delete-btn ${editingEnabled ? 'visible' : ''}" onclick="dismissPdSuggestion('${id}','${escapeHtml(x.id)}')">✖ Dismiss</button>
                         </div>
-                    </div>`).join('') : '';
+                    </div>`; }).join('') : '';
                 return `<div class="fl-card" id="draft-${id}">
                     <div class="fl-card-header">
                         <div class="fl-title-wrap"><span class="fl-title">${escapeHtml(d.title || 'Untitled')}</span>
@@ -4365,6 +4371,49 @@
                     ${suggHtml}
                 </div>`;
             }).join('');
+            pdScrollToFirstMark(wrap);
+        }
+
+        // ── Word-by-word comparison: marks where an edit starts / what changes ──
+        function pdDiffHtml(a, b) {
+            const A = a.match(/\S+|\s+/g) || [], B = b.match(/\S+|\s+/g) || [];
+            let pre = 0; while (pre < A.length && pre < B.length && A[pre] === B[pre]) pre++;
+            let suf = 0; while (suf < A.length - pre && suf < B.length - pre && A[A.length - 1 - suf] === B[B.length - 1 - suf]) suf++;
+            const a2 = A.slice(pre, A.length - suf), b2 = B.slice(pre, B.length - suf);
+            const n = a2.length, m = b2.length;
+            let mid = [];
+            if (n * m > 4000000) {
+                mid = a2.map(v => ({ t: 'del', v })).concat(b2.map(v => ({ t: 'ins', v })));
+            } else {
+                const dp = Array.from({ length: n + 1 }, () => new Uint16Array(m + 1));
+                for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--)
+                    dp[i][j] = a2[i] === b2[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+                let i = 0, j = 0;
+                while (i < n && j < m) {
+                    if (a2[i] === b2[j]) { mid.push({ t: 'eq', v: a2[i] }); i++; j++; }
+                    else if (dp[i + 1][j] >= dp[i][j + 1]) { mid.push({ t: 'del', v: a2[i++] }); }
+                    else { mid.push({ t: 'ins', v: b2[j++] }); }
+                }
+                while (i < n) mid.push({ t: 'del', v: a2[i++] });
+                while (j < m) mid.push({ t: 'ins', v: b2[j++] });
+            }
+            const ops = A.slice(0, pre).map(v => ({ t: 'eq', v })).concat(mid, A.slice(A.length - suf).map(v => ({ t: 'eq', v })));
+            let o = '', nw = '', k = 0;
+            while (k < ops.length) {
+                if (ops[k].t === 'eq') { const v = escapeHtml(ops[k].v); o += v; nw += v; k++; continue; }
+                let del = '', ins = '';
+                while (k < ops.length && ops[k].t !== 'eq') { if (ops[k].t === 'del') del += ops[k].v; else ins += ops[k].v; k++; }
+                o  += del.trim() ? `<mark class="pd-del">${escapeHtml(del)}</mark>` : `<span class="pd-caret" title="New text goes here">▼ new text here</span>`;
+                nw += ins.trim() ? `<mark class="pd-ins">${escapeHtml(ins)}</mark>` : `<span class="pd-caret cut" title="Text removed here">✂ removed</span>`;
+            }
+            return { o, n: nw };
+        }
+        const PD_LEGEND = `<div class="pd-mini">Marked: <mark class="pd-del">red</mark> = text being replaced or removed · <mark class="pd-ins">green</mark> = new text · <span class="pd-caret">▼</span> = new text goes here</div>`;
+        function pdScrollToFirstMark(root) {
+            root.querySelectorAll('.pd-scroll').forEach(el => {
+                const mk = el.querySelector('mark, .pd-caret');
+                if (mk) el.scrollTop = Math.max(0, mk.offsetTop - 24);
+            });
         }
 
         // ── add / edit a draft ──
@@ -4441,6 +4490,15 @@
             const text = (d.fields || {})[document.getElementById('pdSugField').value] || '';
             document.getElementById('pdSugOriginal').textContent = text;
             document.getElementById('pdSugText').value = text;
+        };
+        window.pdSuggestLive = function() {
+            const d = packetDrafts.find(x => x.id === pdSuggestId); if (!d) return;
+            const orig = (d.fields || {})[document.getElementById('pdSugField').value] || '';
+            const box = document.getElementById('pdSugOriginal');
+            const st = box.scrollTop;
+            const txt = document.getElementById('pdSugText').value;
+            box.innerHTML = txt === orig ? escapeHtml(orig) : pdDiffHtml(orig, txt).o;
+            box.scrollTop = st;
         };
         window.closePdSuggestModal = function() { document.getElementById('pdSuggestModal').style.display = 'none'; };
 
