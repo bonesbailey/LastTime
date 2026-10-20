@@ -4462,8 +4462,22 @@
             try {
                 let text;
                 if (/\.docx$/i.test(file.name)) {
-                    const r = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
-                    text = r.value;
+                    const buf = await file.arrayBuffer();
+                    const norm = t => t.toLowerCase().replace(/[^a-z]/g, '');
+                    const known = new Set(PD_FIELDS.map(([k, l]) => norm(l)));
+                    const html = (await mammoth.convertToHtml({ arrayBuffer: buf })).value;
+                    const dom = new DOMParser().parseFromString(html, 'text/html');
+                    const lines = [];
+                    dom.querySelectorAll('tr').forEach(tr => {
+                        const c = tr.querySelectorAll('td, th');
+                        if (c.length < 2) return;
+                        const label = c[0].textContent.replace(/:\s*$/, '').trim();
+                        if (!known.has(norm(label))) return;
+                        const val = Array.from(c[1].querySelectorAll('p')).map(x => x.textContent.trim()).filter(Boolean).join(' ') || c[1].textContent.trim();
+                        lines.push(label + ': ' + val);
+                    });
+                    if (lines.length) text = lines.join('\n');
+                    else text = (await mammoth.extractRawText({ arrayBuffer: buf })).value;
                 } else if (/\.txt$/i.test(file.name)) {
                     text = await file.text();
                 } else { alert('Please choose a Word (.docx) or text (.txt) file.'); return; }
@@ -4480,13 +4494,15 @@
             if (typeof JSZip === 'undefined') { alert('The Word file maker did not load. Please refresh the page and try again.'); return; }
             const f = d.fields || {};
             const esc = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            const paras = PD_FIELDS.filter(([k]) => f[k]).map(([k, l]) => {
-                const lines = String(f[k]).split(/\r?\n/);
-                const first = `<w:p><w:pPr><w:spacing w:after="${lines.length > 1 ? 0 : 120}"/></w:pPr><w:r><w:rPr><w:b/></w:rPr><w:t xml:space="preserve">${esc(l)}: </w:t></w:r><w:r><w:t xml:space="preserve">${esc(lines[0])}</w:t></w:r></w:p>`;
-                const rest = lines.slice(1).map((ln, i) =>
-                    `<w:p><w:pPr><w:spacing w:after="${i === lines.length - 2 ? 120 : 0}"/></w:pPr><w:r><w:t xml:space="preserve">${esc(ln)}</w:t></w:r></w:p>`).join('');
-                return first + rest;
-            }).join('');
+            const bd = '<w:tcBorders><w:top w:val="single" w:sz="4" w:color="808080"/><w:left w:val="single" w:sz="4" w:color="808080"/><w:bottom w:val="single" w:sz="4" w:color="808080"/><w:right w:val="single" w:sz="4" w:color="808080"/></w:tcBorders>';
+            const cell = (w, inner, shade) => `<w:tc><w:tcPr><w:tcW w:w="${w}" w:type="dxa"/>${bd}${shade ? '<w:shd w:val="clear" w:color="auto" w:fill="E8F5E9"/>' : ''}</w:tcPr>${inner}</w:tc>`;
+            const para = (t, bold) => `<w:p><w:pPr><w:spacing w:before="40" w:after="40"/></w:pPr><w:r>${bold ? '<w:rPr><w:b/></w:rPr>' : ''}<w:t xml:space="preserve">${esc(t)}</w:t></w:r></w:p>`;
+            const rows = PD_FIELDS.filter(([k]) => f[k]).map(([k, l]) =>
+                '<w:tr><w:trPr><w:cantSplit/></w:trPr>' +
+                cell(2700, para(l, true), true) +
+                cell(6660, String(f[k]).split(/\r?\n/).map(ln => para(ln, false)).join(''), false) +
+                '</w:tr>').join('');
+            const paras = '<w:tbl><w:tblPr><w:tblW w:w="9360" w:type="dxa"/><w:tblLayout w:type="fixed"/></w:tblPr><w:tblGrid><w:gridCol w:w="2700"/><w:gridCol w:w="6660"/></w:tblGrid>' + rows + '</w:tbl><w:p/>';
             const zip = new JSZip();
             zip.file('[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>');
             zip.file('_rels/.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>');
