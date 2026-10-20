@@ -219,7 +219,7 @@
         .game-table td:last-child { background: #c8e6c9 !important; }
         .game-table td.seed-name { text-align: left; }
 
-        /* Phones: shrink the game tables to the screen so Edit/Delete buttons are visible without scrolling */
+        /* Phones: shrink the game tables to the screen so Edit/Delete are visible without scrolling */
         @media (max-width: 700px) {
             #seedGamePage .game-groups { display: block; }
             #seedGamePage .game-col { display: block; width: 100% !important; max-width: 100% !important; flex: none; margin-bottom: 24px; }
@@ -238,6 +238,17 @@
         #seedPage { display: none; max-width: 1500px; margin: 0 auto; }
         #seedGamePage { display: none; max-width: 1400px; margin: 0 auto; }
         #seedListPage { display: none; max-width: 1500px; margin: 0 auto; }
+        #packetDraftsPage { display: none; max-width: 1100px; margin: 0 auto; }
+        #packetDraftsPage .seed-page-header { justify-content: center; flex-direction: column; text-align: center; }
+        .pd-grid { display: grid; grid-template-columns: 200px 1fr; gap: 8px 16px; align-items: start; }
+        .pd-lbl { font-weight: 700; color: #1b5e20; }
+        .pd-val { white-space: pre-wrap; }
+        .pd-scroll { max-height: 150px; overflow-y: auto; border: 1px solid #ccc; background: #fafafa; border-radius: 8px; padding: 8px 10px; white-space: pre-wrap; margin: 6px 0; font-size: 0.95rem; color: #222; }
+        .pd-sugg { border: 2px dashed #f9a825; background: #fffde7; border-radius: 10px; padding: 10px 14px; margin-top: 12px; color: #222; }
+        .pd-sugg-head { font-weight: 700; color: #6d4c00; }
+        .pd-mini { font-size: 0.78rem; font-weight: 700; color: #555; margin-top: 8px; }
+        #pdModal .modal-content, #pdSuggestModal .modal-content { max-width: 720px; }
+        @media (max-width: 640px) { .pd-grid { grid-template-columns: 1fr; } }
         #seedGerminationPage { display: none; max-width: 1000px; margin: 0 auto; }
 
         /* ── Seed Packet Process (flowcharts, side by side) ── */
@@ -1366,6 +1377,7 @@
             <button class="dropdown-caret" id="seedsCaret" onclick="toggleGameDropdown(event)">▾</button>
             <div class="dropdown-menu" id="gameDropdownMenu">
                 <button id="invMenuItem" onclick="showPage('seeds')">🌰 Seed Inventory</button>
+                <button id="draftsMenuItem" onclick="showPage('packetDrafts')">📝 Seed Packet Drafts</button>
                 <button id="packetMenuItem" onclick="showPage('seedPacket')">📦 Seed Packet Process</button>
                 <button id="germMenuItem" onclick="showPage('seedGermination')">🌱 Seed Germination</button>
                 <button id="gameMenuItem" onclick="showPage('seedGame')">🎮 Seed Saver Game</button>
@@ -1501,6 +1513,16 @@
             <button class="seed-add-btn" id="seedListUploadBtn" onclick="showSeedListForm()" style="display:none; margin:0 auto;">+ Add Excel File</button>
         </div>
         <div id="seedListCard"><p class="fl-empty">Loading Seed List…</p></div>
+    </div>
+
+    <!-- ══ SEED PACKET DRAFTS PAGE ══ -->
+    <div id="packetDraftsPage">
+        <div class="seed-page-header">
+            <h2 style="text-align:center; margin:0 auto;">📝 Seed Packet Drafts</h2>
+            <p style="margin:4px 0 10px;">Read a draft, then press <b>✏️ Suggest</b> next to any field to recommend a change.</p>
+            <button class="seed-add-btn" id="pdAddBtn" onclick="showPdForm()" style="display:none; margin:0 auto;">+ Add Draft</button>
+        </div>
+        <div id="packetDraftsList"><p class="fl-empty">Loading drafts…</p></div>
     </div>
 
     <!-- ══ SEED SAVER GAME PAGE ══ -->
@@ -2037,6 +2059,43 @@
         </div>
     </div>
 
+    <!-- ══ SEED PACKET DRAFT Add/Edit Modal ══ -->
+    <div class="modal" id="pdModal">
+        <div class="modal-content">
+            <h2 id="pdModalTitle">Add Draft</h2>
+            <label>Paste the whole packet text here (optional), then press "Fill Fields"</label>
+            <textarea id="pdPaste" placeholder="Plant Name: Barrel Cactus&#10;Biological Name: Ferocactus wislizeni&#10;…" style="height:110px;"></textarea>
+            <button type="button" class="fl-link-btn" onclick="pdFillFromPaste()">⬇ Fill Fields from Pasted Text</button>
+            <hr>
+            <div id="pdFormFields"></div>
+            <div class="modal-actions">
+                <button class="save-btn"   onclick="savePdDraft()">Save</button>
+                <button class="cancel-btn" onclick="closePdModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ SEED PACKET DRAFT Suggest-an-Edit Modal ══ -->
+    <div class="modal" id="pdSuggestModal">
+        <div class="modal-content">
+            <h2>✏️ Suggest an Edit</h2>
+            <label>Field</label>
+            <select id="pdSugField" onchange="pdSuggestFieldChanged()"></select>
+            <div class="pd-mini">Original text (scroll to read all)</div>
+            <div class="pd-scroll" id="pdSugOriginal" style="max-height:170px;"></div>
+            <label>Your recommended edit (change the text below)</label>
+            <textarea id="pdSugText" style="height:170px;"></textarea>
+            <label>Your name</label>
+            <input type="text" id="pdSugName" placeholder="Your name">
+            <label>Note / reason (optional)</label>
+            <input type="text" id="pdSugNote" placeholder="e.g. Spelling, or source for this fact">
+            <div class="modal-actions">
+                <button class="save-btn"   onclick="submitPdSuggestion()">Submit Suggestion</button>
+                <button class="cancel-btn" onclick="closePdSuggestModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <!-- ══ IMPORTANT DATE Add/Edit Modal ══ -->
     <div class="modal" id="dateModal">
         <div class="modal-content">
@@ -2077,7 +2136,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
         import {
             getFirestore, collection, addDoc, updateDoc, deleteDoc, doc,
-            onSnapshot, serverTimestamp, query, orderBy, getDoc, setDoc, writeBatch, getDocs
+            onSnapshot, serverTimestamp, query, orderBy, getDoc, setDoc, writeBatch, getDocs, arrayUnion
         } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
         import {
             getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject, listAll, getMetadata
@@ -2145,6 +2204,8 @@
             document.getElementById('game1UploadBtn').style.display = 'block';
             document.getElementById('seedListUploadBtn').style.display = 'block';
             renderSeedList();
+            document.getElementById('pdAddBtn').style.display = 'block';
+            renderDrafts();
             document.getElementById('game2UploadBtn').style.display = 'block';
             document.getElementById('game2AddBtn').style.display    = 'block';
             document.getElementById('germAddBtn').style.display     = 'block';
@@ -2180,6 +2241,7 @@
             document.getElementById('photoSearchPage').style.display = page === 'photoSearch' ? 'block' : 'none';
             document.getElementById('seedPage').style.display       = page === 'seeds'       ? 'block' : 'none';
             document.getElementById('seedListPage').style.display   = page === 'seedList'    ? 'block' : 'none';
+            document.getElementById('packetDraftsPage').style.display = page === 'packetDrafts' ? 'block' : 'none';
             document.getElementById('seedGamePage').style.display   = page === 'seedGame'    ? 'block' : 'none';
             document.getElementById('seedGerminationPage').style.display = page === 'seedGermination' ? 'block' : 'none';
             document.getElementById('seedPacketPage').style.display = page === 'seedPacket' ? 'block' : 'none';
@@ -2201,10 +2263,11 @@
             document.getElementById('tabFileLibrary').classList.toggle('active', page === 'fileLibrary');
             document.getElementById('tabDates').classList.toggle('active',      page === 'dates');
             document.getElementById('tabMinutes').classList.toggle('active',    page === 'minutes');
-            document.getElementById('seedsCaret').classList.toggle('active',    page === 'seeds' || page === 'seedGame' || page === 'seedGermination' || page === 'seedPacket');
+            document.getElementById('seedsCaret').classList.toggle('active',    page === 'seeds' || page === 'packetDrafts' || page === 'seedGame' || page === 'seedGermination' || page === 'seedPacket');
             document.getElementById('gameMenuItem').classList.toggle('active',  page === 'seedGame');
             document.getElementById('germMenuItem').classList.toggle('active',  page === 'seedGermination');
             document.getElementById('packetMenuItem').classList.toggle('active', page === 'seedPacket');
+            document.getElementById('draftsMenuItem').classList.toggle('active', page === 'packetDrafts');
             document.getElementById('gameDropdownMenu').classList.remove('show');
         };
 
@@ -3497,11 +3560,13 @@
 
         onSnapshot(query(fileLibCol, orderBy('createdAt', 'desc')), (snapshot) => {
             const allLibDocs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-            fileLibrary   = allLibDocs.filter(f => f.section !== 'seedList');
+            fileLibrary   = allLibDocs.filter(f => !f.section);
             seedListFiles = allLibDocs.filter(f => f.section === 'seedList');
+            packetDrafts  = allLibDocs.filter(f => f.section === 'packetDraft');
             seedListLoaded = true;
             renderFileLibrary();
             renderSeedList();
+            renderDrafts();
         }, (error) => {
             document.getElementById('fileLibraryList').innerHTML = `<p class="fl-empty">Cannot load files: ${error.message}</p>`;
         });
@@ -4232,6 +4297,191 @@
                 await deleteDoc(doc(db, 'fileLibrary', id));
                 if (f.filePath) { try { await deleteObject(storageRef(storage, f.filePath)); } catch (e) {} }
             } catch (e) { alert('Delete failed: ' + e.message); }
+        };
+
+        // ══════════════════════════════════════════════════════════════
+        // SEED PACKET DRAFTS — post a packet draft; anyone can suggest edits,
+        // editors accept or dismiss them. (Stored in the same Firestore
+        // collection as the Bulletin Board, tagged section:'packetDraft',
+        // so no new security rules are needed.)
+        // ══════════════════════════════════════════════════════════════
+        const PD_FIELDS = [
+            ['plantName','Plant Name','text'], ['biologicalName','Biological Name','text'],
+            ['harvestSource','Harvest Source','text'], ['harvestDate','Harvest Date','text'],
+            ['bloomSeason','Bloom Season','text'], ['flowerId','Flower ID','text'],
+            ['attracts','Attracts','text'], ['plantingSeason','Planting Season','text'],
+            ['plantDetails','Plant Details','area'], ['seedCareIndoor','Seed Care Indoor','area'],
+            ['naturalSeedCare','Natural Seed Care','area'], ['germinationTime','Germination Time','text'],
+            ['hardinessZones','Hardiness Zones','text'], ['category','Category','text'],
+            ['seedPacketNum','Seed Packet#','text'], ['seedPacketDate','Seed Packet Date','text']
+        ];
+        let packetDrafts = [];
+        let editingPdId = null;
+        let pdSuggestId = null;
+
+        document.getElementById('pdFormFields').innerHTML = PD_FIELDS.map(([k, l, t]) =>
+            `<label>${l}</label>` + (t === 'area'
+                ? `<textarea id="pdf_${k}" style="height:130px;"></textarea>`
+                : `<input type="text" id="pdf_${k}">`)).join('');
+
+        function renderDrafts() {
+            const wrap = document.getElementById('packetDraftsList');
+            if (!seedListLoaded) return;
+            if (packetDrafts.length === 0) {
+                wrap.innerHTML = `<p class="fl-empty">No drafts yet. ${editingEnabled ? 'Click "+ Add Draft" to get started.' : ''}</p>`;
+                return;
+            }
+            wrap.innerHTML = packetDrafts.map(d => {
+                const id = escapeHtml(d.id);
+                const f = d.fields || {};
+                const sugg = d.suggestions || [];
+                const rows = PD_FIELDS.filter(([k]) => f[k]).map(([k, l]) =>
+                    `<div class="pd-lbl">${l}:<br><button class="fl-link-btn" style="font-size:0.72rem; padding:1px 6px;" onclick="openPdSuggest('${id}','${k}')">✏️ Suggest</button></div>
+                     <div class="pd-val">${escapeHtml(f[k])}</div>`).join('');
+                const suggHtml = sugg.length ? `<h3 style="margin:16px 0 0; color:#6d4c00;">Suggested Edits (${sugg.length})</h3>` + sugg.map(x => `
+                    <div class="pd-sugg">
+                        <div class="pd-sugg-head">${escapeHtml(x.label || '')} — suggested by ${escapeHtml(x.by || 'Anonymous')}${x.date ? ' on ' + escapeHtml(x.date) : ''}</div>
+                        <div class="pd-mini">Original</div>
+                        <div class="pd-scroll">${escapeHtml(x.original || '')}</div>
+                        <div class="pd-mini">Recommended edit</div>
+                        <div class="pd-scroll">${escapeHtml(x.suggested || '')}</div>
+                        ${x.note ? `<div style="margin-top:4px;"><b>Note:</b> ${escapeHtml(x.note)}</div>` : ''}
+                        <div style="margin-top:8px; display:flex; gap:8px;">
+                            <button class="inv-edit-btn ${editingEnabled ? 'visible' : ''}" onclick="acceptPdSuggestion('${id}','${escapeHtml(x.id)}')">✔ Accept</button>
+                            <button class="inv-delete-btn ${editingEnabled ? 'visible' : ''}" onclick="dismissPdSuggestion('${id}','${escapeHtml(x.id)}')">✖ Dismiss</button>
+                        </div>
+                    </div>`).join('') : '';
+                return `<div class="fl-card" id="draft-${id}">
+                    <div class="fl-card-header">
+                        <div class="fl-title-wrap"><span class="fl-title">${escapeHtml(d.title || 'Untitled')}</span>
+                            ${sugg.length ? `<span class="fl-ext-badge" style="background:#fff8e1; color:#6d4c00; border-color:#ffe082;">${sugg.length} suggestion${sugg.length > 1 ? 's' : ''}</span>` : ''}</div>
+                        <div class="inv-actions" style="display:flex; gap:6px; flex-wrap:wrap;">
+                            <button class="fl-link-btn" onclick="openPdSuggest('${id}')">✏️ Suggest an Edit</button>
+                            <button class="inv-edit-btn ${editingEnabled ? 'visible' : ''}" onclick="editPdDraft('${id}')">Edit</button>
+                            <button class="inv-delete-btn ${editingEnabled ? 'visible' : ''}" onclick="deletePdDraft('${id}')">Delete</button>
+                        </div>
+                    </div>
+                    <div class="pd-grid">${rows}</div>
+                    ${suggHtml}
+                </div>`;
+            }).join('');
+        }
+
+        // ── add / edit a draft ──
+        window.showPdForm = function() {
+            editingPdId = null;
+            document.getElementById('pdModalTitle').textContent = 'Add Draft';
+            document.getElementById('pdPaste').value = '';
+            PD_FIELDS.forEach(([k]) => document.getElementById('pdf_' + k).value = '');
+            document.getElementById('pdModal').style.display = 'flex';
+        };
+        window.editPdDraft = function(id) {
+            const d = packetDrafts.find(x => x.id === id); if (!d) return;
+            editingPdId = id;
+            document.getElementById('pdModalTitle').textContent = 'Edit Draft';
+            document.getElementById('pdPaste').value = '';
+            PD_FIELDS.forEach(([k]) => document.getElementById('pdf_' + k).value = (d.fields || {})[k] || '');
+            document.getElementById('pdModal').style.display = 'flex';
+        };
+        window.closePdModal = function() { document.getElementById('pdModal').style.display = 'none'; };
+
+        // Paste a whole packet ("Label:  value" lines) and fill the boxes
+        window.pdFillFromPaste = function() {
+            const norm = t => t.toLowerCase().replace(/[^a-z]/g, '');
+            const map = {}; PD_FIELDS.forEach(([k, l]) => map[norm(l)] = k);
+            const out = {}; let cur = null;
+            document.getElementById('pdPaste').value.split(/\r?\n/).forEach(line => {
+                const m = line.match(/^\s*([A-Za-z# ]{2,30}?)\s*:\s*(.*)$/);
+                const key = m && map[norm(m[1])];
+                if (key) { cur = key; out[cur] = m[2].trim(); }
+                else if (cur && line.trim()) out[cur] += ' ' + line.trim();
+            });
+            const keys = Object.keys(out);
+            if (!keys.length) { alert('Could not find any "Label: value" lines in the pasted text.'); return; }
+            keys.forEach(k => document.getElementById('pdf_' + k).value = out[k].replace(/\s+$/, '').replace(/,\s*$/, ','));
+        };
+
+        window.savePdDraft = async function() {
+            const fields = {};
+            PD_FIELDS.forEach(([k]) => fields[k] = document.getElementById('pdf_' + k).value.trim());
+            if (!fields.plantName) { alert('Please enter a Plant Name.'); return; }
+            const saveBtn = document.querySelector('#pdModal .save-btn');
+            saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
+            try {
+                if (editingPdId) {
+                    await updateDoc(doc(db, 'fileLibrary', editingPdId), { title: fields.plantName, fields });
+                } else {
+                    await addDoc(fileLibCol, { section: 'packetDraft', title: fields.plantName, fields, suggestions: [], createdAt: serverTimestamp() });
+                }
+                window.closePdModal();
+            } catch (e) { alert('Save failed: ' + e.message); }
+            finally { saveBtn.disabled = false; saveBtn.textContent = 'Save'; }
+        };
+
+        window.deletePdDraft = async function(id) {
+            if (!confirm('Delete this draft (and its suggestions) for EVERYONE?')) return;
+            try { await deleteDoc(doc(db, 'fileLibrary', id)); } catch (e) { alert('Delete failed: ' + e.message); }
+        };
+
+        // ── suggest an edit (anyone) ──
+        window.openPdSuggest = function(id, key) {
+            const d = packetDrafts.find(x => x.id === id); if (!d) return;
+            const f = d.fields || {};
+            const withText = PD_FIELDS.filter(([k]) => f[k]);
+            pdSuggestId = id;
+            document.getElementById('pdSugField').innerHTML = withText.map(([k, l]) => `<option value="${k}">${l}</option>`).join('');
+            document.getElementById('pdSugField').value = key || (withText[0] && withText[0][0]);
+            document.getElementById('pdSugNote').value = '';
+            try { document.getElementById('pdSugName').value = localStorage.getItem('pdReviewerName') || ''; } catch (e) {}
+            window.pdSuggestFieldChanged();
+            document.getElementById('pdSuggestModal').style.display = 'flex';
+        };
+        window.pdSuggestFieldChanged = function() {
+            const d = packetDrafts.find(x => x.id === pdSuggestId); if (!d) return;
+            const text = (d.fields || {})[document.getElementById('pdSugField').value] || '';
+            document.getElementById('pdSugOriginal').textContent = text;
+            document.getElementById('pdSugText').value = text;
+        };
+        window.closePdSuggestModal = function() { document.getElementById('pdSuggestModal').style.display = 'none'; };
+
+        window.submitPdSuggestion = async function() {
+            const d = packetDrafts.find(x => x.id === pdSuggestId); if (!d) return;
+            const key = document.getElementById('pdSugField').value;
+            const original = (d.fields || {})[key] || '';
+            const suggested = document.getElementById('pdSugText').value.trim();
+            const by = document.getElementById('pdSugName').value.trim();
+            if (!by) { alert('Please enter your name.'); return; }
+            if (!suggested || suggested === original.trim()) { alert('Please change the text to show your recommended edit.'); return; }
+            try { localStorage.setItem('pdReviewerName', by); } catch (e) {}
+            const label = (PD_FIELDS.find(x => x[0] === key) || [])[1] || key;
+            const sugg = { id: 's' + Date.now() + Math.random().toString(36).slice(2, 6), key, label, original, suggested,
+                           by, note: document.getElementById('pdSugNote').value.trim(), date: new Date().toLocaleDateString() };
+            const btn = document.querySelector('#pdSuggestModal .save-btn');
+            btn.disabled = true; btn.textContent = 'Sending…';
+            try {
+                await updateDoc(doc(db, 'fileLibrary', d.id), { suggestions: arrayUnion(sugg) });
+                window.closePdSuggestModal();
+            } catch (e) { alert('Could not send suggestion: ' + e.message); }
+            finally { btn.disabled = false; btn.textContent = 'Submit Suggestion'; }
+        };
+
+        // ── accept / dismiss (editors) ──
+        window.acceptPdSuggestion = async function(id, sid) {
+            const d = packetDrafts.find(x => x.id === id); if (!d) return;
+            const x = (d.suggestions || []).find(y => y.id === sid); if (!x) return;
+            const fields = { ...(d.fields || {}), [x.key]: x.suggested };
+            try {
+                await updateDoc(doc(db, 'fileLibrary', id), {
+                    fields, title: fields.plantName || d.title,
+                    suggestions: (d.suggestions || []).filter(y => y.id !== sid)
+                });
+            } catch (e) { alert('Could not apply suggestion: ' + e.message); }
+        };
+        window.dismissPdSuggestion = async function(id, sid) {
+            const d = packetDrafts.find(x => x.id === id); if (!d) return;
+            if (!confirm('Dismiss this suggestion?')) return;
+            try { await updateDoc(doc(db, 'fileLibrary', id), { suggestions: (d.suggestions || []).filter(y => y.id !== sid) }); }
+            catch (e) { alert('Could not dismiss: ' + e.message); }
         };
 
         // ══════════════════════════════════════════════════════════════
