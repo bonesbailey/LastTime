@@ -1498,12 +1498,8 @@
     <div id="seedListPage">
         <div class="seed-page-header" style="flex-direction:column; justify-content:center; text-align:center;">
             <h2 style="text-align:center; margin:0 auto;">📋 Seed List</h2>
-            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; justify-content:center;">
-                <button class="seed-add-btn" id="seedListUploadBtn" onclick="document.getElementById('seedListFileInput').click()" style="display:none;">📥 Upload Excel</button>
-                <button class="seed-add-btn" id="seedListDeleteBtn" onclick="deleteSeedListFile()" style="display:none; background:#d32f2f;">🗑️ Remove File</button>
-            </div>
+            <button class="seed-add-btn" id="seedListUploadBtn" onclick="showSeedListForm()" style="display:none; margin:0 auto;">+ Add Excel File</button>
         </div>
-        <input type="file" id="seedListFileInput" accept=".xlsx" style="display:none;">
         <div id="seedListCard"><p class="fl-empty">Loading Seed List…</p></div>
     </div>
 
@@ -2019,6 +2015,28 @@
         </div>
     </div>
 
+    <!-- ══ SEED LIST Add/Edit Modal ══ -->
+    <div class="modal" id="seedListModal">
+        <div class="modal-content">
+            <h2 id="seedListModalTitle">Add Excel File</h2>
+            <label>Title</label>
+            <input type="text" id="slTitle" placeholder="e.g. 2026 Seed List">
+            <label>Description (optional)</label>
+            <textarea id="slDescription" placeholder="Notes about this file…"></textarea>
+            <label>Bulleted Items (optional — one per line, each becomes a bullet)</label>
+            <textarea id="slItems" placeholder="Updated after the March meeting" style="min-height:90px;"></textarea>
+            <label>Excel file (.xlsx)</label>
+            <div class="fl-drop-zone" id="slDropZone">📎 Click to choose an Excel (.xlsx) file</div>
+            <input type="file" id="slFileInput" accept=".xlsx" style="display:none;">
+            <div class="fl-preview" id="slPreview"></div>
+
+            <div class="modal-actions">
+                <button class="save-btn"   onclick="saveSeedListFile()">Save</button>
+                <button class="cancel-btn" onclick="closeSeedListModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <!-- ══ IMPORTANT DATE Add/Edit Modal ══ -->
     <div class="modal" id="dateModal">
         <div class="modal-content">
@@ -2126,7 +2144,7 @@
             document.getElementById('game1AddBtn').style.display    = 'block';
             document.getElementById('game1UploadBtn').style.display = 'block';
             document.getElementById('seedListUploadBtn').style.display = 'block';
-            if (seedListHasFile) document.getElementById('seedListDeleteBtn').style.display = 'block';
+            renderSeedList();
             document.getElementById('game2UploadBtn').style.display = 'block';
             document.getElementById('game2AddBtn').style.display    = 'block';
             document.getElementById('germAddBtn').style.display     = 'block';
@@ -3402,11 +3420,12 @@
             if (!hash) return;
             const isResearch = hash.startsWith('#research-');
             const isFileLib  = hash.startsWith('#filelib-');
-            if (!isResearch && !isFileLib) return;
+            const isSeedList = hash.startsWith('#seedlist-');
+            if (!isResearch && !isFileLib && !isSeedList) return;
             const targetId = hash.slice(1); // e.g. "research-abc123" or "filelib-abc123"
             const el = document.getElementById(targetId);
             if (!el) return; // entry not loaded/rendered yet
-            showPage(isResearch ? 'research' : 'fileLibrary');
+            showPage(isResearch ? 'research' : isSeedList ? 'seedList' : 'fileLibrary');
             setTimeout(() => {
                 el.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 el.classList.remove('deep-link-highlight');
@@ -3477,8 +3496,12 @@
         const FL_EXT_ICON = { pdf: '📄', docx: '📝', xlsx: '📊' };
 
         onSnapshot(query(fileLibCol, orderBy('createdAt', 'desc')), (snapshot) => {
-            fileLibrary = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            const allLibDocs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            fileLibrary   = allLibDocs.filter(f => f.section !== 'seedList');
+            seedListFiles = allLibDocs.filter(f => f.section === 'seedList');
+            seedListLoaded = true;
             renderFileLibrary();
+            renderSeedList();
         }, (error) => {
             document.getElementById('fileLibraryList').innerHTML = `<p class="fl-empty">Cannot load files: ${error.message}</p>`;
         });
@@ -4010,76 +4033,205 @@
         };
 
         // ══════════════════════════════════════════════════════════════
-        // SEED LIST — one Excel file posted to Firebase Storage.
-        // Shown as a card (like the Bulletin Board) with Open / Download.
-        // Uploading a new file replaces the old one.
+        // SEED LIST — any number of Excel files, same buttons as the
+        // Bulletin Board: Open, Download, Copy Link, Edit, Delete.
+        // (Stored in the same Firestore collection as the Bulletin Board,
+        // tagged section:'seedList', so no new security rules are needed.)
         // ══════════════════════════════════════════════════════════════
-        const SEED_LIST_PATH = 'plants/library/seedlist/SeedList.xlsx';
-        const SEED_LIST_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-        let seedListHasFile = false;
+        const SL_LEGACY_PATH = 'plants/library/seedlist/SeedList.xlsx';
+        let seedListFiles = [];
+        let seedListLoaded = false;
+        let seedListLegacy = null;      // the single file posted by the old version, if still there
+        let editingSeedListId = null;
+        let slMigratingLegacy = false;
+        let pendingSeedListFile = null;
+        let slUrl = null, slPath = null, slName = null, originalSlPath = null;
 
-        async function loadSeedList() {
-            const card   = document.getElementById('seedListCard');
-            const delBtn = document.getElementById('seedListDeleteBtn');
+        async function loadSeedListLegacy() {
             try {
-                const fileRef = storageRef(storage, SEED_LIST_PATH);
+                const fileRef = storageRef(storage, SL_LEGACY_PATH);
                 const [url, meta] = await Promise.all([getDownloadURL(fileRef), getMetadata(fileRef)]);
-                seedListHasFile = true;
-                if (editingEnabled) delBtn.style.display = 'block';
-                const origName = (meta.customMetadata && meta.customMetadata.originalName) || 'SeedList.xlsx';
-                const when = meta.updated ? new Date(meta.updated).toLocaleString() : '';
-                const urlAttr = escapeHtml(url);
-                card.innerHTML = `<div class="fl-card" style="text-align:center;">
+                const origName = ((meta.customMetadata && meta.customMetadata.originalName) || 'SeedList.xlsx').replace(/\.xlsx$/i, '');
+                seedListLegacy = { id: 'legacy', title: origName, fileUrl: url, filePath: SL_LEGACY_PATH,
+                                   fileName: origName, fileExt: 'xlsx', description: '', items: '', legacy: true };
+            } catch (e) { seedListLegacy = null; }
+            renderSeedList();
+        }
+        loadSeedListLegacy();
+
+        function getSeedListEntries() {
+            const list = seedListFiles.slice();
+            if (seedListLegacy && !seedListFiles.some(f => f.filePath === SL_LEGACY_PATH)) list.push(seedListLegacy);
+            return list;
+        }
+
+        function renderSeedList() {
+            const wrap = document.getElementById('seedListCard');
+            if (!seedListLoaded) return;
+            const list = getSeedListEntries();
+            if (list.length === 0) {
+                wrap.innerHTML = `<p class="fl-empty">No Excel files yet. Click "+ Add Excel File" to get started.</p>`;
+                return;
+            }
+            wrap.innerHTML = list.map(f => {
+                const id = escapeHtml(f.id);
+                const fileUrlAttr = escapeHtml(f.fileUrl || '');
+                const fileName = `${escapeHtml(f.fileName || 'file')}.xlsx`;
+                const items = (f.items || '').split('\n').map(t => t.trim()).filter(Boolean);
+                return `<div class="fl-card" id="seedlist-${id}" style="text-align:center;">
                     <div class="fl-card-header" style="flex-direction:column; justify-content:center;">
                         <div class="fl-title-wrap" style="justify-content:center;">
-                            <span class="fl-title">${escapeHtml(origName)}</span>
+                            <span class="fl-title">${escapeHtml(f.title || 'Untitled')}</span>
+                            <span class="fl-ext-badge">xlsx</span>
                         </div>
-                        <div class="inv-actions" style="display:flex; justify-content:center;">
-                            <a class="fl-link-btn" href="${urlAttr}" download="${escapeHtml(origName)}" title="Download file">⬇ Download</a>
+                        <div class="inv-actions" style="display:flex; justify-content:center; flex-wrap:wrap; gap:6px;">
+                            <a class="fl-link-btn" href="#" onclick="openSeedListFile('${id}'); return false;" title="Open file">📊 Open</a>
+                            <a class="fl-link-btn" href="${fileUrlAttr}" download="${fileName}" title="Download file">⬇ Download</a>
+                            <button class="fl-link-btn" title="Copy a link straight to this file" onclick="copySeedListLink('${id}', this)">🔗 Copy Link</button>
+                            <button class="inv-edit-btn ${editingEnabled ? 'visible' : ''}"   onclick="editSeedListFile('${id}')">Edit</button>
+                            <button class="inv-delete-btn ${editingEnabled ? 'visible' : ''}" onclick="deleteSeedListFile('${id}')">Delete</button>
                         </div>
                     </div>
-                    ${when ? `<p class="fl-desc" style="text-align:center;">Posted ${escapeHtml(when)}</p>` : ''}
+                    ${f.description ? `<p class="fl-desc" style="text-align:center;">${linkifyText(f.description)}</p>` : ''}
+                    ${items.length ? `<ul style="text-align:left; display:inline-block;">${items.map(i => `<li>${escapeHtml(i)}</li>`).join('')}</ul>` : ''}
                 </div>`;
-            } catch (err) {
-                seedListHasFile = false;
-                delBtn.style.display = 'none';
-                if (err && err.code === 'storage/object-not-found') {
-                    card.innerHTML = `<p class="fl-empty">No Seed List file posted yet. ${editingEnabled ? 'Click "Upload Excel" to post one.' : ''}</p>`;
-                } else {
-                    card.innerHTML = `<p class="fl-empty">Cannot load the Seed List: ${escapeHtml(err.message || String(err))}</p>`;
-                }
-            }
+            }).join('');
+            goToHashTarget();
         }
-        loadSeedList();
 
-        document.getElementById('seedListFileInput').addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            e.target.value = '';
-            if (!file) return;
-            if (!file.name.toLowerCase().endsWith('.xlsx')) { alert('Please choose an Excel (.xlsx) file.'); return; }
-            if (seedListHasFile && !confirm('This will REPLACE the current Seed List file for EVERYONE. Continue?')) return;
-            const btn = document.getElementById('seedListUploadBtn');
-            btn.disabled = true; btn.textContent = 'Uploading…';
-            try {
-                await uploadBytes(storageRef(storage, SEED_LIST_PATH), file, {
-                    contentType: SEED_LIST_MIME,
-                    customMetadata: { originalName: file.name }
-                });
-                await loadSeedList();
-                alert('Seed List file posted.');
-            } catch (err) {
-                alert('Upload failed: ' + err.message);
-            } finally {
-                btn.disabled = false; btn.textContent = '📥 Upload Excel';
+        window.openSeedListFile = function(id) {
+            const f = getSeedListEntries().find(x => x.id === id); if (!f || !f.fileUrl) return;
+            openDocPreview(f.fileUrl, 'xlsx', f.title || 'Excel file');
+        };
+
+        window.copySeedListLink = function(id, btn) {
+            const url = window.location.origin + window.location.pathname + '#seedlist-' + id;
+            const done = () => {
+                const original = btn.textContent;
+                btn.textContent = '✅ Copied!';
+                setTimeout(() => { btn.textContent = original; }, 1800);
+            };
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url).then(done).catch(() => prompt('Copy this link:', url));
+            } else {
+                prompt('Copy this link:', url);
             }
-        });
+        };
 
-        window.deleteSeedListFile = async function() {
-            if (!confirm('Remove the Seed List file for EVERYONE? This cannot be undone.')) return;
+        (function setupSeedListDropZone() {
+            const zone  = document.getElementById('slDropZone');
+            const input = document.getElementById('slFileInput');
+            zone.addEventListener('click', () => input.click());
+            input.addEventListener('change', e => {
+                const file = e.target.files[0];
+                input.value = '';
+                if (!file) return;
+                if (!file.name.toLowerCase().endsWith('.xlsx')) { alert('Please choose an Excel (.xlsx) file.'); return; }
+                if (file.size > 20 * 1024 * 1024) { alert('File too large (max 20MB).'); return; }
+                pendingSeedListFile = file;
+                slName = file.name.replace(/\.xlsx$/i, '');
+                const preview = document.getElementById('slPreview');
+                preview.style.display = 'flex';
+                preview.innerHTML = `📊 ${escapeHtml(slName)}.xlsx (ready — click Save) <button type="button" class="fl-remove-btn" title="Remove" onclick="clearSeedListFile()">✕</button>`;
+                const t = document.getElementById('slTitle');
+                if (!t.value.trim()) t.value = slName;
+            });
+        })();
+
+        window.clearSeedListFile = function() {
+            pendingSeedListFile = null;
+            slUrl = null; slPath = null; slName = null;
+            const preview = document.getElementById('slPreview');
+            preview.style.display = 'none';
+            preview.innerHTML = '';
+        };
+
+        window.showSeedListForm = function() {
+            editingSeedListId = null;
+            slMigratingLegacy = false;
+            originalSlPath = null;
+            document.getElementById('seedListModalTitle').textContent = 'Add Excel File';
+            document.getElementById('slTitle').value = '';
+            document.getElementById('slDescription').value = '';
+            document.getElementById('slItems').value = '';
+            window.clearSeedListFile();
+            document.getElementById('seedListModal').style.display = 'flex';
+        };
+
+        window.editSeedListFile = function(id) {
+            const f = getSeedListEntries().find(x => x.id === id); if (!f) return;
+            slMigratingLegacy = !!f.legacy;
+            editingSeedListId = f.legacy ? null : id;   // the old single file becomes a regular entry on save
+            originalSlPath = f.legacy ? null : (f.filePath || null);
+            document.getElementById('seedListModalTitle').textContent = 'Edit Excel File';
+            document.getElementById('slTitle').value = f.title || '';
+            document.getElementById('slDescription').value = f.description || '';
+            document.getElementById('slItems').value = f.items || '';
+            slUrl = f.fileUrl || null;
+            slPath = f.filePath || null;
+            slName = f.fileName || null;
+            pendingSeedListFile = null;
+            const preview = document.getElementById('slPreview');
+            if (f.fileUrl) {
+                preview.style.display = 'flex';
+                preview.innerHTML = `📊 ${escapeHtml(f.fileName || 'file')}.xlsx (current file — choose a new one to replace) <button type="button" class="fl-remove-btn" title="Remove" onclick="clearSeedListFile()">✕</button>`;
+            } else {
+                preview.style.display = 'none';
+                preview.innerHTML = '';
+            }
+            document.getElementById('seedListModal').style.display = 'flex';
+        };
+
+        window.closeSeedListModal = function() { document.getElementById('seedListModal').style.display = 'none'; };
+
+        window.saveSeedListFile = async function() {
+            const title = document.getElementById('slTitle').value.trim();
+            const description = document.getElementById('slDescription').value.trim();
+            const items = document.getElementById('slItems').value.trim();
+            if (!title) { alert('Please enter a title.'); return; }
+            if (!pendingSeedListFile && !slUrl) { alert('Please choose an Excel (.xlsx) file.'); return; }
+            const saveBtn = document.querySelector('#seedListModal .save-btn');
+            saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
             try {
-                await deleteObject(storageRef(storage, SEED_LIST_PATH));
-                await loadSeedList();
-            } catch (err) { alert('Remove failed: ' + err.message); }
+                let fileUrl = slUrl, filePath = slPath;
+                let oldPathToDelete = null;
+                if (pendingSeedListFile) {
+                    const safeName = (slName || 'file').replace(/[^a-zA-Z0-9.-]/g, '_');
+                    const newPath = `plants/library/seedlist/${Date.now()}-${safeName}.xlsx`;
+                    const fileRef = storageRef(storage, newPath);
+                    await uploadBytes(fileRef, pendingSeedListFile, {
+                        contentType: FL_EXT_MIME.xlsx,
+                        customMetadata: { originalName: pendingSeedListFile.name }
+                    });
+                    fileUrl = await getDownloadURL(fileRef);
+                    if (originalSlPath && originalSlPath !== newPath) oldPathToDelete = originalSlPath;
+                    if (slMigratingLegacy) oldPathToDelete = SL_LEGACY_PATH;
+                    filePath = newPath;
+                }
+                const data = { title, description, items, fileUrl, filePath,
+                               fileName: slName || null, fileExt: 'xlsx', section: 'seedList' };
+                if (editingSeedListId) { await updateDoc(doc(db, 'fileLibrary', editingSeedListId), data); }
+                else { data.createdAt = serverTimestamp(); await addDoc(fileLibCol, data); }
+                if (oldPathToDelete) { try { await deleteObject(storageRef(storage, oldPathToDelete)); } catch (e) {} }
+                if (oldPathToDelete === SL_LEGACY_PATH) { seedListLegacy = null; renderSeedList(); }
+                window.closeSeedListModal();
+            } catch (e) { alert('Save failed: ' + e.message); }
+            finally { saveBtn.disabled = false; saveBtn.textContent = 'Save'; }
+        };
+
+        window.deleteSeedListFile = async function(id) {
+            if (!confirm('Delete this file for EVERYONE? This cannot be undone.')) return;
+            try {
+                const f = getSeedListEntries().find(x => x.id === id); if (!f) return;
+                if (f.legacy) {
+                    await deleteObject(storageRef(storage, SL_LEGACY_PATH));
+                    seedListLegacy = null;
+                    renderSeedList();
+                    return;
+                }
+                await deleteDoc(doc(db, 'fileLibrary', id));
+                if (f.filePath) { try { await deleteObject(storageRef(storage, f.filePath)); } catch (e) {} }
+            } catch (e) { alert('Delete failed: ' + e.message); }
         };
 
         // ══════════════════════════════════════════════════════════════
