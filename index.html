@@ -2090,6 +2090,8 @@
             <div class="pd-mini">As you type below, the part you change is marked in the original: <mark class="pd-del">red</mark> = replaced/removed, <span class="pd-caret">▼</span> = new text goes here.</div>
             <label>Your recommended edit (change the text below)</label>
             <textarea id="pdSugText" style="height:170px;" oninput="pdSuggestLive()"></textarea>
+            <div class="pd-mini">Your edit with the changes marked: <mark class="pd-ins">green</mark> = new text, <span class="pd-caret cut">✂</span> = text removed here</div>
+            <div class="pd-scroll" id="pdSugPreview" style="max-height:170px;"></div>
             <label>Your name</label>
             <input type="text" id="pdSugName" placeholder="Your name">
             <label>Note / reason (optional)</label>
@@ -4490,6 +4492,7 @@
             const text = (d.fields || {})[document.getElementById('pdSugField').value] || '';
             document.getElementById('pdSugOriginal').textContent = text;
             document.getElementById('pdSugText').value = text;
+            window.pdSuggestLive();
         };
         window.pdSuggestLive = function() {
             const d = packetDrafts.find(x => x.id === pdSuggestId); if (!d) return;
@@ -4497,8 +4500,12 @@
             const box = document.getElementById('pdSugOriginal');
             const st = box.scrollTop;
             const txt = document.getElementById('pdSugText').value;
-            box.innerHTML = txt === orig ? escapeHtml(orig) : pdDiffHtml(orig, txt).o;
+            const pv = document.getElementById('pdSugPreview');
+            const pst = pv.scrollTop;
+            if (txt === orig) { box.innerHTML = escapeHtml(orig); pv.innerHTML = escapeHtml(txt); }
+            else { const dh = pdDiffHtml(orig, txt); box.innerHTML = dh.o; pv.innerHTML = dh.n; }
             box.scrollTop = st;
+            pv.scrollTop = pst;
         };
         window.closePdSuggestModal = function() { document.getElementById('pdSuggestModal').style.display = 'none'; };
 
