@@ -2067,7 +2067,9 @@
     <div class="modal" id="pdModal">
         <div class="modal-content">
             <h2 id="pdModalTitle">Add Draft</h2>
-            <label>Paste the whole packet text here (optional), then press "Fill Fields"</label>
+            <label>Upload a packet file (Word .docx or .txt) to fill the fields automatically</label>
+            <input type="file" id="pdFileInput" accept=".docx,.txt" onchange="pdLoadFile(this)" style="width:100%; box-sizing:border-box; margin-bottom:10px;">
+            <label>Or paste the whole packet text here (optional), then press "Fill Fields"</label>
             <textarea id="pdPaste" placeholder="Plant Name: Barrel Cactus&#10;Biological Name: Ferocactus wislizeni&#10;…" style="height:110px;"></textarea>
             <button type="button" class="fl-link-btn" onclick="pdFillFromPaste()">⬇ Fill Fields from Pasted Text</button>
             <hr>
@@ -2138,6 +2140,7 @@
     <!-- Client-side document rendering (docx/xlsx previews) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
@@ -4365,6 +4368,7 @@
                             ${sugg.length ? `<span class="fl-ext-badge" style="background:#fff8e1; color:#6d4c00; border-color:#ffe082;">${sugg.length} suggestion${sugg.length > 1 ? 's' : ''}</span>` : ''}</div>
                         <div class="inv-actions" style="display:flex; gap:6px; flex-wrap:wrap;">
                             <button class="fl-link-btn" onclick="openPdSuggest('${id}')">✏️ Suggest an Edit</button>
+                            <button class="fl-link-btn" onclick="downloadPdDraft('${id}')">⬇ Download</button>
                             <button class="inv-edit-btn ${editingEnabled ? 'visible' : ''}" onclick="editPdDraft('${id}')">Edit</button>
                             <button class="inv-delete-btn ${editingEnabled ? 'visible' : ''}" onclick="deletePdDraft('${id}')">Delete</button>
                         </div>
@@ -4450,6 +4454,49 @@
             const keys = Object.keys(out);
             if (!keys.length) { alert('Could not find any "Label: value" lines in the pasted text.'); return; }
             keys.forEach(k => document.getElementById('pdf_' + k).value = out[k].replace(/\s+$/, '').replace(/,\s*$/, ','));
+        };
+
+        // Upload a .docx or .txt packet and fill the boxes from it
+        window.pdLoadFile = async function(input) {
+            const file = input.files && input.files[0]; if (!file) return;
+            try {
+                let text;
+                if (/\.docx$/i.test(file.name)) {
+                    const r = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
+                    text = r.value;
+                } else if (/\.txt$/i.test(file.name)) {
+                    text = await file.text();
+                } else { alert('Please choose a Word (.docx) or text (.txt) file.'); return; }
+                document.getElementById('pdPaste').value = text;
+                window.pdFillFromPaste();
+            } catch (e) { alert('Could not read that file: ' + e.message); }
+            finally { input.value = ''; }
+        };
+
+        // Put a draft back together as one Word (.docx) file ("Label: value" lines,
+        // the same layout the upload reads, so it can be re-uploaded later)
+        window.downloadPdDraft = async function(id) {
+            const d = packetDrafts.find(x => x.id === id); if (!d) return;
+            if (typeof JSZip === 'undefined') { alert('The Word file maker did not load. Please refresh the page and try again.'); return; }
+            const f = d.fields || {};
+            const esc = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            const paras = PD_FIELDS.filter(([k]) => f[k]).map(([k, l]) => {
+                const lines = String(f[k]).split(/\r?\n/);
+                const first = `<w:p><w:pPr><w:spacing w:after="${lines.length > 1 ? 0 : 120}"/></w:pPr><w:r><w:rPr><w:b/></w:rPr><w:t xml:space="preserve">${esc(l)}: </w:t></w:r><w:r><w:t xml:space="preserve">${esc(lines[0])}</w:t></w:r></w:p>`;
+                const rest = lines.slice(1).map((ln, i) =>
+                    `<w:p><w:pPr><w:spacing w:after="${i === lines.length - 2 ? 120 : 0}"/></w:pPr><w:r><w:t xml:space="preserve">${esc(ln)}</w:t></w:r></w:p>`).join('');
+                return first + rest;
+            }).join('');
+            const zip = new JSZip();
+            zip.file('[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>');
+            zip.file('_rels/.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>');
+            zip.file('word/document.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>' + paras + '<w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/></w:sectPr></w:body></w:document>');
+            const blob = await zip.generateAsync({ type: 'blob', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = ((d.title || 'Seed Packet').replace(/[\\/:*?"<>|]+/g, '').trim() || 'Seed Packet') + '.docx';
+            document.body.appendChild(a); a.click(); a.remove();
+            setTimeout(() => URL.revokeObjectURL(a.href), 2000);
         };
 
         window.savePdDraft = async function() {
