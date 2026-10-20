@@ -4563,6 +4563,10 @@
         }
         window.openDocPreview  = openDocPreview;
         window.closeDocPreview = closeDocPreview;
+
+        // Visiting seedsavers.space?edit=mg unlocks editing automatically
+        // (no need to press the "Unlock Editing" button).
+        if (hasEditAccess) unlockEditing();
     </script>
 
     <!-- 🎃 HALLOWEEN SCRIPT START -->
