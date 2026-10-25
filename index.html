@@ -982,6 +982,18 @@
 
         .gb-empty { grid-column: 1/-1; text-align: center; padding: 3rem; color: #888; font-size: 1rem; }
 
+        /* ── Photo Journal page ── */
+        #photoJournalPage { display: none; max-width: 1400px; margin: 0 auto; }
+        .pj-card img.gb-image { height: 260px; }
+        .pj-desc {
+            padding: 12px 14px 16px;
+            text-align: left;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            font-size: 1rem;
+            line-height: 1.4;
+        }
+
         /* ── Events page ── */
         #eventsPage { display: none; max-width: 1400px; margin: 0 auto; }
 
@@ -1374,6 +1386,7 @@
             <button class="dropdown-caret" id="photosCaret" onclick="togglePhotosDropdown(event)">▾</button>
             <div class="dropdown-menu" id="photosDropdownMenu">
                 <button id="photoSearchMenuItem" onclick="showPage('photoSearch')">🔍 Plant Photo Search</button>
+                <button id="photoJournalMenuItem" onclick="showPage('photoJournal')">🐞 Bugs and Insects</button>
             </div>
         </div>
         <div class="page-tab-dropdown" id="seedsDropdownWrap">
@@ -1640,6 +1653,17 @@
         </div>
         <div class="gb-grid" id="gbGrid">
             <p class="gb-empty">Loading garden beds…</p>
+        </div>
+    </div>
+
+    <!-- ══ PHOTO JOURNAL PAGE ══ -->
+    <div id="photoJournalPage">
+        <div class="seed-page-header">
+            <h2>🐞 Bugs and Insects</h2>
+            <button class="seed-add-btn" id="pjAddBtn" onclick="showPhotoJournalForm()" style="display:none;">+ Add Photo</button>
+        </div>
+        <div class="gb-grid" id="pjGrid">
+            <p class="gb-empty">Loading photos…</p>
         </div>
     </div>
 
@@ -1955,6 +1979,26 @@
         </div>
     </div>
 
+    <!-- ══ PHOTO JOURNAL Add/Edit Modal ══ -->
+    <div class="modal" id="photoJournalModal">
+        <div class="modal-content">
+            <h2 id="pjModalTitle">Add Photo</h2>
+
+            <label>Photo:</label>
+            <input type="file" id="pjImageUpload" accept="image/*" style="display:none;">
+            <div class="drop-zone" id="pjDropZone">📂 <strong>Click to browse</strong></div>
+            <div id="pjImagePreview" class="image-preview"></div>
+
+            <label>Description:</label>
+            <textarea id="pjDescription" placeholder="Write a description of this photo…" style="min-height:140px;"></textarea>
+
+            <div class="modal-actions">
+                <button class="save-btn"   onclick="savePhotoJournal()">Save</button>
+                <button class="cancel-btn" onclick="closePhotoJournalModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <!-- ══ PLANT PHOTO SEARCH Add/Edit Modal ══ -->
     <div class="modal" id="photoSearchModal">
         <div class="modal-content">
@@ -2204,6 +2248,7 @@
             document.getElementById('seedAddBtn').style.display    = 'block';
             document.getElementById('actionsHeader').style.display = '';
             document.getElementById('gbAddBtn').style.display       = 'block';
+            document.getElementById('pjAddBtn').style.display       = 'block';
             document.getElementById('eventAddBtn').style.display    = 'block';
             document.getElementById('researchAddBtn').style.display = 'block';
             document.getElementById('fileLibAddBtn').style.display  = 'block';
@@ -2249,6 +2294,7 @@
         window.showPage = function(page) {
             document.getElementById('photosPage').style.display     = page === 'photos'     ? 'block' : 'none';
             document.getElementById('photoSearchPage').style.display = page === 'photoSearch' ? 'block' : 'none';
+            document.getElementById('photoJournalPage').style.display = page === 'photoJournal' ? 'block' : 'none';
             document.getElementById('seedPage').style.display       = page === 'seeds'       ? 'block' : 'none';
             document.getElementById('seedListPage').style.display   = page === 'seedList'    ? 'block' : 'none';
             document.getElementById('packetDraftsPage').style.display = page === 'packetDrafts' ? 'block' : 'none';
@@ -2262,7 +2308,8 @@
             document.getElementById('datesPage').style.display      = page === 'dates'       ? 'block' : 'none';
             document.getElementById('minutesPage').style.display    = page === 'minutes'     ? 'block' : 'none';
             document.getElementById('tabPhotos').classList.toggle('active',     page === 'photos');
-            document.getElementById('photosCaret').classList.toggle('active',  page === 'photoSearch');
+            document.getElementById('photosCaret').classList.toggle('active',  page === 'photoSearch' || page === 'photoJournal');
+            document.getElementById('photoJournalMenuItem').classList.toggle('active', page === 'photoJournal');
             document.getElementById('photoSearchMenuItem').classList.toggle('active', page === 'photoSearch');
             document.getElementById('photosDropdownMenu').classList.remove('show');
             document.getElementById('tabSeedList').classList.toggle('active',   page === 'seedList');
@@ -3065,6 +3112,113 @@
         document.getElementById('seedInfoPhotoUpload').addEventListener('change', e => {
             const file = e.target.files[0];
             if (file) loadSeedInfoPhoto(file);
+            e.target.value = '';
+        });
+
+        // ══════════════════════════════════════════════════════════════
+        // PHOTO JOURNAL — photos with a text description
+        // ══════════════════════════════════════════════════════════════
+        const photoJournalCol = collection(db, 'photoJournal');
+        let photoJournal = [];
+        let editingPjId = null;
+        let currentPjImageFile = null, currentPjImageUrl = null, currentPjImagePath = null;
+
+        onSnapshot(query(photoJournalCol, orderBy('createdAt', 'desc')), (snapshot) => {
+            photoJournal = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderPhotoJournal();
+        }, (error) => {
+            document.getElementById('pjGrid').innerHTML = `<p class="gb-empty">Cannot load photos: ${error.message}</p>`;
+        });
+
+        function renderPhotoJournal() {
+            const wrap = document.getElementById('pjGrid');
+            if (photoJournal.length === 0) {
+                wrap.innerHTML = `<p class="gb-empty">No photos yet. ${editingEnabled ? 'Click "+ Add Photo" to get started.' : ''}</p>`;
+                return;
+            }
+            wrap.innerHTML = photoJournal.map(p => {
+                const id = escapeHtml(p.id);
+                return `<div class="gb-card pj-card">
+                    <div class="gb-actions ${editingEnabled ? 'visible' : ''}">
+                        <button class="edit-btn"   onclick="editPhotoJournal('${id}')">Edit</button>
+                        <button class="delete-btn" onclick="deletePhotoJournal('${id}')">Delete</button>
+                    </div>
+                    ${p.imageUrl
+                        ? `<img src="${escapeHtml(p.imageUrl)}" class="gb-image" alt="Journal photo" onclick="window.open('${escapeHtml(p.imageUrl)}','_blank')">`
+                        : `<div class="gb-no-photo">🐞 No Photo</div>`}
+                    <div class="pj-desc">${escapeHtml(p.description || '')}</div>
+                </div>`;
+            }).join('');
+        }
+
+        window.showPhotoJournalForm = function() {
+            editingPjId = null;
+            currentPjImageFile = null; currentPjImageUrl = null; currentPjImagePath = null;
+            document.getElementById('pjModalTitle').textContent = 'Add Photo';
+            document.getElementById('pjDescription').value = '';
+            document.getElementById('pjImagePreview').style.backgroundImage = '';
+            document.getElementById('photoJournalModal').style.display = 'flex';
+        };
+
+        window.editPhotoJournal = function(id) {
+            const p = photoJournal.find(x => x.id === id); if (!p) return;
+            editingPjId = id;
+            currentPjImageFile = null; currentPjImageUrl = p.imageUrl || null; currentPjImagePath = p.imagePath || null;
+            document.getElementById('pjModalTitle').textContent = 'Edit Photo';
+            document.getElementById('pjDescription').value = p.description || '';
+            document.getElementById('pjImagePreview').style.backgroundImage = p.imageUrl ? `url('${p.imageUrl}')` : '';
+            document.getElementById('photoJournalModal').style.display = 'flex';
+        };
+
+        window.closePhotoJournalModal = function() { document.getElementById('photoJournalModal').style.display = 'none'; };
+
+        window.savePhotoJournal = async function() {
+            const description = document.getElementById('pjDescription').value.trim();
+            if (!editingPjId && !currentPjImageFile) { alert("Please choose a photo."); return; }
+            const saveBtn = document.querySelector('#photoJournalModal .save-btn');
+            saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
+            try {
+                const data = { description };
+                if (currentPjImageFile) {
+                    const safeName = currentPjImageFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+                    const newPath  = `plants/photoJournal/${Date.now()}-${safeName}`;
+                    const fileRef  = storageRef(storage, newPath);
+                    await uploadBytes(fileRef, currentPjImageFile);
+                    data.imageUrl  = await getDownloadURL(fileRef);
+                    data.imagePath = newPath;
+                    if (editingPjId && currentPjImagePath && currentPjImagePath !== newPath) {
+                        try { await deleteObject(storageRef(storage, currentPjImagePath)); } catch(e){}
+                    }
+                }
+                if (editingPjId) { await updateDoc(doc(db, 'photoJournal', editingPjId), data); }
+                else { data.createdAt = serverTimestamp(); await addDoc(photoJournalCol, data); }
+                window.closePhotoJournalModal();
+            } catch(e) { alert("Save failed: " + e.message); }
+            finally { saveBtn.disabled = false; saveBtn.textContent = 'Save'; }
+        };
+
+        window.deletePhotoJournal = async function(id) {
+            if (!confirm("Delete this photo for EVERYONE? This cannot be undone.")) return;
+            try {
+                const p = photoJournal.find(x => x.id === id);
+                await deleteDoc(doc(db, 'photoJournal', id));
+                if (p && p.imagePath) { try { await deleteObject(storageRef(storage, p.imagePath)); } catch(e){} }
+            } catch(e) { alert("Delete failed: " + e.message); }
+        };
+
+        function loadPjImageFile(file) {
+            if (!file || !file.type.startsWith('image/')) { alert("Please choose an image file."); return; }
+            if (file.size > 10 * 1024 * 1024) { alert("Image too large (max 10MB)."); return; }
+            const reader = new FileReader();
+            reader.onload = ev => { document.getElementById('pjImagePreview').style.backgroundImage = `url('${ev.target.result}')`; };
+            reader.readAsDataURL(file);
+            currentPjImageFile = file;
+        }
+
+        document.getElementById('pjDropZone').addEventListener('click', () => document.getElementById('pjImageUpload').click());
+        document.getElementById('pjImageUpload').addEventListener('change', e => {
+            const file = e.target.files[0];
+            if (file) loadPjImageFile(file);
             e.target.value = '';
         });
 
