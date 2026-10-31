@@ -2558,7 +2558,8 @@
                 openNotesModal(t.dataset.id);
             } else if (action === 'docpreview') {
                 e.preventDefault();
-                openDocPreview(t.dataset.url, t.dataset.ext, t.dataset.name);
+                if (t.dataset.ext === 'docx') downloadDocFile(t.dataset.url, t.dataset.name, 'docx');
+                else openDocPreview(t.dataset.url, t.dataset.ext, t.dataset.name);
             }
         });
 
@@ -5271,6 +5272,26 @@
                     body.innerHTML = `<p>Sorry, this file couldn't be previewed. <a href="${url}" download>Download it instead</a>.</p>`;
                 });
         }
+        // Saves the Word file to the computer with its proper name so it can be
+        // opened straight in Word (same as the ⬇ button, but from the name link).
+        async function downloadDocFile(url, name, ext) {
+            try {
+                const res = await fetch(url);
+                if (!res.ok) throw new Error('Fetch failed: ' + res.status);
+                const blob = await res.blob();
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = `${name || 'Document'}.${ext}`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+            } catch (err) {
+                console.error('Document download failed:', err);
+                window.location.href = url;
+            }
+        }
+        window.downloadDocFile = downloadDocFile;
         function closeDocPreview() {
             document.getElementById('docPreviewModal').style.display = 'none';
             document.getElementById('docPreviewBody').innerHTML = '';
