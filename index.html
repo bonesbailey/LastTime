@@ -1007,6 +1007,15 @@
         }
         .pj-desc.empty { color: #888; font-style: italic; }
 
+        /* ── What's In Your Garden? page ── */
+        #homeGardenPage { display: none; max-width: 1400px; margin: 0 auto; }
+        #hgGrid {
+            grid-template-columns: repeat(auto-fill, minmax(min(340px, 100%), 340px));
+            justify-content: center;
+        }
+        .hg-card img.gb-image { width: 100%; height: 325px; }
+        .hg-by { margin: 2px 0 0; color: #558b2f; font-size: 0.9rem; }
+
         /* ── Events page ── */
         #eventsPage { display: none; max-width: 1400px; margin: 0 auto; }
 
@@ -1414,6 +1423,7 @@
             </div>
         </div>
         <button class="page-tab"        id="tabGardenBeds" onclick="showPage('gardenBeds')">🪴 Garden<br>Beds</button>
+        <button class="page-tab"        id="tabHomeGarden" onclick="showPage('homeGarden')">🏡 What's In Your<br>Garden?</button>
         <button class="page-tab"        id="tabEvents"     onclick="showPage('events')">🎉<br>Events</button>
         <button class="page-tab"        id="tabResearch"   onclick="showPage('research')">🔬 Research and<br>Misc. Information</button>
         <button class="page-tab"        id="tabFileLibrary" onclick="showPage('fileLibrary')">📌 Bulletin<br>Board</button>
@@ -1666,6 +1676,17 @@
         </div>
         <div class="gb-grid" id="gbGrid">
             <p class="gb-empty">Loading garden beds…</p>
+        </div>
+    </div>
+
+    <!-- ══ WHAT'S IN YOUR GARDEN? PAGE ══ -->
+    <div id="homeGardenPage">
+        <div class="seed-page-header">
+            <h2>🏡 What's In Your Garden?</h2>
+            <button class="seed-add-btn" id="hgAddBtn" onclick="showHomeGardenForm()" style="display:block;">+ Add Photo</button>
+        </div>
+        <div class="gb-grid" id="hgGrid">
+            <p class="gb-empty">Loading photos…</p>
         </div>
     </div>
 
@@ -1988,6 +2009,32 @@
             <div class="modal-actions">
                 <button class="save-btn"   onclick="saveGardenBed()">Save</button>
                 <button class="cancel-btn" onclick="closeGardenBedModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ WHAT'S IN YOUR GARDEN? Add/Edit Modal ══ -->
+    <div class="modal" id="homeGardenModal">
+        <div class="modal-content">
+            <h2 id="hgModalTitle">Add Photo</h2>
+
+            <label>Photo:</label>
+            <input type="file" id="hgImageUpload" accept="image/*" style="display:none;">
+            <div class="drop-zone" id="hgDropZone">📂 <strong>Click to browse</strong></div>
+            <div id="hgImagePreview" class="image-preview"></div>
+
+            <label>Plant Name</label>
+            <input type="text" id="hgPlantName" placeholder="e.g. Desert Marigold">
+
+            <label>Photo Taken By / Gardener:</label>
+            <input type="text" id="hgGardener" placeholder="e.g. Dorothy">
+
+            <label>Description:</label>
+            <textarea id="hgDescription" placeholder="Tell us about this plant in your garden…" style="min-height:120px;"></textarea>
+
+            <div class="modal-actions">
+                <button class="save-btn"   onclick="saveHomeGarden()">Save</button>
+                <button class="cancel-btn" onclick="closeHomeGardenModal()">Cancel</button>
             </div>
         </div>
     </div>
@@ -2315,6 +2362,7 @@
             document.getElementById('seedGerminationPage').style.display = page === 'seedGermination' ? 'block' : 'none';
             document.getElementById('seedPacketPage').style.display = page === 'seedPacket' ? 'block' : 'none';
             document.getElementById('gardenBedsPage').style.display = page === 'gardenBeds'  ? 'block' : 'none';
+            document.getElementById('homeGardenPage').style.display = page === 'homeGarden'  ? 'block' : 'none';
             document.getElementById('eventsPage').style.display     = page === 'events'      ? 'block' : 'none';
             document.getElementById('researchPage').style.display   = page === 'research'    ? 'block' : 'none';
             document.getElementById('fileLibraryPage').style.display = page === 'fileLibrary' ? 'block' : 'none';
@@ -2328,6 +2376,7 @@
             document.getElementById('tabSeedList').classList.toggle('active',   page === 'seedList');
             document.getElementById('invMenuItem').classList.toggle('active',   page === 'seeds');
             document.getElementById('tabGardenBeds').classList.toggle('active', page === 'gardenBeds');
+            document.getElementById('tabHomeGarden').classList.toggle('active', page === 'homeGarden');
             document.getElementById('tabEvents').classList.toggle('active',     page === 'events');
             document.getElementById('tabResearch').classList.toggle('active',   page === 'research');
             document.getElementById('tabFileLibrary').classList.toggle('active', page === 'fileLibrary');
@@ -3336,6 +3385,123 @@
         document.getElementById('gbImageUpload').addEventListener('change', e => {
             const file = e.target.files[0];
             if (file) loadGbImageFile(file);
+            e.target.value = '';
+        });
+
+        // ══════════════════════════════════════════════════════════════
+        // WHAT'S IN YOUR GARDEN? — group members' home garden photos
+        // ══════════════════════════════════════════════════════════════
+        const homeGardenCol = collection(db, 'homeGarden');
+        let homeGarden = [];
+        let editingHgId = null;
+        let currentHgImageFile = null, currentHgImageUrl = null, currentHgImagePath = null;
+
+        onSnapshot(query(homeGardenCol, orderBy('createdAt', 'desc')), (snapshot) => {
+            homeGarden = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderHomeGarden();
+        }, (error) => {
+            document.getElementById('hgGrid').innerHTML = `<p class="gb-empty">Cannot load photos: ${error.message}</p>`;
+        });
+
+        function renderHomeGarden() {
+            const wrap = document.getElementById('hgGrid');
+            if (homeGarden.length === 0) {
+                wrap.innerHTML = `<p class="gb-empty">No photos yet. Click "+ Add Photo" to get started.</p>`;
+                return;
+            }
+            wrap.innerHTML = homeGarden.map(p => {
+                const id = escapeHtml(p.id);
+                return `<div class="gb-card pj-card hg-card">
+                    <div class="gb-actions visible">
+                        <button class="edit-btn"   onclick="editHomeGarden('${id}')">Edit</button>
+                        <button class="delete-btn" onclick="deleteHomeGarden('${id}')">Delete</button>
+                    </div>
+                    ${p.imageUrl
+                        ? `<img src="${escapeHtml(p.imageUrl)}" class="gb-image" alt="${escapeHtml(p.plantName || 'Garden photo')}" onclick="window.open('${escapeHtml(p.imageUrl)}','_blank')">`
+                        : `<div class="gb-no-photo">🏡 No Photo</div>`}
+                    <div class="gb-info">
+                        <p class="gb-name">${escapeHtml(p.plantName || '')}</p>
+                        ${p.gardener ? `<p class="hg-by">📷 ${escapeHtml(p.gardener)}</p>` : ''}
+                    </div>
+                    <div class="pj-desc ${p.description ? '' : 'empty'}">${p.description ? escapeHtml(p.description) : 'No description yet.'}</div>
+                </div>`;
+            }).join('');
+        }
+
+        window.showHomeGardenForm = function() {
+            editingHgId = null;
+            currentHgImageFile = null; currentHgImageUrl = null; currentHgImagePath = null;
+            document.getElementById('hgModalTitle').textContent = 'Add Photo';
+            document.getElementById('hgPlantName').value = '';
+            document.getElementById('hgGardener').value = '';
+            document.getElementById('hgDescription').value = '';
+            document.getElementById('hgImagePreview').style.backgroundImage = '';
+            document.getElementById('homeGardenModal').style.display = 'flex';
+        };
+
+        window.editHomeGarden = function(id) {
+            const p = homeGarden.find(x => x.id === id); if (!p) return;
+            editingHgId = id;
+            currentHgImageFile = null; currentHgImageUrl = p.imageUrl || null; currentHgImagePath = p.imagePath || null;
+            document.getElementById('hgModalTitle').textContent = 'Edit Photo';
+            document.getElementById('hgPlantName').value = p.plantName || '';
+            document.getElementById('hgGardener').value = p.gardener || '';
+            document.getElementById('hgDescription').value = p.description || '';
+            document.getElementById('hgImagePreview').style.backgroundImage = p.imageUrl ? `url('${p.imageUrl}')` : '';
+            document.getElementById('homeGardenModal').style.display = 'flex';
+        };
+
+        window.closeHomeGardenModal = function() { document.getElementById('homeGardenModal').style.display = 'none'; };
+
+        window.saveHomeGarden = async function() {
+            const plantName   = document.getElementById('hgPlantName').value.trim();
+            const gardener    = document.getElementById('hgGardener').value.trim();
+            const description = document.getElementById('hgDescription').value.trim();
+            if (!editingHgId && !currentHgImageFile) { alert("Please choose a photo."); return; }
+            const saveBtn = document.querySelector('#homeGardenModal .save-btn');
+            saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
+            try {
+                const data = { plantName, gardener, description };
+                if (currentHgImageFile) {
+                    const safeName = currentHgImageFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+                    const newPath  = `plants/homeGarden/${Date.now()}-${safeName}`;
+                    const fileRef  = storageRef(storage, newPath);
+                    await uploadBytes(fileRef, currentHgImageFile);
+                    data.imageUrl  = await getDownloadURL(fileRef);
+                    data.imagePath = newPath;
+                    if (editingHgId && currentHgImagePath && currentHgImagePath !== newPath) {
+                        try { await deleteObject(storageRef(storage, currentHgImagePath)); } catch(e){}
+                    }
+                }
+                if (editingHgId) { await updateDoc(doc(db, 'homeGarden', editingHgId), data); }
+                else { data.createdAt = serverTimestamp(); await addDoc(homeGardenCol, data); }
+                window.closeHomeGardenModal();
+            } catch(e) { alert("Save failed: " + e.message); }
+            finally { saveBtn.disabled = false; saveBtn.textContent = 'Save'; }
+        };
+
+        window.deleteHomeGarden = async function(id) {
+            if (!confirm("Delete this photo for EVERYONE? This cannot be undone.")) return;
+            try {
+                const p = homeGarden.find(x => x.id === id);
+                await deleteDoc(doc(db, 'homeGarden', id));
+                if (p && p.imagePath) { try { await deleteObject(storageRef(storage, p.imagePath)); } catch(e){} }
+            } catch(e) { alert("Delete failed: " + e.message); }
+        };
+
+        function loadHgImageFile(file) {
+            if (!file || !file.type.startsWith('image/')) { alert("Please choose an image file."); return; }
+            if (file.size > 10 * 1024 * 1024) { alert("Image too large (max 10MB)."); return; }
+            const reader = new FileReader();
+            reader.onload = ev => { document.getElementById('hgImagePreview').style.backgroundImage = `url('${ev.target.result}')`; };
+            reader.readAsDataURL(file);
+            currentHgImageFile = file;
+        }
+
+        document.getElementById('hgDropZone').addEventListener('click', () => document.getElementById('hgImageUpload').click());
+        document.getElementById('hgImageUpload').addEventListener('change', e => {
+            const file = e.target.files[0];
+            if (file) loadHgImageFile(file);
             e.target.value = '';
         });
 
