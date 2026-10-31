@@ -2537,7 +2537,7 @@
                             const docExt  = escapeHtml(plant.documentExt || 'pdf');
                             const docUrlAttr = escapeHtml(plant.documentUrl);
                             const openLink = isWordOrExcel
-                                ? `<a class="doc-link" href="#" onclick="openDocPreview('${docUrlAttr}','${docExt}','${docName}'); return false;" title="Open document">📄 ${docName}.${docExt}</a>`
+                                ? `<a class="doc-link" href="${docUrlAttr}" data-action="docpreview" data-url="${docUrlAttr}" data-ext="${docExt}" data-name="${docName}" title="Open document">📄 ${docName}.${docExt}</a>`
                                 : `<a class="doc-link" href="${docUrlAttr}" target="_blank" rel="noopener" title="Open document">📄 ${docName}.${docExt}</a>`;
                             return `<div class="doc-row">${openLink}<a class="download-btn doc-download-btn" href="${docUrlAttr}" download="${docName}.${docExt}" title="Download document">⬇</a></div>`;
                         })() : ''}
@@ -2556,6 +2556,9 @@
                 window.open(t.dataset.url, '_blank');
             } else if (action === 'notes') {
                 openNotesModal(t.dataset.id);
+            } else if (action === 'docpreview') {
+                e.preventDefault();
+                openDocPreview(t.dataset.url, t.dataset.ext, t.dataset.name);
             }
         });
 
