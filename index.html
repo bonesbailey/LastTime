@@ -4832,11 +4832,12 @@
                             ${sugg.length ? `<span class="fl-ext-badge" style="background:#fff8e1; color:#6d4c00; border-color:#ffe082;">${sugg.length} suggestion${sugg.length > 1 ? 's' : ''}</span>` : ''}</div>
                         <div class="inv-actions" style="display:flex; gap:6px; flex-wrap:wrap;">
                             <button class="fl-link-btn" onclick="openPdSuggest('${id}')">✏️ Suggest an Edit</button>
-                            <button class="fl-link-btn" onclick="downloadPdDraft('${id}')">⬇ Download${d.docmUrl ? ' (.docm)' : ''}</button>
+                            ${(!d.docmUrl || editingEnabled) ? `<button class="fl-link-btn" onclick="downloadPdDraft('${id}')">⬇ Download${d.docmUrl ? ' (.docm)' : ''}</button>` : ''}
                             <button class="inv-edit-btn ${editingEnabled ? 'visible' : ''}" onclick="editPdDraft('${id}')">Edit</button>
                             <button class="inv-delete-btn ${editingEnabled ? 'visible' : ''}" onclick="deletePdDraft('${id}')">Delete</button>
                         </div>
                     </div>
+                    ${(d.docmUrl && editingEnabled) ? `<div class="pd-mini" style="color:#b71c1c; margin:2px 0 8px;">⚠ The .docm download is a macro-enabled Word file. Only click “Enable Content” in Word if you trust where the file came from.</div>` : ''}
                     <div class="pd-grid">${rows}</div>
                     ${suggHtml}
                 </div>`;
