@@ -2177,7 +2177,7 @@
             <textarea id="pdPaste" placeholder="Plant Name: Barrel Cactus&#10;Biological Name: Ferocactus wislizeni&#10;(any titles work)…" style="height:110px;"></textarea>
             <button type="button" class="fl-link-btn" onclick="pdFillFromPaste()">⬇ Fill Fields from Pasted Text</button>
             <hr>
-            <div class="pd-mini" style="margin-bottom:6px;">The field titles come from your file or pasted text — you can retitle, remove, or add fields below.</div>
+            <div class="pd-mini" style="margin-bottom:6px;">Only the titles found in your file or pasted text appear below — you can retitle, remove, or add fields.</div>
             <div id="pdFormFields"></div>
             <button type="button" class="fl-link-btn" onclick="pdAddRow()" style="margin-bottom:6px;">+ Add Field</button>
             <div class="modal-actions">
@@ -4689,6 +4689,7 @@
 
         function pdRenderForm() {
             const wrap = document.getElementById('pdFormFields');
+            if (!pdFormList.length) { wrap.innerHTML = '<p class="fl-empty">No fields yet — upload a file or paste text above, or press “+ Add Field”.</p>'; return; }
             wrap.innerHTML = pdFormList.map((r, i) => `
                 <div style="margin-bottom:10px;">
                     <div style="display:flex; gap:6px; align-items:center; margin-bottom:3px;">
@@ -4809,7 +4810,7 @@
             editingPdId = null;
             document.getElementById('pdModalTitle').textContent = 'Add Draft';
             document.getElementById('pdPaste').value = '';
-            pdFormList = PD_FIELDS.map(([k, l, t]) => ({ key: k, label: l, value: '', type: t }));
+            pdFormList = [];
             pdRenderForm();
             document.getElementById('pdModal').style.display = 'flex';
         };
@@ -4819,8 +4820,8 @@
             const f = d.fields || {};
             document.getElementById('pdModalTitle').textContent = 'Edit Draft';
             document.getElementById('pdPaste').value = '';
-            const keys = (Array.isArray(d.order) && d.order.length) ? d.order.slice() : PD_FIELDS.map(x => x[0]);
-            Object.keys(f).forEach(k => { if (!keys.includes(k)) keys.push(k); });
+            const keys = (Array.isArray(d.order) && d.order.length) ? d.order.slice() : PD_FIELDS.map(x => x[0]).filter(k => f[k]);
+            Object.keys(f).forEach(k => { if (f[k] && !keys.includes(k)) keys.push(k); });
             pdFormList = keys.map(k => ({ key: k, label: pdLabel(d, k), value: f[k] || '',
                 type: (PD_KNOWN_TYPE[k] === 'area' || /\n/.test(f[k] || '') || (f[k] || '').length > 90) ? 'area' : 'text' }));
             pdRenderForm();
@@ -4876,7 +4877,7 @@
                         const c = tr.querySelectorAll('td, th');
                         if (c.length < 2) return;
                         const label = c[0].textContent.replace(/:\s*$/, '').replace(/\s+/g, ' ').trim();
-                        if (!label || label.length > 40) return;
+                        if (!label || label.length > 60) return;
                         const val = Array.from(c[1].querySelectorAll('p')).map(x => x.textContent.trim()).filter(Boolean).join(' ') || c[1].textContent.trim();
                         lines.push(label + ': ' + val);
                     });
