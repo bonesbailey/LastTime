@@ -2171,8 +2171,8 @@
     <div class="modal" id="pdModal">
         <div class="modal-content">
             <h2 id="pdModalTitle">Add Draft</h2>
-            <label>Upload a packet file (Word .docx or .txt) — its own field titles are used</label>
-            <input type="file" id="pdFileInput" accept=".docx,.txt" onchange="pdLoadFile(this)" style="width:100%; box-sizing:border-box; margin-bottom:10px;">
+            <label>Upload a packet file (Word .docm with macros, .docx, or .txt) — its own field titles are used</label>
+            <input type="file" id="pdFileInput" accept=".docm,.docx,.txt" onchange="pdLoadFile(this)" style="width:100%; box-sizing:border-box; margin-bottom:10px;">
             <label>Or paste the whole packet text here (optional), then press "Fill Fields"</label>
             <textarea id="pdPaste" placeholder="Plant Name: Barrel Cactus&#10;Biological Name: Ferocactus wislizeni&#10;(any titles work)…" style="height:110px;"></textarea>
             <button type="button" class="fl-link-btn" onclick="pdFillFromPaste()">⬇ Fill Fields from Pasted Text</button>
@@ -4687,6 +4687,83 @@
             return keys.filter(k => f[k]).map(k => [k, pdLabel(d, k)]);
         }
 
+        // ── Word macro form (.docm) support ──
+        // The original .docm is kept in Storage. On download, only the text of the
+        // second column is swapped in the original document.xml, so the macros,
+        // bookmarks, formatting and the 16-row table layout stay exactly as they were.
+        const PD_W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+        const PD_XML_NS = 'http://www.w3.org/XML/1998/namespace';
+        const PD_DOCM_MIME = 'application/vnd.ms-word.document.macroEnabled.12';
+        let pdDocm = null;     // {buffer, name} while a .docm has just been chosen in the form
+        function pdKids(el, name) { return Array.from(el.childNodes).filter(n => n.nodeType === 1 && n.namespaceURI === PD_W && n.localName === name); }
+        function pdFirstTable(xmlDoc) {
+            const body = xmlDoc.getElementsByTagNameNS(PD_W, 'body')[0];
+            return body ? pdKids(body, 'tbl')[0] || null : null;
+        }
+        function pdCellText(tc) {
+            const lines = pdKids(tc, 'p').map(p => Array.from(p.getElementsByTagNameNS(PD_W, 't')).map(t => t.textContent).join(''));
+            while (lines.length && !lines[lines.length - 1].trim()) lines.pop();
+            return lines.join('\n').trim();
+        }
+        // [{row, label, value}] for every row of the first table (title = column 1, text = column 2)
+        function pdReadDocmRows(xml) {
+            const d = new DOMParser().parseFromString(xml, 'application/xml');
+            const tbl = pdFirstTable(d); if (!tbl) return [];
+            return pdKids(tbl, 'tr').map((tr, i) => {
+                const tcs = pdKids(tr, 'tc');
+                return { row: i, label: tcs[0] ? pdCellText(tcs[0]).replace(/\s*:\s*$/, '').replace(/\s+/g, ' ').trim() : '',
+                         value: tcs[1] ? pdCellText(tcs[1]) : '' };
+            });
+        }
+        function pdSetCell(d, tc, text) {
+            const mk = n => d.createElementNS(PD_W, 'w:' + n);
+            let ps = pdKids(tc, 'p');
+            if (!ps.length) { const np = mk('p'); tc.appendChild(np); ps = [np]; }
+            const first = ps[0];
+            ps.slice(1).forEach(p => {   // keep any bookmark markers that sat in later paragraphs
+                Array.from(p.childNodes).forEach(ch => { if (ch.nodeType === 1 && /^bookmark(Start|End)$/.test(ch.localName)) first.appendChild(ch); });
+                tc.removeChild(p);
+            });
+            const runs = pdKids(first, 'r');
+            const tpl = runs.find(r => r.getElementsByTagNameNS(PD_W, 't').length) || runs[0] || null;
+            const rPr = tpl ? pdKids(tpl, 'rPr')[0] : null;
+            const pPr = pdKids(first, 'pPr')[0] || null;
+            const run = line => {
+                const r = mk('r'); if (rPr) r.appendChild(rPr.cloneNode(true));
+                const t = mk('t'); t.setAttributeNS(PD_XML_NS, 'xml:space', 'preserve'); t.textContent = line; r.appendChild(t); return r;
+            };
+            const lines = String(text).split(/\r?\n/);
+            first.insertBefore(run(lines[0]), tpl);   // tpl null → appended
+            runs.forEach(r => first.removeChild(r));
+            let prev = first;
+            lines.slice(1).forEach(line => {
+                const np = mk('p'); if (pPr) np.appendChild(pPr.cloneNode(true)); np.appendChild(run(line));
+                tc.insertBefore(np, prev.nextSibling); prev = np;
+            });
+        }
+        // edits: [{row, value}] — returns the new document.xml text
+        function pdPatchDocmXml(xml, edits) {
+            const d = new DOMParser().parseFromString(xml, 'application/xml');
+            const tbl = pdFirstTable(d); if (!tbl) throw new Error('The Word form has no table.');
+            const trs = pdKids(tbl, 'tr');
+            edits.forEach(e => {
+                const tr = trs[e.row]; if (!tr) return;
+                const tcs = pdKids(tr, 'tc'); if (tcs.length < 2) return;
+                pdSetCell(d, tcs[1], e.value);
+            });
+            return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' + new XMLSerializer().serializeToString(d.documentElement);
+        }
+        async function pdLoadDocm(file) {
+            if (typeof JSZip === 'undefined') throw new Error('The Word reader did not load. Please refresh the page and try again.');
+            const buffer = await file.arrayBuffer();
+            const zip = await JSZip.loadAsync(buffer);
+            const entry = zip.file('word/document.xml'); if (!entry) throw new Error('That file does not look like a Word document.');
+            const rows = pdReadDocmRows(await entry.async('string')).filter(r => r.label);
+            if (!rows.length) throw new Error('Could not find a two-column table (title : text) in that file.');
+            pdDocm = { buffer, name: file.name };
+            pdFillFormFromParsed(rows.map(r => ({ label: r.label, value: r.value, docmRow: r.row })));
+        }
+
         function pdRenderForm() {
             const wrap = document.getElementById('pdFormFields');
             if (!pdFormList.length) { wrap.innerHTML = '<p class="fl-empty">No fields yet — upload a file or paste text above, or press “+ Add Field”.</p>'; return; }
@@ -4715,7 +4792,11 @@
             pdRenderForm();
             const l = document.getElementById('pdl_' + (pdFormList.length - 1)); if (l) l.focus();
         };
-        window.pdRemoveRow = function(i) { pdSyncForm(); pdFormList.splice(i, 1); pdRenderForm(); };
+        window.pdRemoveRow = function(i) {
+            pdSyncForm();
+            if (pdFormList[i] && pdFormList[i].docmRow != null && !confirm('This row is part of the Word form the macros read. If you remove it, that row keeps its original text in the downloaded .docm. Remove it anyway?')) return;
+            pdFormList.splice(i, 1); pdRenderForm();
+        };
 
         function renderDrafts() {
             const wrap = document.getElementById('packetDraftsList');
@@ -4751,7 +4832,7 @@
                             ${sugg.length ? `<span class="fl-ext-badge" style="background:#fff8e1; color:#6d4c00; border-color:#ffe082;">${sugg.length} suggestion${sugg.length > 1 ? 's' : ''}</span>` : ''}</div>
                         <div class="inv-actions" style="display:flex; gap:6px; flex-wrap:wrap;">
                             <button class="fl-link-btn" onclick="openPdSuggest('${id}')">✏️ Suggest an Edit</button>
-                            <button class="fl-link-btn" onclick="downloadPdDraft('${id}')">⬇ Download</button>
+                            <button class="fl-link-btn" onclick="downloadPdDraft('${id}')">⬇ Download${d.docmUrl ? ' (.docm)' : ''}</button>
                             <button class="inv-edit-btn ${editingEnabled ? 'visible' : ''}" onclick="editPdDraft('${id}')">Edit</button>
                             <button class="inv-delete-btn ${editingEnabled ? 'visible' : ''}" onclick="deletePdDraft('${id}')">Delete</button>
                         </div>
@@ -4810,7 +4891,7 @@
             editingPdId = null;
             document.getElementById('pdModalTitle').textContent = 'Add Draft';
             document.getElementById('pdPaste').value = '';
-            pdFormList = [];
+            pdFormList = []; pdDocm = null;
             pdRenderForm();
             document.getElementById('pdModal').style.display = 'flex';
         };
@@ -4822,7 +4903,8 @@
             document.getElementById('pdPaste').value = '';
             const keys = (Array.isArray(d.order) && d.order.length) ? d.order.slice() : PD_FIELDS.map(x => x[0]).filter(k => f[k]);
             Object.keys(f).forEach(k => { if (f[k] && !keys.includes(k)) keys.push(k); });
-            pdFormList = keys.map(k => ({ key: k, label: pdLabel(d, k), value: f[k] || '',
+            pdDocm = null;
+            pdFormList = keys.map(k => ({ key: k, label: pdLabel(d, k), value: f[k] || '', docmRow: ((d.docmMap || {})[k] == null ? null : d.docmMap[k]),
                 type: (PD_KNOWN_TYPE[k] === 'area' || /\n/.test(f[k] || '') || (f[k] || '').length > 90) ? 'area' : 'text' }));
             pdRenderForm();
             document.getElementById('pdModal').style.display = 'flex';
@@ -4850,7 +4932,7 @@
                 if (!key || used.has(key)) { key = null; }
                 else used.add(key);
                 const v = r.value.replace(/\s+$/, '').replace(/,\s*$/, ',');
-                return { key, label: r.label, value: v,
+                return { key, label: r.label, value: v, docmRow: (r.docmRow == null ? null : r.docmRow),
                     type: (key && PD_KNOWN_TYPE[key] === 'area') || /\n/.test(v) || v.length > 90 ? 'area' : 'text' };
             });
             pdRenderForm();
@@ -4860,6 +4942,7 @@
         window.pdFillFromPaste = function() {
             const list = pdParseText(document.getElementById('pdPaste').value);
             if (!list.length) { alert('Could not find any "Title: value" lines in the pasted text.'); return; }
+            pdDocm = null;
             pdFillFormFromParsed(list);
         };
 
@@ -4868,7 +4951,11 @@
             const file = input.files && input.files[0]; if (!file) return;
             try {
                 let text;
-                if (/\.docx$/i.test(file.name)) {
+                if (/\.docm$/i.test(file.name)) {
+                    await pdLoadDocm(file);
+                    document.getElementById('pdPaste').value = '';
+                    return;
+                } else if (/\.docx$/i.test(file.name)) {
                     const buf = await file.arrayBuffer();
                     const html = (await mammoth.convertToHtml({ arrayBuffer: buf })).value;
                     const dom = new DOMParser().parseFromString(html, 'text/html');
@@ -4885,7 +4972,7 @@
                     else text = (await mammoth.extractRawText({ arrayBuffer: buf })).value;
                 } else if (/\.txt$/i.test(file.name)) {
                     text = await file.text();
-                } else { alert('Please choose a Word (.docx) or text (.txt) file.'); return; }
+                } else { alert('Please choose a Word (.docm or .docx) or text (.txt) file.'); return; }
                 document.getElementById('pdPaste').value = text;
                 window.pdFillFromPaste();
             } catch (e) { alert('Could not read that file: ' + e.message); }
@@ -4898,6 +4985,22 @@
             const d = packetDrafts.find(x => x.id === id); if (!d) return;
             if (typeof JSZip === 'undefined') { alert('The Word file maker did not load. Please refresh the page and try again.'); return; }
             const f = d.fields || {};
+            if (d.docmUrl && d.docmMap) {   // patch the original macro form: macros & layout untouched
+                try {
+                    const resp = await fetch(d.docmUrl); if (!resp.ok) throw new Error('could not fetch the stored Word form (' + resp.status + ')');
+                    const zip = await JSZip.loadAsync(await resp.arrayBuffer());
+                    const xml = await zip.file('word/document.xml').async('string');
+                    const edits = Object.keys(d.docmMap).map(k => ({ row: d.docmMap[k], value: f[k] || '' }));
+                    zip.file('word/document.xml', pdPatchDocmXml(xml, edits), { createFolders: false });
+                    const blob = await zip.generateAsync({ type: 'blob', mimeType: PD_DOCM_MIME, compression: 'DEFLATE' });
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = ((d.title || 'Seed Packet').replace(/[\\/:*?"<>|]+/g, '').trim() || 'Seed Packet') + '.docm';
+                    document.body.appendChild(a); a.click(); a.remove();
+                    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+                } catch (e) { alert('Could not build the .docm: ' + e.message); }
+                return;
+            }
             const esc = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
             const bd = '<w:tcBorders><w:top w:val="single" w:sz="4" w:color="808080"/><w:left w:val="single" w:sz="4" w:color="808080"/><w:bottom w:val="single" w:sz="4" w:color="808080"/><w:right w:val="single" w:sz="4" w:color="808080"/></w:tcBorders>';
             const cell = (w, inner, shade) => `<w:tc><w:tcPr><w:tcW w:w="${w}" w:type="dxa"/>${bd}${shade ? '<w:shd w:val="clear" w:color="auto" w:fill="E8F5E9"/>' : ''}</w:tcPr>${inner}</w:tc>`;
@@ -4922,8 +5025,8 @@
 
         window.savePdDraft = async function() {
             pdSyncForm();
-            const fields = {}, labels = {}, order = [], used = new Set();
-            let firstValue = '';
+            const fields = {}, labels = {}, order = [], docmMap = {}, used = new Set();
+            let firstValue = '', unmapped = false;
             for (const r of pdFormList) {
                 const label = (r.label || '').trim(), value = (r.value || '').trim();
                 if (!label && !value) continue;
@@ -4939,26 +5042,48 @@
                 }
                 used.add(key);
                 fields[key] = value; labels[key] = label; order.push(key);
+                if (r.docmRow != null) docmMap[key] = r.docmRow; else if (value) unmapped = true;
                 if (!firstValue && value) firstValue = value;
             }
             if (!firstValue) { alert('Please fill in at least one field.'); return; }
             const title = fields.plantName || firstValue.split(/\r?\n/)[0].slice(0, 80);
+            const old = editingPdId ? packetDrafts.find(x => x.id === editingPdId) : null;
             const saveBtn = document.querySelector('#pdModal .save-btn');
             saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
             try {
-                if (editingPdId) {
-                    await updateDoc(doc(db, 'fileLibrary', editingPdId), { title, fields, labels, order });
-                } else {
-                    await addDoc(fileLibCol, { section: 'packetDraft', title, fields, labels, order, suggestions: [], createdAt: serverTimestamp() });
+                const data = { title, fields, labels, order, docmMap };
+                let pathToDelete = null;
+                if (pdDocm) {   // a new .docm was chosen: keep the original in Storage
+                    const safe = pdDocm.name.replace(/\.docm$/i, '').replace(/[^a-zA-Z0-9.-]/g, '_');
+                    const newPath = `plants/library/${Date.now()}-pd-${safe}.docm`;
+                    const fileRef = storageRef(storage, newPath);
+                    // stored with the .docx content type so the existing Storage rules accept it
+                    await uploadBytes(fileRef, new Blob([pdDocm.buffer]), { contentType: FL_EXT_MIME.docx });
+                    data.docmUrl = await getDownloadURL(fileRef);
+                    data.docmPath = newPath; data.docmName = pdDocm.name;
+                    if (old && old.docmPath) pathToDelete = old.docmPath;
+                } else if (old && old.docmPath && !Object.keys(docmMap).length) {
+                    data.docmUrl = null; data.docmPath = null; data.docmName = null;   // form was replaced by a non-.docm source
+                    pathToDelete = old.docmPath;
                 }
+                if (editingPdId) await updateDoc(doc(db, 'fileLibrary', editingPdId), data);
+                else await addDoc(fileLibCol, { section: 'packetDraft', ...data, suggestions: [], createdAt: serverTimestamp() });
+                if (pathToDelete) { try { await deleteObject(storageRef(storage, pathToDelete)); } catch (e) {} }
+                const hadDocm = !!pdDocm || (old && old.docmPath && Object.keys(docmMap).length);
+                pdDocm = null;
                 window.closePdModal();
+                if (hadDocm && unmapped) alert('Note: fields you added by hand are not part of the Word form, so they will not appear in the downloaded .docm (the macros need the original table rows).');
             } catch (e) { alert('Save failed: ' + e.message); }
             finally { saveBtn.disabled = false; saveBtn.textContent = 'Save'; }
         };
 
         window.deletePdDraft = async function(id) {
             if (!confirm('Delete this draft (and its suggestions) for EVERYONE?')) return;
-            try { await deleteDoc(doc(db, 'fileLibrary', id)); } catch (e) { alert('Delete failed: ' + e.message); }
+            const d = packetDrafts.find(x => x.id === id);
+            try {
+                await deleteDoc(doc(db, 'fileLibrary', id));
+                if (d && d.docmPath) { try { await deleteObject(storageRef(storage, d.docmPath)); } catch (e) {} }
+            } catch (e) { alert('Delete failed: ' + e.message); }
         };
 
         // ── suggest an edit (anyone) ──
