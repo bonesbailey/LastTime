@@ -2171,13 +2171,15 @@
     <div class="modal" id="pdModal">
         <div class="modal-content">
             <h2 id="pdModalTitle">Add Draft</h2>
-            <label>Upload a packet file (Word .docx or .txt) to fill the fields automatically</label>
+            <label>Upload a packet file (Word .docx or .txt) — its own field titles are used</label>
             <input type="file" id="pdFileInput" accept=".docx,.txt" onchange="pdLoadFile(this)" style="width:100%; box-sizing:border-box; margin-bottom:10px;">
             <label>Or paste the whole packet text here (optional), then press "Fill Fields"</label>
-            <textarea id="pdPaste" placeholder="Plant Name: Barrel Cactus&#10;Biological Name: Ferocactus wislizeni&#10;…" style="height:110px;"></textarea>
+            <textarea id="pdPaste" placeholder="Plant Name: Barrel Cactus&#10;Biological Name: Ferocactus wislizeni&#10;(any titles work)…" style="height:110px;"></textarea>
             <button type="button" class="fl-link-btn" onclick="pdFillFromPaste()">⬇ Fill Fields from Pasted Text</button>
             <hr>
+            <div class="pd-mini" style="margin-bottom:6px;">The field titles come from your file or pasted text — you can retitle, remove, or add fields below.</div>
             <div id="pdFormFields"></div>
+            <button type="button" class="fl-link-btn" onclick="pdAddRow()" style="margin-bottom:6px;">+ Add Field</button>
             <div class="modal-actions">
                 <button class="save-btn"   onclick="savePdDraft()">Save</button>
                 <button class="cancel-btn" onclick="closePdModal()">Cancel</button>
@@ -4666,10 +4668,53 @@
         let editingPdId = null;
         let pdSuggestId = null;
 
-        document.getElementById('pdFormFields').innerHTML = PD_FIELDS.map(([k, l, t]) =>
-            `<label>${l}</label>` + (t === 'area'
-                ? `<textarea id="pdf_${k}" style="height:130px;"></textarea>`
-                : `<input type="text" id="pdf_${k}">`)).join('');
+        // ── Dynamic field titles ──
+        // A draft stores its values in `fields` (key → text), the title shown for each
+        // key in `labels`, and the display order in `order`. Older drafts without
+        // `labels`/`order` fall back to the standard titles above.
+        const pdNorm = t => String(t || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+        const PD_KNOWN = {}; PD_FIELDS.forEach(([k, l]) => PD_KNOWN[pdNorm(l)] = k);
+        const PD_KNOWN_LABEL = {}; PD_FIELDS.forEach(([k, l]) => PD_KNOWN_LABEL[k] = l);
+        const PD_KNOWN_TYPE = {}; PD_FIELDS.forEach(([k, l, t]) => PD_KNOWN_TYPE[k] = t);
+        let pdFormList = [];   // rows currently in the Add/Edit form: {key, label, value, type}
+
+        function pdLabel(d, k) { return ((d && d.labels) || {})[k] || PD_KNOWN_LABEL[k] || k; }
+        // The fields a draft shows, in order, as [key, label]
+        function pdFieldList(d) {
+            const f = (d && d.fields) || {};
+            const keys = (d && Array.isArray(d.order) && d.order.length) ? d.order.slice() : PD_FIELDS.map(x => x[0]);
+            Object.keys(f).forEach(k => { if (!keys.includes(k)) keys.push(k); });
+            return keys.filter(k => f[k]).map(k => [k, pdLabel(d, k)]);
+        }
+
+        function pdRenderForm() {
+            const wrap = document.getElementById('pdFormFields');
+            wrap.innerHTML = pdFormList.map((r, i) => `
+                <div style="margin-bottom:10px;">
+                    <div style="display:flex; gap:6px; align-items:center; margin-bottom:3px;">
+                        <input type="text" id="pdl_${i}" placeholder="Field title" style="flex:1; font-weight:700; color:#1b5e20;">
+                        <button type="button" class="fl-link-btn" title="Remove this field" onclick="pdRemoveRow(${i})">✕</button>
+                    </div>
+                    ${r.type === 'area' ? `<textarea id="pdf_${i}" style="height:130px;"></textarea>` : `<input type="text" id="pdf_${i}">`}
+                </div>`).join('');
+            pdFormList.forEach((r, i) => {
+                document.getElementById('pdl_' + i).value = r.label || '';
+                document.getElementById('pdf_' + i).value = r.value || '';
+            });
+        }
+        function pdSyncForm() {
+            pdFormList.forEach((r, i) => {
+                const l = document.getElementById('pdl_' + i), v = document.getElementById('pdf_' + i);
+                if (l) r.label = l.value; if (v) r.value = v.value;
+            });
+        }
+        window.pdAddRow = function() {
+            pdSyncForm();
+            pdFormList.push({ key: null, label: '', value: '', type: 'text' });
+            pdRenderForm();
+            const l = document.getElementById('pdl_' + (pdFormList.length - 1)); if (l) l.focus();
+        };
+        window.pdRemoveRow = function(i) { pdSyncForm(); pdFormList.splice(i, 1); pdRenderForm(); };
 
         function renderDrafts() {
             const wrap = document.getElementById('packetDraftsList');
@@ -4682,8 +4727,8 @@
                 const id = escapeHtml(d.id);
                 const f = d.fields || {};
                 const sugg = d.suggestions || [];
-                const rows = PD_FIELDS.filter(([k]) => f[k]).map(([k, l]) =>
-                    `<div class="pd-lbl">${l}:<br><button class="fl-link-btn" style="font-size:0.72rem; padding:1px 6px;" onclick="openPdSuggest('${id}','${k}')">✏️ Suggest</button></div>
+                const rows = pdFieldList(d).map(([k, l]) =>
+                    `<div class="pd-lbl">${escapeHtml(l)}:<br><button class="fl-link-btn" style="font-size:0.72rem; padding:1px 6px;" onclick="openPdSuggest('${id}','${k}')">✏️ Suggest</button></div>
                      <div class="pd-val">${escapeHtml(f[k])}</div>`).join('');
                 const suggHtml = sugg.length ? `<h3 style="margin:16px 0 0; color:#6d4c00;">Suggested Edits (${sugg.length})</h3>` + sugg.map(x => { const dh = pdDiffHtml(x.original || '', x.suggested || ''); return `
                     <div class="pd-sugg">
@@ -4764,33 +4809,57 @@
             editingPdId = null;
             document.getElementById('pdModalTitle').textContent = 'Add Draft';
             document.getElementById('pdPaste').value = '';
-            PD_FIELDS.forEach(([k]) => document.getElementById('pdf_' + k).value = '');
+            pdFormList = PD_FIELDS.map(([k, l, t]) => ({ key: k, label: l, value: '', type: t }));
+            pdRenderForm();
             document.getElementById('pdModal').style.display = 'flex';
         };
         window.editPdDraft = function(id) {
             const d = packetDrafts.find(x => x.id === id); if (!d) return;
             editingPdId = id;
+            const f = d.fields || {};
             document.getElementById('pdModalTitle').textContent = 'Edit Draft';
             document.getElementById('pdPaste').value = '';
-            PD_FIELDS.forEach(([k]) => document.getElementById('pdf_' + k).value = (d.fields || {})[k] || '');
+            const keys = (Array.isArray(d.order) && d.order.length) ? d.order.slice() : PD_FIELDS.map(x => x[0]);
+            Object.keys(f).forEach(k => { if (!keys.includes(k)) keys.push(k); });
+            pdFormList = keys.map(k => ({ key: k, label: pdLabel(d, k), value: f[k] || '',
+                type: (PD_KNOWN_TYPE[k] === 'area' || /\n/.test(f[k] || '') || (f[k] || '').length > 90) ? 'area' : 'text' }));
+            pdRenderForm();
             document.getElementById('pdModal').style.display = 'flex';
         };
         window.closePdModal = function() { document.getElementById('pdModal').style.display = 'none'; };
 
-        // Paste a whole packet ("Label:  value" lines) and fill the boxes
-        window.pdFillFromPaste = function() {
-            const norm = t => t.toLowerCase().replace(/[^a-z]/g, '');
-            const map = {}; PD_FIELDS.forEach(([k, l]) => map[norm(l)] = k);
-            const out = {}; let cur = null;
-            document.getElementById('pdPaste').value.split(/\r?\n/).forEach(line => {
-                const m = line.match(/^\s*([A-Za-z# ]{2,30}?)\s*:\s*(.*)$/);
-                const key = m && map[norm(m[1])];
-                if (key) { cur = key; out[cur] = m[2].trim(); }
-                else if (cur && line.trim()) out[cur] += ' ' + line.trim();
+        // Read "Label: value" lines (any labels) into [{label, value}], in the order found
+        function pdParseText(text) {
+            const out = []; let cur = null;
+            String(text).split(/\r?\n/).forEach(line => {
+                const m = line.match(/^\s*([^:\n]{2,40}?)\s*:\s*(.*)$/);
+                if (m && m[1].trim().split(/\s+/).length <= 6 && !/^https?$/i.test(m[1].trim())) {
+                    cur = { label: m[1].trim(), value: m[2].trim() }; out.push(cur);
+                } else if (cur && line.trim()) {
+                    cur.value += (cur.value ? ' ' : '') + line.trim();
+                }
             });
-            const keys = Object.keys(out);
-            if (!keys.length) { alert('Could not find any "Label: value" lines in the pasted text.'); return; }
-            keys.forEach(k => document.getElementById('pdf_' + k).value = out[k].replace(/\s+$/, '').replace(/,\s*$/, ','));
+            return out;
+        }
+        // Fill the form: every title found in the text becomes a field, in the same order
+        function pdFillFormFromParsed(list) {
+            const used = new Set();
+            pdFormList = list.map(r => {
+                let key = PD_KNOWN[pdNorm(r.label)];
+                if (!key || used.has(key)) { key = null; }
+                else used.add(key);
+                const v = r.value.replace(/\s+$/, '').replace(/,\s*$/, ',');
+                return { key, label: r.label, value: v,
+                    type: (key && PD_KNOWN_TYPE[key] === 'area') || /\n/.test(v) || v.length > 90 ? 'area' : 'text' };
+            });
+            pdRenderForm();
+        }
+
+        // Paste a whole packet ("Title:  value" lines) and fill the boxes
+        window.pdFillFromPaste = function() {
+            const list = pdParseText(document.getElementById('pdPaste').value);
+            if (!list.length) { alert('Could not find any "Title: value" lines in the pasted text.'); return; }
+            pdFillFormFromParsed(list);
         };
 
         // Upload a .docx or .txt packet and fill the boxes from it
@@ -4800,16 +4869,14 @@
                 let text;
                 if (/\.docx$/i.test(file.name)) {
                     const buf = await file.arrayBuffer();
-                    const norm = t => t.toLowerCase().replace(/[^a-z]/g, '');
-                    const known = new Set(PD_FIELDS.map(([k, l]) => norm(l)));
                     const html = (await mammoth.convertToHtml({ arrayBuffer: buf })).value;
                     const dom = new DOMParser().parseFromString(html, 'text/html');
                     const lines = [];
                     dom.querySelectorAll('tr').forEach(tr => {
                         const c = tr.querySelectorAll('td, th');
                         if (c.length < 2) return;
-                        const label = c[0].textContent.replace(/:\s*$/, '').trim();
-                        if (!known.has(norm(label))) return;
+                        const label = c[0].textContent.replace(/:\s*$/, '').replace(/\s+/g, ' ').trim();
+                        if (!label || label.length > 40) return;
                         const val = Array.from(c[1].querySelectorAll('p')).map(x => x.textContent.trim()).filter(Boolean).join(' ') || c[1].textContent.trim();
                         lines.push(label + ': ' + val);
                     });
@@ -4834,7 +4901,7 @@
             const bd = '<w:tcBorders><w:top w:val="single" w:sz="4" w:color="808080"/><w:left w:val="single" w:sz="4" w:color="808080"/><w:bottom w:val="single" w:sz="4" w:color="808080"/><w:right w:val="single" w:sz="4" w:color="808080"/></w:tcBorders>';
             const cell = (w, inner, shade) => `<w:tc><w:tcPr><w:tcW w:w="${w}" w:type="dxa"/>${bd}${shade ? '<w:shd w:val="clear" w:color="auto" w:fill="E8F5E9"/>' : ''}</w:tcPr>${inner}</w:tc>`;
             const para = (t, bold) => `<w:p><w:pPr><w:spacing w:before="40" w:after="40"/></w:pPr><w:r>${bold ? '<w:rPr><w:b/></w:rPr>' : ''}<w:t xml:space="preserve">${esc(t)}</w:t></w:r></w:p>`;
-            const rows = PD_FIELDS.filter(([k]) => f[k]).map(([k, l]) =>
+            const rows = pdFieldList(d).map(([k, l]) =>
                 '<w:tr><w:trPr><w:cantSplit/></w:trPr>' +
                 cell(2700, para(l, true), true) +
                 cell(6660, String(f[k]).split(/\r?\n/).map(ln => para(ln, false)).join(''), false) +
@@ -4853,16 +4920,35 @@
         };
 
         window.savePdDraft = async function() {
-            const fields = {};
-            PD_FIELDS.forEach(([k]) => fields[k] = document.getElementById('pdf_' + k).value.trim());
-            if (!fields.plantName) { alert('Please enter a Plant Name.'); return; }
+            pdSyncForm();
+            const fields = {}, labels = {}, order = [], used = new Set();
+            let firstValue = '';
+            for (const r of pdFormList) {
+                const label = (r.label || '').trim(), value = (r.value || '').trim();
+                if (!label && !value) continue;
+                if (!label) { alert('Please give every field a title (one of the boxes has text but no title).'); return; }
+                let key = r.key && !used.has(r.key) ? r.key : null;
+                if (!key) {
+                    const known = PD_KNOWN[pdNorm(label)];
+                    if (known && !used.has(known)) key = known;
+                    else {
+                        const base = 'x_' + (pdNorm(label) || 'field'); key = base;
+                        for (let n = 2; used.has(key); n++) key = base + n;
+                    }
+                }
+                used.add(key);
+                fields[key] = value; labels[key] = label; order.push(key);
+                if (!firstValue && value) firstValue = value;
+            }
+            if (!firstValue) { alert('Please fill in at least one field.'); return; }
+            const title = fields.plantName || firstValue.split(/\r?\n/)[0].slice(0, 80);
             const saveBtn = document.querySelector('#pdModal .save-btn');
             saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
             try {
                 if (editingPdId) {
-                    await updateDoc(doc(db, 'fileLibrary', editingPdId), { title: fields.plantName, fields });
+                    await updateDoc(doc(db, 'fileLibrary', editingPdId), { title, fields, labels, order });
                 } else {
-                    await addDoc(fileLibCol, { section: 'packetDraft', title: fields.plantName, fields, suggestions: [], createdAt: serverTimestamp() });
+                    await addDoc(fileLibCol, { section: 'packetDraft', title, fields, labels, order, suggestions: [], createdAt: serverTimestamp() });
                 }
                 window.closePdModal();
             } catch (e) { alert('Save failed: ' + e.message); }
@@ -4878,9 +4964,9 @@
         window.openPdSuggest = function(id, key) {
             const d = packetDrafts.find(x => x.id === id); if (!d) return;
             const f = d.fields || {};
-            const withText = PD_FIELDS.filter(([k]) => f[k]);
+            const withText = pdFieldList(d);
             pdSuggestId = id;
-            document.getElementById('pdSugField').innerHTML = withText.map(([k, l]) => `<option value="${k}">${l}</option>`).join('');
+            document.getElementById('pdSugField').innerHTML = withText.map(([k, l]) => `<option value="${escapeHtml(k)}">${escapeHtml(l)}</option>`).join('');
             document.getElementById('pdSugField').value = key || (withText[0] && withText[0][0]);
             document.getElementById('pdSugNote').value = '';
             try { document.getElementById('pdSugName').value = localStorage.getItem('pdReviewerName') || ''; } catch (e) {}
@@ -4918,7 +5004,7 @@
             if (!by) { alert('Please enter your name.'); return; }
             if (!suggested || suggested === original.trim()) { alert('Please change the text to show your recommended edit.'); return; }
             try { localStorage.setItem('pdReviewerName', by); } catch (e) {}
-            const label = (PD_FIELDS.find(x => x[0] === key) || [])[1] || key;
+            const label = pdLabel(d, key);
             const sugg = { id: 's' + Date.now() + Math.random().toString(36).slice(2, 6), key, label, original, suggested,
                            by, note: document.getElementById('pdSugNote').value.trim(), date: new Date().toLocaleDateString() };
             const btn = document.querySelector('#pdSuggestModal .save-btn');
