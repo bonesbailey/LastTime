@@ -2077,6 +2077,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
@@ -5304,8 +5305,10 @@
                     } else if (ext === 'xlsx') {
                         const wb = XLSX.read(buffer, { type: 'array' });
                         const firstSheet = wb.Sheets[wb.SheetNames[0]];
-                        const html = XLSX.utils.sheet_to_html(firstSheet);
+                        const html = XLSX.utils.sheet_to_html(firstSheet, { id: 'xl' });
                         body.innerHTML = `<div class="doc-preview-html">${html}</div>`;
+                        // Bring over bold / red text from the Excel file (SheetJS drops it)
+                        return applyExcelTextStyles(buffer, body).catch(e => console.warn('Could not apply Excel text styles:', e));
                     } else {
                         throw new Error('Unsupported file type for preview');
                     }
@@ -5314,6 +5317,50 @@
                     console.error('Document preview failed:', err);
                     body.innerHTML = `<p>Sorry, this file couldn't be previewed. <a href="${url}" download>Download it instead</a>.</p>`;
                 });
+        }
+        // Reads each cell's bold / font color from the .xlsx and applies it to the
+        // preview table, so bold red text in Excel shows as bold red here.
+        function xlFontColor(c) {
+            if (!c) return null;
+            if (c.argb) {
+                const h = c.argb.length === 8 ? c.argb.slice(2) : c.argb;
+                if (/^f{6}$/i.test(h)) return null;            // ignore white
+                return '#' + h;
+            }
+            if (c.indexed === 10 || c.indexed === 2) return '#FF0000';   // Excel's built-in red
+            return null;
+        }
+        function xlStyleSpan(text, font) {
+            const span = document.createElement('span');
+            span.textContent = text;
+            if (font && font.bold) span.style.fontWeight = 'bold';
+            const col = xlFontColor(font && font.color);
+            if (col) span.style.color = col;
+            return span;
+        }
+        async function applyExcelTextStyles(buffer, container) {
+            if (typeof ExcelJS === 'undefined') return;
+            const wb = new ExcelJS.Workbook();
+            await wb.xlsx.load(buffer);
+            const ws = wb.worksheets[0];
+            if (!ws) return;
+            ws.eachRow({ includeEmpty: false }, row => {
+                row.eachCell({ includeEmpty: false }, cell => {
+                    const td = container.querySelector('#xl-' + cell.address);
+                    if (!td) return;
+                    const v = cell.value;
+                    if (v && typeof v === 'object' && Array.isArray(v.richText)) {
+                        // cell with mixed formatting: style each piece separately
+                        td.textContent = '';
+                        v.richText.forEach(run => td.appendChild(xlStyleSpan(run.text, run.font || cell.font)));
+                    } else {
+                        const f = cell.font || {};
+                        if (f.bold) td.style.fontWeight = 'bold';
+                        const col = xlFontColor(f.color);
+                        if (col) td.style.color = col;
+                    }
+                });
+            });
         }
         // Saves the Word file to the computer with its proper name so it can be
         // opened straight in Word (same as the ⬇ button, but from the name link).
