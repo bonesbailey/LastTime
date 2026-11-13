@@ -5199,7 +5199,7 @@
                 const fid = escapeHtml(fl.id), n = fl.steps.length;
                 return `<div class="sp-col">
                   <div class="sp-title">${ed
-                      ? `<input class="sp-ttl" data-fl="${fid}" data-k="title" value="${escapeHtml(fl.title || '')}"><button class="sp-del" data-a="delflow" data-fl="${fid}" title="Delete this flowchart">🗑</button>`
+                      ? `<input class="sp-ttl" data-fl="${fid}" data-k="title" value="${escapeHtml(fl.title || '')}"><button class="sp-del" data-a="delflow" data-fl="${fid}" title="Delete this entire process" style="white-space:nowrap;">🗑 Delete</button>`
                       : `<h3>${escapeHtml(fl.title || 'Untitled')}</h3>`}</div>
                   ${fl.steps.map((s, i) => `
                     <div class="sp-box">
