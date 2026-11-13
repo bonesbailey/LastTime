@@ -1646,7 +1646,7 @@
                 <label for="arizonaNative">Arizona Native?</label>
             </div>
             <label for="seedPktCount" style="display:block;font-weight:600;font-size:0.95rem;color:#1b5e20;margin:10px 0 2px;">Seed Pkt Number</label>
-            <input type="number" id="seedPktCount" min="0" placeholder="0" style="width:120px;">
+            <input type="text" id="seedPktCount" placeholder="e.g. 250A" style="width:120px;">
             <textarea id="description" placeholder="Description / Notes"></textarea>
             <div class="modal-actions">
                 <button class="save-btn"   onclick="savePlant()">Save Plant</button>
@@ -2355,7 +2355,7 @@
                         <div class="tags">
                             <span class="tag">${escapeHtml(plant.type)}</span>
                             ${plant.arizonaNative ? '<span class="tag">🌵 AZ Native</span>' : ''}
-                            ${(plant.seedPktCount > 0) ? `<span class="tag">📦 ${escapeHtml(String(plant.seedPktCount))} Seed Pkt</span>` : ''}
+                            ${(plant.seedPktCount && String(plant.seedPktCount).trim() !== '0') ? `<span class="tag">📦 ${escapeHtml(String(plant.seedPktCount))} Seed Pkt</span>` : ''}
                         </div>
                         ${plant.description ? `<p><strong>Description:</strong> ${escapeHtml(plant.description)}</p>` : ''}
                         ${plant.documentUrl ? (() => {
@@ -2700,7 +2700,7 @@
                     name, scientific: document.getElementById('scientific').value.trim(),
                     type: document.getElementById('type').value,
                     arizonaNative: document.getElementById('arizonaNative').checked,
-                    seedPktCount:  parseInt(document.getElementById('seedPktCount').value) || 0,
+                    seedPktCount:  document.getElementById('seedPktCount').value.trim() || 0,
                     photoCredit:   document.getElementById('photoCredit').value.trim(),
                     photoDate:     document.getElementById('photoDate').value,
                     seedPhotoCredit: document.getElementById('seedPhotoCredit').value.trim(),
